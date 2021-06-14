@@ -1,0 +1,2 @@
+*.fnl linguist-language=Clojure
+*.fnl linguist-vendored
