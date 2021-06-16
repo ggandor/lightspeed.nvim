@@ -93,7 +93,7 @@ local function skip_to_fold_edge_21(reverse_3f)
     return "moved-the-cursor"
   end
 end
-local opts = {cycle_group_bwd_key = nil, cycle_group_fwd_key = nil, full_inclusive_prefix_key = "<c-x>", grey_out_search_area = true, highlight_unique_chars = false, jump_on_partial_input_safety_timeout = 400, jump_to_first_match = true, labels = nil, limit_ft_matches = 5, match_only_the_start_of_same_char_seqs = true}
+local opts = {cycle_group_bwd_key = nil, cycle_group_fwd_key = nil, default_mappings = true, full_inclusive_prefix_key = "<c-x>", grey_out_search_area = true, highlight_unique_chars = false, jump_on_partial_input_safety_timeout = 400, jump_to_first_match = true, labels = nil, limit_ft_matches = 5, match_only_the_start_of_same_char_seqs = true}
 local function setup(user_opts)
   opts = setmetatable(user_opts, {__index = opts})
   return nil
@@ -1232,5 +1232,7 @@ local function add_default_mappings()
   end
   return nil
 end
-add_default_mappings()
+if opts.default_mappings then
+  add_default_mappings()
+end
 return {add_default_mappings = add_default_mappings, ft = ft, init_highlight = init_highlight, opts = opts, s = s, setup = setup}

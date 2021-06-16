@@ -115,6 +115,7 @@ character instead."
            :grey_out_search_area true
            :match_only_the_start_of_same_char_seqs true
            :limit_ft_matches 5
+           :default_mappings true
            :full_inclusive_prefix_key "<c-x>"
            :cycle_group_fwd_key nil
            :cycle_group_bwd_key nil
@@ -893,7 +894,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
             (= (vim.fn.hasmapto rhs mode) 0))
       (api.nvim_set_keymap mode lhs rhs {:silent true}))))
 
-(add-default-mappings)
+(when opts.default_mappings (add-default-mappings))
 
 ; }}}
 ; Endnotes {{{

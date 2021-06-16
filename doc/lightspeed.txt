@@ -155,6 +155,16 @@ Available options~
     by setting the value to 0, but that is not recommended, since this is also
     a visual signal about whether |lightspeed-instant-repeat| is active.)
 
+`default_mappings = true`
+
+    Set this to false if you want to define you own mappings, or prevent the
+    plugin to override some of the native motions.
+
+    Note: Lightspeed will still not remap any keys automatically for which a
+          custom mapping is already specified - you have to |unmap| those
+          first, or manually map the corresponding <Plug> keys to them
+          (|lightspeed-custom-mappings|).
+
 `full_inclusive_prefix_key = '<c-x>'`
 
     Key to switch on "full-inclusive" mode for 2-character search. The cursor
@@ -266,12 +276,6 @@ Note: Be sure not to use the `-noremap` versions, as <Plug> mappings should be
 For 2-character search, the keys for cycling between groups of matches, and
 the prefix triggering full-inclusive mode can be set in the `opts` table, see
 |lightspeed-config|.
-
-                                           *lightspeed-disable-default-mappings*
-Lightspeed does not remap any keys for which a custom mapping is already
-specified. If you want to prevent the plugin to override some of the native
-commands, for example f/t, map anything to the corresponding <Plug> keys,
-before the plugin is loaded.
 
 ==============================================================================
 HIGHLIGHTING                                              *lightspeed-highlight*
