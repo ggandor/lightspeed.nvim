@@ -300,10 +300,10 @@ The same in Vimscript: >
       lua require'lightspeed'.ft:to(vim.api.nvim_eval('a:reverse'),
                                   \ require'lightspeed'.ft['prev-t-like?'])
     endfun
-    nnoremap <silent> ; :call <SID>RepeatFt(v:false)<cr>
-    xnoremap <silent> ; :call <SID>RepeatFt(v:false)<cr>
-    nnoremap <silent> , :call <SID>RepeatFt(v:true)<cr>
-    xnoremap <silent> , :call <SID>RepeatFt(v:true)<cr>
+    nnoremap <silent> ; <cmd>call <SID>RepeatFt(v:false)<cr>
+    xnoremap <silent> ; <cmd>call <SID>RepeatFt(v:false)<cr>
+    nnoremap <silent> , <cmd>call <SID>RepeatFt(v:true)<cr>
+    xnoremap <silent> , <cmd>call <SID>RepeatFt(v:true)<cr>
 <
 ==============================================================================
 HIGHLIGHTING                                              *lightspeed-highlight*
