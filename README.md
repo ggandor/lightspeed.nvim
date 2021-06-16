@@ -103,11 +103,7 @@ lua require'lightspeed'.setup {
    grey_out_search_area = true,
    match_only_the_start_of_same_char_seqs = true,
    limit_ft_matches = 5,
-   default_mappings = true,
    full_inclusive_prefix_key = '<c-x>',
-   cycle_group_fwd_key = nil,
-   cycle_group_bwd_key = nil,
-   labels = nil,
 }
 ```
 
@@ -197,7 +193,7 @@ user preference.
 ## 👀 Coming sooner or later
 
 - Provided that auto-jumping to the first target is turned off, we could
-  frequently use the on-screen character that follows the pair instead of a
+  frequently use the the on-screen character that follows the pair instead of a
   label. Even if that turns out to be a bit harder to type than the assigned
   label would have been, _zero_ surprise - when the characters are already
   loaded into your brain even before you start typing - cannot be beaten. This
