@@ -81,8 +81,9 @@ That is,
 current line. In Normal and Visual mode, the motion can be repeated via pressing
 the same key (`f` for `f`, etc.) or one of the others (changing the direction or
 the inclusiveness on the fly) - this "instant-repeat" mode is active until you
-type any other character. Note that `;` and `,` do not work - they can be
-remapped for more useful things.
+type any other character. (If you want to keep using `;` and `,` to trigger
+repeat, you can configure that manually - see
+`:h lightspeed-custom-ft-repeat-mappings`.)
 
 Pressing `<enter>` after invoking any of Lightspeed's commands searches with the
 previous input (1- and 2-character searches are saved separately).
@@ -193,7 +194,7 @@ user preference.
 ## 👀 Coming sooner or later
 
 - Provided that auto-jumping to the first target is turned off, we could
-  frequently use the the on-screen character that follows the pair instead of a
+  frequently use the on-screen character that follows the pair instead of a
   label. Even if that turns out to be a bit harder to type than the assigned
   label would have been, _zero_ surprise - when the characters are already
   loaded into your brain even before you start typing - cannot be beaten. This

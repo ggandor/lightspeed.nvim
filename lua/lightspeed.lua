@@ -393,7 +393,7 @@ local function set_dot_repeat(_7_0)
     end
   end
 end
-local ft = {["instant-repeat?"] = nil, ["prev-dot-repeatable-search"] = nil, ["prev-search"] = nil, ["started-reverse?"] = nil}
+local ft = {["instant-repeat?"] = nil, ["prev-dot-repeatable-search"] = nil, ["prev-search"] = nil, ["prev-t-like?"] = nil, ["started-reverse?"] = nil}
 ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f)
   local _let_0_ = self
   local instant_repeat_3f = _let_0_["instant-repeat?"]
@@ -473,6 +473,7 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f)
         set_dot_repeat({cmd = cmd_for_dot_repeat, count = count})
       else
         self["prev-search"] = in1
+        self["prev-t-like?"] = t_like_3f
       end
     end
     local i = 0

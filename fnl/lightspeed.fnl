@@ -347,6 +347,7 @@ interrupted change-operation."
 ; State for 1-character search that is persisted between invocations.
 (local ft {:instant-repeat? nil
            :started-reverse? nil
+           :prev-t-like? nil
            :prev-search nil
            :prev-dot-repeatable-search nil})
 
@@ -389,7 +390,8 @@ interrupted change-operation."
           (if dot-repeatable-op?
             (do (set self.prev-dot-repeatable-search in1)
                 (set-dot-repeat {:cmd cmd-for-dot-repeat :count count}))
-            (set self.prev-search in1)))
+            (do (set self.prev-search in1)
+                (set self.prev-t-like? t-like?))))
         (var i 0)
         (var target-pos nil)
         (each [[line col &as pos] 
