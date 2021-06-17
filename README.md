@@ -17,12 +17,13 @@ etc. A user of Sneak, on the other hand, embraces a different philosophy: it is
 like having a _jetpack_ on you all the time.
 
 Lightspeed, in particular, is like having a jetpack _with a GPS_. It is all
-about _incremental targeting_, and using every available information to assist
-the user and offer shortcuts while entering the input:
+about _incremental targeting_ - analyzing the available information after _each_
+keystroke, to assist the user and offer shortcuts:
 
 * **target labels are assigned and displayed right after the first input:** the
-  key idea behind the plugin, that eliminates a significant problem with
-  EasyMotion, and Sneak's label-mode. Once you try it, you will never look back.
+  key idea behind Lightspeed, that eliminates a significant problem with all of
+  the current general-purpose motion plugins. Once you try it, you will never
+  look back.
 * **shortcut-labels:** often you can type the target label right after the first
   input, as if doing 1-character search
 * **jump based on partial input:** 2-character search can jump right after the
@@ -34,14 +35,14 @@ Other quality-of-life features:
 
 * having a choice between automatically jumping to the first match (Sneak-like -
   default) or allowing for more comfortable target labels (EasyMotion-like)
-* flawless **dot-repeat support** for operators (with
-  [repeat.vim](https://github.com/tpope/vim-repeat) installed)
-* **multiline f/t search**, with _instant-repeat_ available (similar to
-  [clever-f](https://github.com/rhysd/clever-f.vim) or Sneak's "clever" modes)
 * **full-inclusive mode** extends the operated area to the end of the match
-* skips folds
 * skips repeated (3+) sequences of the same character, for preserving labels
   (opt-out)
+* **multiline f/t search**, with _instant-repeat_ available (similar to
+  [clever-f](https://github.com/rhysd/clever-f.vim) or Sneak's "clever" modes)
+* flawless **dot-repeat support** for operators (with
+  [repeat.vim](https://github.com/tpope/vim-repeat) installed)
+* skips folds
 * greys out the search area, like EasyMotion does (opt-out)
 * the cursor stays visible all the time
 * uses extmarks, and does not mess with the Conceal group
