@@ -151,20 +151,44 @@ character instead."
 (fn init-highlight []
   (local bg vim.o.background)
   (local groupdefs
-    [[hl.group.label                    (.. "guifg=" (match bg :light "#f02077" _ "#ff2f87") " gui=bold,underline")]
-     [hl.group.label-overlapped         (.. "guifg=" (match bg :light "#ff4090" _ "#e01067") " gui=underline")]
-     [hl.group.label-distant            (.. "guifg=" (match bg :light "#399d9f" _ "#99ddff") " gui=bold,underline")]
-     [hl.group.label-distant-overlapped (.. "guifg=" (match bg :light "#59bdbf" _ "#79bddf") " gui=underline")]
-     [hl.group.shortcut                 "guibg=#f00077 guifg=#ffffff gui=bold,underline"]  ; ~inverse of label
-     [hl.group.one-char-match           "guibg=#f00077 guifg=#ffffff gui=bold"]  ; shortcut without underline
-     [hl.group.matching-ch              "guifg=#cc9999"]
-     [hl.group.unlabeled-match          (.. "guifg=" (match bg :light "#272020" _ "#f3ecec") " gui=bold")]
-     [hl.group.pending-op-area          "guibg=#f00077 guifg=#ffffff"]  ; ~shortcut without bold/underline
-     [hl.group.pending-change-op-area   (.. "guifg=" (match bg :light "#f02077" _ "#ff2f87") " gui=strikethrough")]
-     [hl.group.greywash                 "guifg=#777777"]])
+    [[hl.group.label                    {:guifg (match bg :light "#f02077" _ "#ff2f87")
+                                         :ctermfg "Red"
+                                         :gui "bold,underline"
+                                         :cterm "bold,underline"}]
+     [hl.group.label-overlapped         {:guifg (match bg :light "#ff4090" _ "#e01067")
+                                         :ctermfg "Magenta"
+                                         :gui "underline"
+                                         :cterm "underline"}]
+     [hl.group.label-distant            {:guifg (match bg :light "#399d9f" _ "#99ddff")
+                                         :ctermfg (match bg :light "Blue" _ "Cyan")
+                                         :gui "bold,underline"
+                                         :cterm "bold,underline"}]
+     [hl.group.label-distant-overlapped {:guifg (match bg :light "#59bdbf" _ "#79bddf")
+                                         :ctermfg (match bg :light "Cyan" _ "Blue")
+                                         :gui "underline" :cterm "underline"}]
+     [hl.group.shortcut                 {:guibg "#f00077" :ctermbg "Red"
+                                         :guifg "#ffffff" :ctermfg "White"
+                                         :gui "bold,underline" :cterm "bold,underline"}]  ; ~inverse of label
+     [hl.group.one-char-match           {:guibg "#f00077" :ctermbg "Red"
+                                         :guifg "#ffffff" :ctermfg "White"
+                                         :gui "bold" :cterm "bold"}]  ; shortcut without underline 
+     [hl.group.matching-ch              {:guifg "#cc9999" :ctermfg "DarkGrey"}]
+     [hl.group.unlabeled-match          {:guifg (match bg :light "#272020" _ "#f3ecec")
+                                         :ctermfg (match bg :light "Black" _ "White")
+                                         :gui "bold"
+                                         :cterm "bold"}]
+     [hl.group.pending-op-area          {:guibg "#f00077" :ctermbg "Red"
+                                         :guifg "#ffffff" :ctermfg "White"}]  ; ~shortcut without bold/underline
+     [hl.group.pending-change-op-area   {:guifg (match bg :light "#f02077" _ "#ff2f87")
+                                         :ctermfg "Red"
+                                         :gui "strikethrough"
+                                         :cterm "strikethrough"}]
+     [hl.group.greywash                 {:guifg "#777777" :ctermfg "Grey"}]])
   (each [_ [group attrs] (ipairs groupdefs)]
     ; "default" = do not override any existing definition for the group.
-    (vim.cmd (.. "highlight default " group " " attrs)))
+    (let [attrs-str (-> (icollect [k v (pairs attrs)] (.. k "=" v))
+                        (table.concat " "))]
+      (vim.cmd (.. "highlight default " group " " attrs-str))))
   (each [_ [from-group to-group]
          (ipairs [[hl.group.unique-ch hl.group.unlabeled-match]
                   [hl.group.shortcut-overlapped hl.group.shortcut]])]

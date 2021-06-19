@@ -136,51 +136,91 @@ local function init_highlight()
   do
     local _9_0 = bg
     if (_9_0 == "light") then
-      _10_ = "#399d9f"
+      _10_ = "Blue"
     else
       local _ = _9_0
-      _10_ = "#99ddff"
+      _10_ = "Cyan"
     end
   end
   local _12_
   do
     local _11_0 = bg
     if (_11_0 == "light") then
-      _12_ = "#59bdbf"
+      _12_ = "#399d9f"
     else
       local _ = _11_0
-      _12_ = "#79bddf"
+      _12_ = "#99ddff"
     end
   end
   local _14_
   do
     local _13_0 = bg
     if (_13_0 == "light") then
-      _14_ = "#272020"
+      _14_ = "Cyan"
     else
       local _ = _13_0
-      _14_ = "#f3ecec"
+      _14_ = "Blue"
     end
   end
   local _16_
   do
     local _15_0 = bg
     if (_15_0 == "light") then
-      _16_ = "#f02077"
+      _16_ = "#59bdbf"
     else
       local _ = _15_0
-      _16_ = "#ff2f87"
+      _16_ = "#79bddf"
     end
   end
-  groupdefs = {{hl.group.label, ("guifg=" .. _6_ .. " gui=bold,underline")}, {hl.group["label-overlapped"], ("guifg=" .. _8_ .. " gui=underline")}, {hl.group["label-distant"], ("guifg=" .. _10_ .. " gui=bold,underline")}, {hl.group["label-distant-overlapped"], ("guifg=" .. _12_ .. " gui=underline")}, {hl.group.shortcut, "guibg=#f00077 guifg=#ffffff gui=bold,underline"}, {hl.group["one-char-match"], "guibg=#f00077 guifg=#ffffff gui=bold"}, {hl.group["matching-ch"], "guifg=#cc9999"}, {hl.group["unlabeled-match"], ("guifg=" .. _14_ .. " gui=bold")}, {hl.group["pending-op-area"], "guibg=#f00077 guifg=#ffffff"}, {hl.group["pending-change-op-area"], ("guifg=" .. _16_ .. " gui=strikethrough")}, {hl.group.greywash, "guifg=#777777"}}
-  for _, _17_0 in ipairs(groupdefs) do
-    local _each_0_ = _17_0
+  local _18_
+  do
+    local _17_0 = bg
+    if (_17_0 == "light") then
+      _18_ = "Black"
+    else
+      local _ = _17_0
+      _18_ = "White"
+    end
+  end
+  local _20_
+  do
+    local _19_0 = bg
+    if (_19_0 == "light") then
+      _20_ = "#272020"
+    else
+      local _ = _19_0
+      _20_ = "#f3ecec"
+    end
+  end
+  local _22_
+  do
+    local _21_0 = bg
+    if (_21_0 == "light") then
+      _22_ = "#f02077"
+    else
+      local _ = _21_0
+      _22_ = "#ff2f87"
+    end
+  end
+  groupdefs = {{hl.group.label, {cterm = "bold,underline", ctermfg = "Red", gui = "bold,underline", guifg = _6_}}, {hl.group["label-overlapped"], {cterm = "underline", ctermfg = "Magenta", gui = "underline", guifg = _8_}}, {hl.group["label-distant"], {cterm = "bold,underline", ctermfg = _10_, gui = "bold,underline", guifg = _12_}}, {hl.group["label-distant-overlapped"], {cterm = "underline", ctermfg = _14_, gui = "underline", guifg = _16_}}, {hl.group.shortcut, {cterm = "bold,underline", ctermbg = "Red", ctermfg = "White", gui = "bold,underline", guibg = "#f00077", guifg = "#ffffff"}}, {hl.group["one-char-match"], {cterm = "bold", ctermbg = "Red", ctermfg = "White", gui = "bold", guibg = "#f00077", guifg = "#ffffff"}}, {hl.group["matching-ch"], {ctermfg = "DarkGrey", guifg = "#cc9999"}}, {hl.group["unlabeled-match"], {cterm = "bold", ctermfg = _18_, gui = "bold", guifg = _20_}}, {hl.group["pending-op-area"], {ctermbg = "Red", ctermfg = "White", guibg = "#f00077", guifg = "#ffffff"}}, {hl.group["pending-change-op-area"], {cterm = "strikethrough", ctermfg = "Red", gui = "strikethrough", guifg = _22_}}, {hl.group.greywash, {ctermfg = "Grey", guifg = "#777777"}}}
+  for _, _23_0 in ipairs(groupdefs) do
+    local _each_0_ = _23_0
     local group = _each_0_[1]
     local attrs = _each_0_[2]
-    vim.cmd(("highlight default " .. group .. " " .. attrs))
+    local attrs_str
+    local _24_
+    do
+      local tbl_0_ = {}
+      for k, v in pairs(attrs) do
+        tbl_0_[(#tbl_0_ + 1)] = (k .. "=" .. v)
+      end
+      _24_ = tbl_0_
+    end
+    attrs_str = table.concat(_24_, " ")
+    vim.cmd(("highlight default " .. group .. " " .. attrs_str))
   end
-  for _, _17_0 in ipairs({{hl.group["unique-ch"], hl.group["unlabeled-match"]}, {hl.group["shortcut-overlapped"], hl.group.shortcut}}) do
-    local _each_0_ = _17_0
+  for _, _23_0 in ipairs({{hl.group["unique-ch"], hl.group["unlabeled-match"]}, {hl.group["shortcut-overlapped"], hl.group.shortcut}}) do
+    local _each_0_ = _23_0
     local from_group = _each_0_[1]
     local to_group = _each_0_[2]
     vim.cmd(("highlight default link " .. from_group .. " " .. to_group))
