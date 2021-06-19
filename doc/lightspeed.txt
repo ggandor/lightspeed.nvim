@@ -204,10 +204,10 @@ S{char}{char}              Jump to the first character of {char}{char}
 
 Visual mode~
 
-z{char}{char}              Extend visual selection up to and including the
+s{char}{char}              Extend visual selection up to and including the
                            first character of {char}{char} in the forward
                            direciton.
-Z{char}{char}              Extend visual selection up to and including the
+S{char}{char}              Extend visual selection up to and including the
                            first character of {char}{char} in the backward
                            direciton.
 

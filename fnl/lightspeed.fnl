@@ -867,8 +867,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
   (local default-mappings
     [[:n "s" "<Plug>Lightspeed_s"]
      [:n "S" "<Plug>Lightspeed_S"]
-     [:x "z" "<Plug>Lightspeed_s"]
-     [:x "Z" "<Plug>Lightspeed_S"]
+     [:x "s" "<Plug>Lightspeed_s"]
+     [:x "S" "<Plug>Lightspeed_S"]
      [:o "z" "<Plug>Lightspeed_s"]
      [:o "Z" "<Plug>Lightspeed_S"]
 
