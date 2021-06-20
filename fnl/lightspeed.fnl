@@ -133,7 +133,7 @@ character instead."
            :label-distant-overlapped "LightspeedLabelDistantOverlapped"
            :shortcut                 "LightspeedShortcut"
            :shortcut-overlapped      "LightspeedShortcutOverlapped"
-           :matching-ch              "LightspeedMatchingChar"
+           :masked-ch                "LightspeedMaskedChar"
            :unlabeled-match          "LightspeedUnlabeledMatch"
            :one-char-match           "LightspeedOneCharMatch"
            :unique-ch                "LightspeedUniqueChar"
@@ -172,7 +172,7 @@ character instead."
      [hl.group.one-char-match           {:guibg "#f00077" :ctermbg "Red"
                                          :guifg "#ffffff" :ctermfg "White"
                                          :gui "bold" :cterm "bold"}]  ; shortcut without underline 
-     [hl.group.matching-ch              {:guifg "#cc9999" :ctermfg "DarkGrey"}]
+     [hl.group.masked-ch                {:guifg "#cc9999" :ctermfg "DarkGrey"}]
      [hl.group.unlabeled-match          {:guifg (match bg :light "#272020" _ "#f3ecec")
                                          :ctermfg (match bg :light "Black" _ "White")
                                          :gui "bold"
@@ -535,7 +535,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
               ; keeps the same special highlight. (It is important for a label
               ; to stay unchanged once shown up, if possible, else the eye might
               ; get confused, which kinda beats the purpose.)
-              [col [field1-ch hl.group.matching-ch] [field2-ch overlapped-label-hl]])
+              [col [field1-ch hl.group.masked-ch] [field2-ch overlapped-label-hl]])
 
             ; `repeat?` is mutually exclusive both with `unlabeled?` and
             ; `partially-covered?` (since only the second round takes place).
@@ -544,7 +544,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
             [(inc col) [field2-ch label-hl] nil]
 
             ; Common case: labeled, fully visible match, new invocation.
-            :else [col [field1-ch hl.group.matching-ch] [field2-ch label-hl]])]
+            :else [col [field1-ch hl.group.masked-ch] [field2-ch label-hl]])]
       (hl:set-extmark (dec line) (dec col) {:end_col col
                                             :virt_text [chunk1 ?chunk2]
                                             :virt_text_pos "overlay"})))

@@ -331,7 +331,7 @@ own liking:
         Labels for positions that can be jumped to right after the first
         input (see |lightspeed-shortcuts|).
 
-    LightspeedMatchingChar~
+    LightspeedMaskedChar~
         The second character of the match, that is shown on top of the first
         one, as a reminder.
 

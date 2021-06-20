@@ -108,7 +108,7 @@ end
 local function _4_(self)
   return api.nvim_buf_clear_namespace(0, self.ns, 0, -1)
 end
-hl = {["add-hl"] = _2_, ["set-extmark"] = _3_, cleanup = _4_, group = {["label-distant"] = "LightspeedLabelDistant", ["label-distant-overlapped"] = "LightspeedLabelDistantOverlapped", ["label-overlapped"] = "LightspeedLabelOverlapped", ["matching-ch"] = "LightspeedMatchingChar", ["one-char-match"] = "LightspeedOneCharMatch", ["pending-change-op-area"] = "LightspeedPendingChangeOpArea", ["pending-op-area"] = "LightspeedPendingOpArea", ["shortcut-overlapped"] = "LightspeedShortcutOverlapped", ["unique-ch"] = "LightspeedUniqueChar", ["unlabeled-match"] = "LightspeedUnlabeledMatch", greywash = "LightspeedGreyWash", label = "LightspeedLabel", shortcut = "LightspeedShortcut"}, ns = api.nvim_create_namespace("")}
+hl = {["add-hl"] = _2_, ["set-extmark"] = _3_, cleanup = _4_, group = {["label-distant"] = "LightspeedLabelDistant", ["label-distant-overlapped"] = "LightspeedLabelDistantOverlapped", ["label-overlapped"] = "LightspeedLabelOverlapped", ["masked-ch"] = "LightspeedMaskedChar", ["one-char-match"] = "LightspeedOneCharMatch", ["pending-change-op-area"] = "LightspeedPendingChangeOpArea", ["pending-op-area"] = "LightspeedPendingOpArea", ["shortcut-overlapped"] = "LightspeedShortcutOverlapped", ["unique-ch"] = "LightspeedUniqueChar", ["unlabeled-match"] = "LightspeedUnlabeledMatch", greywash = "LightspeedGreyWash", label = "LightspeedLabel", shortcut = "LightspeedShortcut"}, ns = api.nvim_create_namespace("")}
 local function init_highlight()
   local bg = vim.o.background
   local groupdefs
@@ -202,7 +202,7 @@ local function init_highlight()
       _22_ = "#ff2f87"
     end
   end
-  groupdefs = {{hl.group.label, {cterm = "bold,underline", ctermfg = "Red", gui = "bold,underline", guifg = _6_}}, {hl.group["label-overlapped"], {cterm = "underline", ctermfg = "Magenta", gui = "underline", guifg = _8_}}, {hl.group["label-distant"], {cterm = "bold,underline", ctermfg = _10_, gui = "bold,underline", guifg = _12_}}, {hl.group["label-distant-overlapped"], {cterm = "underline", ctermfg = _14_, gui = "underline", guifg = _16_}}, {hl.group.shortcut, {cterm = "bold,underline", ctermbg = "Red", ctermfg = "White", gui = "bold,underline", guibg = "#f00077", guifg = "#ffffff"}}, {hl.group["one-char-match"], {cterm = "bold", ctermbg = "Red", ctermfg = "White", gui = "bold", guibg = "#f00077", guifg = "#ffffff"}}, {hl.group["matching-ch"], {ctermfg = "DarkGrey", guifg = "#cc9999"}}, {hl.group["unlabeled-match"], {cterm = "bold", ctermfg = _18_, gui = "bold", guifg = _20_}}, {hl.group["pending-op-area"], {ctermbg = "Red", ctermfg = "White", guibg = "#f00077", guifg = "#ffffff"}}, {hl.group["pending-change-op-area"], {cterm = "strikethrough", ctermfg = "Red", gui = "strikethrough", guifg = _22_}}, {hl.group.greywash, {ctermfg = "Grey", guifg = "#777777"}}}
+  groupdefs = {{hl.group.label, {cterm = "bold,underline", ctermfg = "Red", gui = "bold,underline", guifg = _6_}}, {hl.group["label-overlapped"], {cterm = "underline", ctermfg = "Magenta", gui = "underline", guifg = _8_}}, {hl.group["label-distant"], {cterm = "bold,underline", ctermfg = _10_, gui = "bold,underline", guifg = _12_}}, {hl.group["label-distant-overlapped"], {cterm = "underline", ctermfg = _14_, gui = "underline", guifg = _16_}}, {hl.group.shortcut, {cterm = "bold,underline", ctermbg = "Red", ctermfg = "White", gui = "bold,underline", guibg = "#f00077", guifg = "#ffffff"}}, {hl.group["one-char-match"], {cterm = "bold", ctermbg = "Red", ctermfg = "White", gui = "bold", guibg = "#f00077", guifg = "#ffffff"}}, {hl.group["masked-ch"], {ctermfg = "DarkGrey", guifg = "#cc9999"}}, {hl.group["unlabeled-match"], {cterm = "bold", ctermfg = _18_, gui = "bold", guifg = _20_}}, {hl.group["pending-op-area"], {ctermbg = "Red", ctermfg = "White", guibg = "#f00077", guifg = "#ffffff"}}, {hl.group["pending-change-op-area"], {cterm = "strikethrough", ctermfg = "Red", gui = "strikethrough", guifg = _22_}}, {hl.group.greywash, {ctermfg = "Grey", guifg = "#777777"}}}
   for _, _23_0 in ipairs(groupdefs) do
     local _each_0_ = _23_0
     local group = _each_0_[1]
@@ -721,12 +721,12 @@ local function set_beacon_at(_8_0, field1_ch, field2_ch, _9_0)
       if init_round_3f then
         return {inc(col), {field2_ch, overlapped_label_hl}, nil}
       else
-        return {col, {field1_ch, hl.group["matching-ch"]}, {field2_ch, overlapped_label_hl}}
+        return {col, {field1_ch, hl.group["masked-ch"]}, {field2_ch, overlapped_label_hl}}
       end
     elseif repeat_3f then
       return {inc(col), {field2_ch, label_hl}, nil}
     elseif "else" then
-      return {col, {field1_ch, hl.group["matching-ch"]}, {field2_ch, label_hl}}
+      return {col, {field1_ch, hl.group["masked-ch"]}, {field2_ch, label_hl}}
     end
   end
   local _let_0_ = _14_()
