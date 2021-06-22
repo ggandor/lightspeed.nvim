@@ -62,13 +62,13 @@ character instead."
     (when (not= char-nr -1) (vim.fn.nr2char char-nr))))
 
 
-(fn skip-to-fold-edge! [reverse?]
-  "Move the cursor to the outmost position in the current folded area."
-  (match ((if reverse? vim.fn.foldclosed vim.fn.foldclosedend) (vim.fn.line "."))
-    -1 :not-in-fold
-    fold-edge (do (vim.fn.cursor fold-edge 0)
-                  (vim.fn.cursor 0 (if reverse? 1 (vim.fn.col "$")))
-                  :moved-the-cursor)))
+(fn leftmost-editable-wincol []
+  ; Note: This will not have a visible effect if not forcing a redraw.
+  (local view (vim.fn.winsaveview))
+  (vim.cmd "norm! 0")
+  (local wincol (vim.fn.wincol))
+  (vim.fn.winrestview view)
+  wincol)
 
 ; }}}
 ; Glossary {{{
@@ -245,12 +245,13 @@ character instead."
 
 (fn push-cursor! [direction]
   "Push cursor 1 character to the left or right, possibly beyond EOL."
-  (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW")))
+  (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW") ?stopline))
 
 
-(fn onscreen-match-positions [pattern reverse? ?limit]
+(fn onscreen-match-positions [pattern reverse? {: ft-search? : limit}]
   "Returns an iterator streaming the return values of `searchpos` for
-the given pattern, skipping folds, and stopping at the window edge.
+the given pattern, stopping at the window edge; in case of 2-character
+search, folds and offscreen parts of non-wrapped lines are skipped too.
 Caveat: side-effects take place here (cursor movement, &cpo), and the
 clean-up happens only when the iterator is exhausted, so be careful with
 early termination in loops."
@@ -258,23 +259,62 @@ early termination in loops."
         cpo vim.o.cpo
         opts (if reverse? "b" "")
         stopline (vim.fn.line (if reverse? "w0" "w$"))  ; top/bottom of window
-        cleanup #(do (vim.fn.winrestview view) (set vim.o.cpo cpo) nil)]
+        cleanup #(do (vim.fn.winrestview view) (set vim.o.cpo cpo) nil)
+        ; Only relevant for 2-character search from here on.
+        non-editable-width (dec (leftmost-editable-wincol))  ; sign/number/foldcolumn
+        col-in-edit-area (- (vim.fn.wincol) non-editable-width)
+        left-bound (- (vim.fn.col ".") (dec col-in-edit-area))
+        window-width (api.nvim_win_get_width 0)
+        ; -1, as both chars of the match should be visible.
+        ; NOTE: Should we change our minds and allow f/t to skip folds
+        ;       and offscreen segments, then this has to be incremented
+        ;       at the proper place(s)!
+        right-bound (+ left-bound (dec (- window-width non-editable-width 1)))]
+
+    (fn skip-to-fold-edge! []
+      (match ((if reverse? vim.fn.foldclosed vim.fn.foldclosedend) (vim.fn.line "."))
+        -1 :not-in-fold
+        fold-edge (do (vim.fn.cursor fold-edge 0)
+                      (vim.fn.cursor 0 (if reverse? 1 (vim.fn.col "$")))
+                      ; ...regardless of whether it _actually_ moved
+                      :moved-the-cursor)))
+
+    (fn skip-to-next-onscreen-pos! []
+      (local [line col &as from-pos] (get-current-pos))
+      (match (if (< col left-bound) (if reverse? (when (>= (dec line) stopline)
+                                                   [(dec line) right-bound])
+                                        [line left-bound])
+                 (> col right-bound) (if reverse? [line right-bound]
+                                         (when (<= (inc line) stopline)
+                                           [(inc line) left-bound])))
+        to-pos (when (not= from-pos to-pos)
+                 (vim.fn.cursor to-pos)
+                 :moved-the-cursor)))
+
     (set vim.o.cpo (cpo:gsub "c" ""))  ; do not skip overlapping matches
     (var match-count 0)
-    (fn rec []
-      (if (and ?limit (>= match-count ?limit)) (cleanup)
-          (match (vim.fn.searchpos pattern opts stopline)
+    (fn rec [match-at-curpos?]
+      (if (and limit (>= match-count limit)) (cleanup)
+          (match (vim.fn.searchpos
+                   pattern (.. opts (if match-at-curpos? "c" "")) stopline)
             [0 _] (cleanup)
-            pos (match (skip-to-fold-edge! reverse?)
-                  :moved-the-cursor (rec)  ; continue from fold edge
-                  :not-in-fold (do (++ match-count) pos)))))))
+            [line col &as pos]
+            (if ft-search? (do (++ match-count) pos)
+                (match (skip-to-fold-edge!)
+                  :moved-the-cursor (rec false)
+                  :not-in-fold
+                  (if (or vim.wo.wrap (<= left-bound col right-bound))  ; = on-screen
+                    (do (++ match-count) pos)
+                    (match (skip-to-next-onscreen-pos!)
+                      :moved-the-cursor (rec true)  ; true -> we might be _on_ a match
+                      _ (cleanup))))))))))
 
 
 ; Thinking about some totally different implementation, not using search().
 ; (This is unusably slow if the window has a lot of content.)
 (fn highlight-unique-chars [reverse? ignorecase]
   (local unique-chars {})
-  (each [pos (onscreen-match-positions ".." reverse?)]  ; do not match before EOL
+  (each [pos (onscreen-match-positions ".." reverse? {})]  ; do not match before EOL
     (let [ch (get-char-at-pos pos {})]
       (tset unique-chars ch (match (. unique-chars ch) nil pos _ false))))
   (each [ch pos-or-false (pairs unique-chars)]
@@ -420,8 +460,8 @@ interrupted change-operation."
         (var target-pos nil)
         (each [[line col &as pos] 
                (let [pattern (.. "\\V" (in1:gsub "\\" "\\\\"))
-                     ?limit (when opts.limit_ft_matches (+ count opts.limit_ft_matches))]
-                 (onscreen-match-positions pattern reverse? ?limit))]
+                     limit (when opts.limit_ft_matches (+ count opts.limit_ft_matches))]
+                 (onscreen-match-positions pattern reverse? {:ft-search? true : limit}))]
           (++ i)
           (if (<= i count) (set target-pos pos)
               (when-not op-mode?
@@ -468,7 +508,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
     (var match-count 0)
     ; Saving some of the search state locally, in order to discover overlaps.
     (var prev {})
-    (each [[line col &as pos] (onscreen-match-positions pattern reverse?)]
+    (each [[line col &as pos] (onscreen-match-positions pattern reverse? {})]
       (let [overlap-with-prev? (and (= line prev.line)
                                     (= col ((if reverse? dec inc) prev.col)))
             ch2 (get-char-at-pos pos {:char-offset 1})
