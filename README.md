@@ -60,6 +60,11 @@ Other quality-of-life features:
 Plug 'ggandor/lightspeed.nvim'
 ```
 
+#### [packer](https://github.com/wbthomason/packer.nvim)
+```Lua
+use 'ggandor/lightspeed.nvim'
+```
+
 ### Usage
 
 Command sequence for 2-character search in Normal mode, with the default
