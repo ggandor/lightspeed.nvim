@@ -1,4 +1,4 @@
-*lightspeed.txt*        For Neovim version 0.5        Last change: 2021 June 12
+*lightspeed.txt*        For Neovim version 0.5        Last change: 2021 June 25
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -66,10 +66,11 @@ appears as an "inverse" block of the normal labels).
 `f`, `F`, `t`, `T` work as their native counterparts, but are not limited to
 the current line. In Normal and Visual mode, the motion can be repeated via
 pressing the same key (`f` for `f`, etc.) or one of the others (changing the
-direction or the inclusiveness on the fly) - this "instant-repeat" mode is
+direction or the inclusiveness on the fly). This "instant-repeat" mode is
 active until you type any other character.
 
-Note: `;` and `,` do not work - they can be remapped for more useful things.
+Note: If you would like to keep using `;` and `,` to trigger repeat, see
+      |lightspeed-custom-ft-repeat-mappings| for a workaround.
 
                                                        *lightspeed-enter-repeat*
 Pressing <enter> after invoking any of Lightspeed's commands searches with the
@@ -145,7 +146,8 @@ Available options~
 `match_only_the_start_of_same_char_seqs = true`
 
     This can be useful, so that e.g. a separator line will not snatch up all the
-    available labels when you want to jump to a `==` or `--` beyond that.
+    available labels when you want to jump to a `==` or `--` beyond that. Also
+    convenient for working with hex color codes.
 
 `limit_ft_matches = 5`
     
@@ -251,14 +253,21 @@ All modes~
 ==============================================================================
 CUSTOM MAPPINGS                                     *lightspeed-custom-mappings*
 
+<Plug> keys are aliases for right hand sides of mappings - in our case, Lua
+method calls. If you are not familiar with the concept, see |<Plug>| and
+|using-<Plug>|.
+
 Available <Plug> keys for all modes:
 
-`<Plug>Lightspeed_s`
-`<Plug>Lightspeed_S`
-`<Plug>Lightspeed_f`
-`<Plug>Lightspeed_F`
-`<Plug>Lightspeed_t`
-`<Plug>Lightspeed_T`
+`<Plug>Lightspeed_s` - forward, 2-character
+`<Plug>Lightspeed_S` - backward, 2-character
+`<Plug>Lightspeed_f` - forward, 1-character, inclusive
+`<Plug>Lightspeed_F` - backward, 1-character, inclusive
+`<Plug>Lightspeed_t` - forward, 1-character, exclusive
+`<Plug>Lightspeed_T` - backward, 1-character, exclusive
+
+You may use them like:
+`{mode}map {preferred-key} <Plug>Lightspeed_s`
 
 Note: Be sure not to use the `-noremap` versions, as <Plug> mappings should be
       used recursively, by design.
@@ -268,10 +277,11 @@ the prefix triggering full-inclusive mode can be set in the `opts` table, see
 |lightspeed-config|.
 
                                            *lightspeed-disable-default-mappings*
-Lightspeed does not remap any keys for which a custom mapping is already
-specified. If you want to prevent the plugin to override some of the native
-commands, for example f/t, map anything unused to the corresponding <Plug>
-keys, before the plugin is loaded.
+Lightspeed does not remap any keys for which there is a custom mapping already
+defined. If you wish to preserve the the _native_ behaviour of some of the
+keys, for example f/t, simply |unmap| the given keys after the plugin has been
+loaded, or equivalently, map anything unused to the corresponding <Plug> keys,
+before the plugin has been loaded.
 
                                           *lightspeed-custom-ft-repeat-mappings*
 You can trigger instant-repeat manually by tweaking the publicly exposed `ft`
@@ -305,6 +315,9 @@ The same in Vimscript: >
     nnoremap <silent> , <cmd>call <SID>RepeatFt(v:true)<cr>
     xnoremap <silent> , <cmd>call <SID>RepeatFt(v:true)<cr>
 <
+Note: The state tables are not considered as part of the official API yet;
+      changes might happen.
+
 ==============================================================================
 HIGHLIGHTING                                              *lightspeed-highlight*
 
