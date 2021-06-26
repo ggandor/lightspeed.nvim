@@ -478,7 +478,7 @@ interrupted change-operation."
                 (local (ok? in2) (pcall get-char))  ; pcall for handling <C-c>
                 (set self.instant-repeat?
                      (and ok? (string.match (vim.fn.maparg in2) "<Plug>Lightspeed_[fFtT]")))
-                (vim.fn.feedkeys (if ok? in2 (replace-vim-keycodes "<esc>"))))
+                (vim.fn.feedkeys (if ok? in2 (replace-vim-keycodes "<esc>")) :i))
               (hl:cleanup)))))))
 
 ; }}}
@@ -654,7 +654,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         timeout-secs (/ opts.jump_on_partial_input_safety_timeout 1000)
         (ok? input) (pcall get-char)]
     (when-not (and (= input char-to-ignore) (< (os.clock) (+ start timeout-secs)))
-      (when ok? (vim.fn.feedkeys input)))))
+      (when ok? (vim.fn.feedkeys input :i)))))
 
 
 ; State for 2-character search that is persisted between invocations.
@@ -882,7 +882,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                                    (. positions-to-label))  ; ...currently in use?
                                              ; When "autojump" is on, fall through with any other key,
                                              ; so that we can continue editing right away.
-                                             (exit-with (when jump-to-first? (vim.fn.feedkeys in3))))
+                                             (exit-with (when jump-to-first? (vim.fn.feedkeys in3 :i))))
                                     ; Succesful exit, option #4: selecting a valid label.
                                     pos (do (set-dot-repeat-if-applies)
                                             (jump-to! pos full-incl?)))))))))))))))))))

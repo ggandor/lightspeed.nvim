@@ -653,14 +653,13 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f)
         vim.cmd("redraw")
         local ok_3f, in2 = pcall(get_char)
         self["instant-repeat?"] = (ok_3f and string.match(vim.fn.maparg(in2), "<Plug>Lightspeed_[fFtT]"))
-        local function _20_()
-          if ok_3f then
-            return in2
-          else
-            return replace_vim_keycodes("<esc>")
-          end
+        local _20_
+        if ok_3f then
+          _20_ = in2
+        else
+          _20_ = replace_vim_keycodes("<esc>")
         end
-        vim.fn.feedkeys(_20_())
+        vim.fn.feedkeys(_20_, "i")
       end
       return hl:cleanup()
     end
@@ -950,7 +949,7 @@ local function ignore_char_until_timeout(char_to_ignore)
   local ok_3f, input = pcall(get_char)
   if not ((input == char_to_ignore) and (os.clock() < (start + timeout_secs))) then
     if ok_3f then
-      return vim.fn.feedkeys(input)
+      return vim.fn.feedkeys(input, "i")
     end
   end
 end
@@ -1310,7 +1309,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
                       end
                       do
                         if jump_to_first_3f then
-                          vim.fn.feedkeys(in3)
+                          vim.fn.feedkeys(in3, "i")
                         end
                       end
                       return nil
