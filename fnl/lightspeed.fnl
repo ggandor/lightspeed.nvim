@@ -702,7 +702,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
               (set first-jump? false))
             (vim.fn.cursor pos)
             (when (and full-incl? (not reverse?))
-              (push-cursor! :fwd) (when op-mode? (push-cursor!))))))  ; endnote #3
+              (push-cursor! :fwd) (when op-mode? (push-cursor! :fwd))))))  ; endnote #3
 
     (fn jump-and-ignore-ch2-until-timeout! [[line col _ &as pos] full-incl? new-search? ch2]
       (let [from-pos (get-current-pos)]

@@ -1005,7 +1005,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
       if (full_incl_3f and not reverse_3f) then
         push_cursor_21("fwd")
         if op_mode_3f then
-          return push_cursor_21()
+          return push_cursor_21("fwd")
         end
       end
     end
