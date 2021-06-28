@@ -687,7 +687,7 @@ local function get_cycle_keys()
     if opts.jump_to_first_match then
       return "<s-tab>"
     else
-      return "<s-space>"
+      return "<tab>"
     end
   end
   return {replace_vim_keycodes((opts.cycle_group_fwd_key or _9_())), replace_vim_keycodes((opts.cycle_group_bwd_key or _10_()))}
