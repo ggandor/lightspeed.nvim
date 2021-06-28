@@ -495,7 +495,7 @@ interrupted change-operation."
   [(replace-vim-keycodes
      (or opts.cycle_group_fwd_key (if opts.jump_to_first_match "<tab>" "<space>")))
    (replace-vim-keycodes
-     (or opts.cycle_group_bwd_key (if opts.jump_to_first_match "<s-tab>" "<s-space>")))])
+     (or opts.cycle_group_bwd_key (if opts.jump_to_first_match "<s-tab>" "<tab>")))])
 
 
 (fn get-match-map-for [ch1 reverse?]

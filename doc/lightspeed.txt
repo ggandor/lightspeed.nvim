@@ -1,4 +1,4 @@
-*lightspeed.txt*        For Neovim version 0.5        Last change: 2021 June 25
+*lightspeed.txt*        For Neovim version 0.5        Last change: 2021 June 28
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -192,7 +192,7 @@ used right after a jump.)
 `cycle_group_bwd_key = nil`
 
     If `jump_to_first_match` is on: <s-tab>
-    Otherwise: <s-space>
+    Otherwise: <tab>
 
 ==============================================================================
 DEFAULT MAPPINGS                                   *lightspeed-default-mappings*
@@ -242,7 +242,7 @@ All modes~
                            with `full_inclusive_prefix_key`.
 
 <Tab> (or <Space>)         Cycle to the next group of labeled matches.
-<S-Tab> (or <S-Space>)     Cycle to the previous group of labeled matches.
+<S-Tab> (or <Tab>)         Cycle to the previous group of labeled matches.
 
                            When `jump_to_first_match` is set to `false`, and
                            no custom mappings are given, the second - 
