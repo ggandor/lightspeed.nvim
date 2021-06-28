@@ -690,7 +690,7 @@ local function get_cycle_keys()
       return "<s-space>"
     end
   end
-  return {(opts.cycle_group_fwd_key or replace_vim_keycodes(_9_())), (opts.cycle_group_bwd_key or replace_vim_keycodes(_10_()))}
+  return {replace_vim_keycodes((opts.cycle_group_fwd_key or _9_())), replace_vim_keycodes((opts.cycle_group_bwd_key or _10_()))}
 end
 local function get_match_map_for(ch1, reverse_3f)
   local match_map = {}
