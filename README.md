@@ -10,21 +10,23 @@ the flow.
 
 ### A short pitch
 
-[EasyMotion](https://github.com/easymotion/vim-easymotion) or
-[Hop](https://github.com/phaazon/hop.nvim) is like a bunch of different -
+[EasyMotion](https://github.com/easymotion/vim-easymotion) and its derivatives
+([Hop](https://github.com/phaazon/hop.nvim), or
+[Avy](https://github.com/abo-abo/avy) for Emacs) are like a bunch of different -
 however sophisticated - railway networks, with pre-built stations: you have to
 think about which train to take, which exit point is the closest to your goal,
 etc. A user of Sneak, on the other hand, embraces a different philosophy: it is
 like having a _jetpack_ on you all the time.
 
-Lightspeed, in particular, is like having a jetpack _with a GPS_. It is all
-about _incremental targeting_ - analyzing the available information after each
-keystroke, to assist the user and offer shortcuts:
+Lightspeed, in particular, is like having a jetpack with a GPS. It is all about
+processing the input _incrementally_ - analyzing the available information after
+each keystroke, to assist the user and offer shortcuts:
 
-* **target labels are assigned and displayed right after the first input:** the
-  key idea behind Lightspeed, that eliminates a significant problem with all of
-  the current general-purpose motion plugins. Once you try it, you will never
-  look back.
+* **target labels are assigned and displayed ahead of time, right after the
+  first input:** the key idea behind Lightspeed, that eliminates (or minimizes)
+  the major problem of all of the current, general-purpose motion plugins,
+  including Sneak itself - the inevitable pause between entering the search
+  pattern and selecting the target. Once you try it, you will never look back.
 * **shortcut-labels:** often you can type the target label right after the first
   input, as if doing 1-character search
 * **jump based on partial input:** 2-character search can jump right after the
