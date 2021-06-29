@@ -18,37 +18,41 @@ think about which train to take, which exit point is the closest to your goal,
 etc. A user of Sneak, on the other hand, embraces a different philosophy: it is
 like having a _jetpack_ on you all the time.
 
-Lightspeed, in particular, is like having a jetpack with a GPS. It is all about
-processing the input _incrementally_ - analyzing the available information after
-each keystroke, to assist the user and offer shortcuts:
+Lightspeed, in particular, is like having a jetpack _with a GPS_. It is all
+about processing the input incrementally - analyzing the available information
+after _each_ keystroke, to assist the user and offer shortcuts:
 
 * **target labels are assigned and displayed ahead of time, right after the
-  first input:** the key idea behind Lightspeed, that eliminates (or minimizes)
-  the major problem of all of the current, general-purpose motion plugins,
-  including Sneak itself - the inevitable pause between entering the search
-  pattern and selecting the target. Once you try it, you will never look back.
+  first input:** the key idea behind Lightspeed, that eliminates the major
+  problem of all of the current, general-purpose motion plugins, including Sneak
+  itself - the inevitable pause between entering the search pattern and
+  selecting the target. Once you try it, you will never look back.
 * **shortcut-labels:** often you can type the target label right after the first
   input, as if doing 1-character search
 * **jump based on partial input:** 2-character search can jump right after the
   first input, if the character is unique in the search direction
-* unique characters in the search direction can be highlighted before entering
-  any input (opt-in)
 
 Other quality-of-life features:
 
 * having a choice between automatically jumping to the first match (Sneak-like -
   default) or allowing for more comfortable target labels (EasyMotion-like)
 * **full-inclusive mode** extends the operated area to the end of the match
-* skips repeated (3+) sequences of the same character, for preserving labels
-  (opt-out)
-* **multiline f/t search**, with _instant-repeat_ available (similar to
-  [clever-f](https://github.com/rhysd/clever-f.vim) or Sneak's "clever" modes)
 * flawless **dot-repeat support** for operators (with
   [repeat.vim](https://github.com/tpope/vim-repeat) installed)
 * skips folds
+* skips repeated (3+) sequences of the same character, for preserving labels
+  (opt-out)
 * greys out the search area, like EasyMotion does (opt-out)
+* unique characters in the search direction can be highlighted before entering
+  any input (opt-in)
 * the cursor stays visible all the time
 * uses extmarks, and does not mess with the Conceal group
+
+Last but not least (bonus):
+
+* **multiline 1-character (f/t-like) search modes**, with _instant-repeat_
+  available (similar to [clever-f](https://github.com/rhysd/clever-f.vim) or
+  Sneak's "clever" modes)
 
 ## 🚀 Getting started
 
