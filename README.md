@@ -58,7 +58,7 @@ Last but not least (bonus):
 
 ### Requirements
 
-* Neovim >= 0.5 (the nightly release at the moment)
+* Neovim >= 0.5.0
 
 ### Installation
 
