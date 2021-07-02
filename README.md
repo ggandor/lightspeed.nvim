@@ -134,6 +134,14 @@ lua require'lightspeed'.opts['jump_to_first_match'] = false
 For a detailed description of the available options, see the docs: `:h
 lightspeed-config`.
 
+### Notes
+
+* While the plugin is active, the actual cursor is down on the command line, but
+  its position in the window is kept highlighted, using the attributes of the
+  built-in `Cursor` highlight group - should you experience any issues, you
+  should check the settings of that first. Alternatively, you can tweak the
+  `LightspeedCursor` group, to highlight the cursor in a custom way.
+
 ## 📚 An in-depth introduction of the key features
 
 Lightspeed's closest ancestor is the beloved

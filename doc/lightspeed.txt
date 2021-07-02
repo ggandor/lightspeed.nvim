@@ -372,6 +372,9 @@ own liking:
         change and delete - get a different highlight, with strikethrough, by
         default.)
 
+    LightspeedCursor~
+        Linked to |hl-Cursor| by default.
+
 In order to preserve your custom settings after changing the colorscheme, you
 might want to wrap them in a function, and define an autocommand like below.
 (Lightspeed does the same, but with |:hi-default|, so it will not overwrite

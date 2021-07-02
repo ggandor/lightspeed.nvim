@@ -139,7 +139,8 @@ character instead."
            :unique-ch                "LightspeedUniqueChar"
            :pending-op-area          "LightspeedPendingOpArea"
            :pending-change-op-area   "LightspeedPendingChangeOpArea"
-           :greywash                 "LightspeedGreyWash"}
+           :greywash                 "LightspeedGreyWash"
+           :cursor                   "LightspeedCursor"}
    :ns (api.nvim_create_namespace "")
    :add-hl (fn [self hl-group line startcol endcol]
              (api.nvim_buf_add_highlight 0 self.ns hl-group line startcol endcol))
@@ -191,7 +192,8 @@ character instead."
       (vim.cmd (.. "highlight default " group " " attrs-str))))
   (each [_ [from-group to-group]
          (ipairs [[hl.group.unique-ch hl.group.unlabeled-match]
-                  [hl.group.shortcut-overlapped hl.group.shortcut]])]
+                  [hl.group.shortcut-overlapped hl.group.shortcut]
+                  [hl.group.cursor "Cursor"]])]
     (vim.cmd (.. "highlight default link " from-group " " to-group))))
 
 (init-highlight)
@@ -332,7 +334,7 @@ so we set a temporary highlight on it to see where we are."
         ch-at-curpos (or (get-char-at-pos pos {}) " ")]  ; get-char-at-pos needs 1,1-idx
     ; (Ab)using extmarks even here, to be able to highlight the cursor
     ; on empty lines too.
-    (hl:set-extmark (dec line) (dec col) {:virt_text [[ch-at-curpos "Cursor"]]
+    (hl:set-extmark (dec line) (dec col) {:virt_text [[ch-at-curpos hl.group.cursor]]
                                           :virt_text_pos "overlay"
                                           :hl_mode "combine"})))
 
@@ -392,9 +394,9 @@ interrupted change-operation."
             seq (.. op (or count "") cmd (or change ""))]
       ; Using pcall, since vim-repeat might not be installed.
       ; Use the same register for the repeated operation.
-      (pcall vim.fn.repeat#setreg seq vim.v.register)
+       (pcall vim.fn.repeat#setreg seq vim.v.register)
       ; Note: we're feeding count inside the seq itself.
-      (pcall vim.fn.repeat#set seq -1)))))
+       (pcall vim.fn.repeat#set seq -1)))))
 
 ; }}}
 ; 1-character search {{{
