@@ -141,8 +141,8 @@ lightspeed-config`.
 * While the plugin is active, the actual cursor is down on the command line, but
   its position in the window is kept highlighted, using the attributes of the
   built-in `Cursor` highlight group - should you experience any issues, you
-  should check the settings of that first. Alternatively, you can tweak the
-  `LightspeedCursor` group, to highlight the cursor in a custom way.
+  should check that first. Alternatively, you can tweak the `LightspeedCursor`
+  group, to highlight the cursor in a custom way.
 
 * The otherwise useful multiline scoping of `f/F/t/T` can be undesireable when
   recording macros or executing `:normal`. This is [being worked
@@ -162,11 +162,11 @@ lightspeed-config`.
 
 Lightspeed's closest ancestor is the beloved
 [Sneak](https://github.com/justinmk/vim-sneak) plugin, in that they share the
-same basic assumptions, namely, that (1) we need _one_ command that is flexible
-enough to do the job all the time, and can be invoked/operated with _total
-automatism_, (2) unidirectional 1- or 2-character search is the simplest and
-most adequate building block most of the time, (3) the interface should be
-optimized for the _common case_.
+same basic assumptions, namely: (1) to reach all kinds of distant targets,
+ideally we need _one_ command that is flexible enough to do the job all the
+time, and can be invoked/operated with _total automatism_; (2) for that, the
+most adequate basis is unidirectional 2-character search; (3) the interface
+should be optimized for the _common case_.
 
 While keeping that minimalist approach, Lightspeed nonetheless has a bunch of
 brand-new features, blurring the boundary between one- and two-character search,
@@ -284,9 +284,9 @@ That is practically labeling `/?` matches, right? It is overkill for our
 purposes, IMO. Again, we are optimizing for the common case. A 2-character
 pattern, with the secondary group of targets displayed ahead of time, should be
 enough for making an on-screen jump efficiently 99% of the time; in that
-remaining 1%, please use `H/M/L/{/}` first, and if that's still not enough, just
-live with having to press `Tab/Space` multiple times. (What the heck are you
-editing, on what size of display, by the way?)
+remaining 1%, please use `H/M/L/{/}` first, or just live with having to press
+`Tab/Space` multiple times. (What the heck are you editing, on what size of
+display, by the way?)
 
 For regex patterns specifically, I have yet to find a compelling use case in
 this context. Couldn't we just type the exact characters on the screen? (See

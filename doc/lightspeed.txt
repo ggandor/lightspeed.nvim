@@ -337,7 +337,8 @@ own liking:
     LightspeedLabelDistantOverlapped~
         If the number of matches exceeds the available target labels, the next
         group of labeled targets are shown with a different color. Those can
-        be reached by pressing the `cycle_fwd_key` before the label character.
+        be reached by pressing `cycle_group_fwd_key` before the label
+        character.
          
     LightspeedShortcut~
     LightspeedShortcutOverlapped~
