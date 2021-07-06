@@ -142,6 +142,20 @@ lightspeed-config`.
   should check the settings of that first. Alternatively, you can tweak the
   `LightspeedCursor` group, to highlight the cursor in a custom way.
 
+* The otherwise useful multiline scoping of `f/F/t/T` can be undesireable when
+  recording macros or executing `:normal`. This is [being worked
+  on](https://github.com/ggandor/lightspeed.nvim/issues/14), but as an API
+  change, it should be thought through carefully. In the meantime, here is a
+  rather elegant workaround for macros by [rktjmp](https://github.com/rktjmp):
+  ```Vim
+  nmap <expr> f reg_recording() . reg_executing() == "" ? "<Plug>Lightspeed_f" : "f"
+  nmap <expr> F reg_recording() . reg_executing() == "" ? "<Plug>Lightspeed_F" : "F"
+  nmap <expr> t reg_recording() . reg_executing() == "" ? "<Plug>Lightspeed_t" : "t"
+  nmap <expr> T reg_recording() . reg_executing() == "" ? "<Plug>Lightspeed_T" : "T"
+  ```
+  For `:normal`, you could use the bang-version `:normal!`, although that disables
+  all custom mappings, so that is only a half-measure.
+
 ## 📚 An in-depth introduction of the key features
 
 Lightspeed's closest ancestor is the beloved
