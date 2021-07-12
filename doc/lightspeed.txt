@@ -1,4 +1,4 @@
-*lightspeed.txt*        For Neovim version 0.5        Last change: 2021 June 28
+*lightspeed.txt*        For Neovim version 0.5        Last change: 2021 July 12
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -34,7 +34,7 @@ USAGE                                                         *lightspeed-usage*
 Command sequence for 2-character search in Normal mode, with the default
 settings:
 
-`{s,S}<c-x>?{char1}{char2}?{<tab>,<s-tab>}*{label}?`
+`(s|S) <c-x>? char1 (char2|label)? (<tab>|<s-tab>)* label?`
 
 That is, 
 - invoke in the forward (`s`) or backward (`S`) direction
@@ -43,7 +43,8 @@ That is,
 - enter 1st character of the search pattern (might short-circuit after this,
   if the character is unique in the search direction)
 - enter 2nd character of the search pattern (might short-circuit after this,
-  if there is only one match)
+  if there is only one match), or the label character, if the target is
+  shortcutable.
 - optionally cycle through the groups of targets that can be labeled at once
 - choose a labeled target to jump to (in the current group)
 

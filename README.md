@@ -74,10 +74,12 @@ use 'ggandor/lightspeed.nvim'
 
 ### Usage
 
+#### 2-character search
+
 Command sequence for 2-character search in Normal mode, with the default
 settings:
 
-`{s,S}<c-x>?{char1}{char2}?{<tab>,<s-tab>}*{label}?`
+`(s|S) <c-x>? char1 (char2|label)? (<tab>|<s-tab>)* label?`
 
 That is, 
 - invoke in the forward (`s`) or backward (`S`) direction
@@ -86,9 +88,12 @@ That is,
 - enter 1st character of the search pattern (might short-circuit after this, if
   the character is unique in the search direction)
 - enter 2nd character of the search pattern (might short-circuit after this, if
-  there is only one match)
+  there is only one match), or the label character, if the target is
+  [shortcutable](https://github.com/ggandor/lightspeed.nvim#shortcuts).
 - optionally cycle through the groups of targets that can be labeled at once
 - choose a labeled target to jump to (in the current group)
+
+#### 1-character search
 
 `f`, `F`, `t`, `T` work as their native counterparts, but are not limited to the
 current line. In Normal and Visual mode, the motion can be repeated via pressing
@@ -98,19 +103,29 @@ type any other character. (If you want to keep using `;` and `,` to trigger
 repeat, you can configure that manually - see
 `:h lightspeed-custom-ft-repeat-mappings`.)
 
+#### Repeating motions
+
 Pressing `<enter>` after invoking any of Lightspeed's commands searches with the
 previous input (1- and 2-character searches are saved separately).
 
-For more details, see `:h lightspeed-usage` and `:h lightspeed-default-mappings`.
+Dot-repeat aims to behave in the most intuitive way in different situations - on
+special cases, see `:h lightspeed-dot-repeat`.
+
+#### See also
+
+For more details, see the docs (`:h lightspeed-usage`, `:h
+lightspeed-default-mappings`), and the [in-depth
+introduction](https://github.com/ggandor/lightspeed.nvim#-an-in-depth-introduction-of-the-key-features)
+below.
 
 ### Configuration
 
-Lightspeed exposes a configuration table, that can be set directly, or via a
-`setup` function that updates the current settings with the values given in its
-argument table.
+Lightspeed exposes a configuration table (`opts`), that can be set directly, or
+via a `setup` function that updates the current settings with the values given
+in its argument table.
 
 ```Lua
-lua require'lightspeed'.setup {
+require'lightspeed'.setup {
   jump_to_first_match = true,
   jump_on_partial_input_safety_timeout = 400,
   -- This can get _really_ slow if the window has a lot of content,
@@ -136,13 +151,20 @@ lua require'lightspeed'.opts['jump_to_first_match'] = false
 For a detailed description of the available options, see the docs: `:h
 lightspeed-config`.
 
-### Notes
+For customizing the highlight colors, see `:h lightspeed-highlight`.
+
+#### Notes
+
+* Note that Lightspeed will not override your - or other plugins' - custom
+  mappings, unless explicitly told so. If you, for any reason, would like to
+  revert to the _native_ behaviour of certain keys, check `:h
+  lightspeed-disable-default-mappings` (spoiler alert: `unmap`).
 
 * While the plugin is active, the actual cursor is down on the command line, but
   its position in the window is kept highlighted, using the attributes of the
   built-in `Cursor` highlight group - should you experience any issues, you
-  should check that first. Alternatively, you can tweak the `LightspeedCursor`
-  group, to highlight the cursor in a custom way.
+  should check the state of that first. Alternatively, you can tweak the
+  `LightspeedCursor` group, to highlight the cursor in a custom way.
 
 * The otherwise useful multiline scoping of `f/F/t/T` can be undesireable when
   recording macros or executing `:normal`. This is [being worked
@@ -170,68 +192,71 @@ should be optimized for the _common case_.
 
 While keeping that minimalist approach, Lightspeed nonetheless has a bunch of
 brand-new features, blurring the boundary between one- and two-character search,
-and offering some additional help at every single keypress:
+and offering some additional help at every single keypress.
 
-- If you enter a character that is the only match in the search direction,
-  Lightspeed jumps to it directly, without waiting for a second input.
-  To mitigate accidents, a short timeout is set by default, until the second
-  character in the pair (and only that) is "swallowed". 
+### Jump on partial input
 
-  ![jumping to unique characters](../media/intro_img1_jump_to_unique.gif?raw=true)
+If you enter a character that is the only match in the search direction,
+Lightspeed jumps to it directly, without waiting for a second input.
+To mitigate accidents, a short timeout is set by default, until the second
+character in the pair (and only that) is "swallowed". 
 
-  As an opt-int feature, these unique characters in the search direction can be
-  highlighted beforehand;
-  [quick-scope](https://github.com/unblevable/quick-scope) is based on a similar
-  idea, but the intent here is not a "choose me!"-kind of preliminary
-  orientation (the assumpiton is that you _know_ where you want to go), more
-  like giving feedback for your brain _while_ you type.
+![jumping to unique characters](../media/intro_img1_jump_to_unique.gif?raw=true)
 
-- Target labels are shown ahead of time, _right after typing the first input
-  character_. This means you can often type without any serious break in the
-  flow, almost as if using 3-character search. It is a micro-optimisation, but
-  can mean the world - Lightspeed simply _feels_ different because of this.
+As an opt-int feature, these unique characters in the search direction can be
+highlighted beforehand;
+[quick-scope](https://github.com/unblevable/quick-scope) is based on a similar
+idea, but the intent here is not a "choose me!"-kind of preliminary
+orientation (the assumpiton is that you _know_ where you want to go), more
+like giving feedback for your brain _while_ you type.
 
-  ![incremental labeling](../media/intro_img2_incremental_labeling.gif?raw=true)
+### Ahead-of-time labeling
 
-- Made possible by the above, Lightspeed has the concept of _shortcutable_
-  positions, where the assigned label itself is enough to determine the target:
-  those you can reach via typing the label character right after the first
-  input, bypassing the second one. This case is suprisingly frequent in
-  practice, and in case of harder-to-type sequences, when you're not rushing
-  with 200+ CPM, can work really well.
+Target labels are shown ahead of time, _right after typing the first input
+character_. This means you can often type without any serious break in the
+flow, almost as if using 3-character search. It is a micro-optimisation, but
+can mean the world - Lightspeed simply _feels_ different because of this.
 
-  You can see that "shortcuts" are highlighted differently:
+![incremental labeling](../media/intro_img2_incremental_labeling.gif?raw=true)
 
-  ![shortcuts](../media/intro_img3_shortcuts.gif?raw=true)
+### Shortcuts
 
-  Note that this is just an alternative: you do not _have to_ watch out for
-  these, and nothing bad happens if you type the second input as normal, and
-  then type the label to reach the target. But in my experience, you can often
-  guess whether the targeted position will be shortcutable, e.g. if there is a
-  character that seems to be consistently followed by the same other character
-  in the window (simple examples: a comment leader, e.g. `-` in Lua, or an `<`
-  if there are lots of `<Plug>` forms in a section of a Vim config file).
+Made possible by the above, Lightspeed has the concept of _shortcutable_
+positions, where the assigned label itself is enough to determine the target:
+those you can reach via typing the label character right after the first
+input, bypassing the second one. This case is suprisingly frequent in
+practice, and in case of harder-to-type sequences, when you're not rushing
+with 200+ CPM, can work really well.
 
-- When there is a large number of targets, we cycle through groups instead of
-  trying to label everything at once (just like Sneak does it). However, the
-  immediate next group is always shown ahead of time too, with a different
-  color, so your brain has a bit of time to process the label, even in case of a
-  distant group. If the target is right in the second group, you don't even have
-  to think about "switching groups" - a blue label just means it's
-  `{prefix-key}{label-key}`. That means we have `2 * number-of-labels` targets
-  right away that are in the efficiently-reachable/low-cognitive-load range.
+You can see that "shortcuts" are highlighted differently:
 
-  ![groups](../media/intro_img4_groups.gif?raw=true)
+![shortcuts](../media/intro_img3_shortcuts.gif?raw=true)
 
-  Note that Lightspeed keeps the invariant that a label consists of _exactly one
-  character_, that should _always stay in the same position_, once appeared. (No
-  rolling/flashing sequence of labels, like in case of Hop/EasyMotion.)
+Note that this is just an alternative: you do not _have to_ watch out for
+these, and nothing bad happens if you type the second input as normal, and
+then type the label to reach the target. But in my experience, you can often
+guess whether the targeted position will be shortcutable, e.g. if there is a
+character that seems to be consistently followed by the same other character
+in the window (simple examples: a comment leader, e.g. `-` in Lua, or an `<`
+if there are lots of `<Plug>` forms in a section of a Vim config file).
 
-Moreover, you can choose between jumping to the first match automatically (like
-Sneak does), or always having to select a label (Hop/EasyMotion). As both have
-their pros and cons (the latter allows for a lot more - and more comfortable -
-labels to use), there is no clear winner here I guess, and this is best left to
-user preference.
+### Grouping matches by distance
+
+When there is a large number of targets, we cycle through groups instead of
+trying to label everything at once (just like Sneak does it). However, the
+immediate next group is always shown ahead of time too, with a different
+color, so your brain has a bit of time to process the label, even in case of a
+distant group. If the target is right in the second group, you don't even have
+to think about "switching groups" - a blue label just means it's
+`{group-switch-key}{label-key}`. That means we have `2 * number-of-labels`
+targets right away that are in the efficiently-reachable/low-cognitive-load
+range.
+
+![groups](../media/intro_img4_groups.gif?raw=true)
+
+Note that Lightspeed keeps the invariant that a label consists of _exactly one
+character_, that should _always stay in the same position_, once appeared. (No
+rolling/flashing sequence of labels, like in case of Hop/EasyMotion.)
 
 ## 👀 Coming sooner or later
 
@@ -365,7 +390,8 @@ doesn't mean that I am not open for discussions.
 Lightspeed is written in [Fennel](https://fennel-lang.org/), and compiled to Lua
 ahead of time. I am aware that using Fennel might limit the number of available
 contributors, but compile-time macros, pattern matching, and a bunch of other
-features are simply too much of a convenience.
+features are simply too much of a convenience. (Learning a Lisp can be an
+eye-opening experience anyway, even though Fennel is something of a half-blood.)
 
 As for "building", the plugin is really just one `.fnl` file at the moment, that
 you can compile into the `lua` folder with the Fennel executable.
@@ -382,5 +408,4 @@ As always, we are standing on the shoulders of giants:
 - [EasyMotion](https://github.com/easymotion/vim-easymotion): the venerable one,
   of course
 - [clever-f](https://github.com/rhysd/clever-f.vim)
-- [quick-scope](https://github.com/unblevable/quick-scope)
 
