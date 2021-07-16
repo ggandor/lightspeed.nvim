@@ -55,7 +55,7 @@ end
 local function get_current_pos()
   return {vim.fn.line("."), vim.fn.col(".")}
 end
-local function get_char_at_pos(_0_, _1_)
+local function char_at_pos(_0_, _1_)
   local _arg_0_ = _0_
   local line = _arg_0_[1]
   local byte_col = _arg_0_[2]
@@ -437,7 +437,7 @@ end
 local function highlight_unique_chars(reverse_3f, ignorecase)
   local unique_chars = {}
   for pos in onscreen_match_positions("..", reverse_3f, {}) do
-    local ch = get_char_at_pos(pos, {})
+    local ch = char_at_pos(pos, {})
     local _9_
     do
       local _8_ = unique_chars[ch]
@@ -465,7 +465,7 @@ local function highlight_cursor(_3fpos)
   local line = _let_0_[1]
   local col = _let_0_[2]
   local pos = _let_0_
-  local ch_at_curpos = (get_char_at_pos(pos, {}) or " ")
+  local ch_at_curpos = (char_at_pos(pos, {}) or " ")
   return hl["set-extmark"](hl, dec(line), dec(col), {hl_mode = "combine", virt_text = {{ch_at_curpos, hl.group.cursor}}, virt_text_pos = "overlay"})
 end
 local function handle_interrupted_change_op_21()
@@ -712,7 +712,7 @@ local function get_match_map_for(ch1, reverse_3f)
       _10_ = inc
     end
     overlap_with_prev_3f = ((line == prev.line) and (col == _10_(prev.col)))
-    local ch2 = get_char_at_pos(pos, {["char-offset"] = 1})
+    local ch2 = char_at_pos(pos, {["char-offset"] = 1})
     local same_pair_3f = (ch2 == prev.ch2)
     local _12_
     if not opts.match_only_the_start_of_same_char_seqs then
@@ -975,7 +975,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
     end
   end
   cmd_for_dot_repeat = replace_vim_keycodes(("<Plug>Lightspeed_repeat_" .. _12_()))
-  local function save_for(_13_)
+  local function save_state_for(_13_)
     local _arg_0_ = _13_
     local dot_repeat = _arg_0_["dot-repeat"]
     local _repeat = _arg_0_["repeat"]
@@ -1131,7 +1131,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
       local pos = (_18_)[2]
       if (new_search_3f or (repeat_3f and (ch2 == self["prev-search"].in2)) or (dot_repeat_3f and (ch2 == self["prev-dot-repeatable-search"].in2))) then
         if new_search_3f then
-          save_for({["dot-repeat"] = {["full-incl?"] = full_incl_3f, in1 = in1, in2 = ch2, in3 = labels[1]}, ["repeat"] = {in1 = in1, in2 = ch2}})
+          save_state_for({["dot-repeat"] = {["full-incl?"] = full_incl_3f, in1 = in1, in2 = ch2, in3 = labels[1]}, ["repeat"] = {in1 = in1, in2 = ch2}})
         end
         set_dot_repeat_if_applies()
         return jump_and_ignore_ch2_until_timeout_21(pos, full_incl_3f, new_search_3f, ch2)
@@ -1193,13 +1193,13 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
           local pos = (_23_)[1]
           local ch2 = (_23_)[2]
           if new_search_3f then
-            save_for({["dot-repeat"] = {["full-incl?"] = full_incl_3f, in1 = in1, in2 = ch2, in3 = in2}, ["repeat"] = {in1 = in1, in2 = ch2}})
+            save_state_for({["dot-repeat"] = {["full-incl?"] = full_incl_3f, in1 = in1, in2 = ch2, in3 = in2}, ["repeat"] = {in1 = in1, in2 = ch2}})
           end
           set_dot_repeat_if_applies()
           return jump_to_21(pos, full_incl_3f)
         elseif (_23_ == nil) then
           if new_search_3f then
-            save_for({["dot-repeat"] = {["full-incl?"] = full_incl_3f, in1 = in1, in2 = in2, in3 = labels[1]}, ["repeat"] = {in1 = in1, in2 = in2}})
+            save_state_for({["dot-repeat"] = {["full-incl?"] = full_incl_3f, in1 = in1, in2 = in2, in3 = labels[1]}, ["repeat"] = {in1 = in1, in2 = in2}})
           end
           local _26_
           local function _27_()

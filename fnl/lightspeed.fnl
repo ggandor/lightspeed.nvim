@@ -52,7 +52,7 @@
   [(vim.fn.line ".") (vim.fn.col ".")])
 
 
-(fn get-char-at-pos [[line byte-col] {: char-offset}]  ; expects (1,1)-indexed input
+(fn char-at-pos [[line byte-col] {: char-offset}]  ; expects (1,1)-indexed input
   "Get character at the given position in a multibyte-aware manner.
 An optional offset argument can be given to get the nth-next screen
 character instead."
@@ -186,9 +186,9 @@ character instead."
                                          :cterm "strikethrough"}]
      [hl.group.greywash                 {:guifg "#777777" :ctermfg "Grey"}]])
   (each [_ [group attrs] (ipairs groupdefs)]
-    ; "default" = do not override any existing definition for the group.
     (let [attrs-str (-> (icollect [k v (pairs attrs)] (.. k "=" v))
                         (table.concat " "))]
+      ; "default" = do not override any existing definition for the group.
       (vim.cmd (.. "highlight default " group " " attrs-str))))
   (each [_ [from-group to-group]
          (ipairs [[hl.group.unique-ch hl.group.unlabeled-match]
@@ -317,7 +317,7 @@ early termination in loops."
 (fn highlight-unique-chars [reverse? ignorecase]
   (local unique-chars {})
   (each [pos (onscreen-match-positions ".." reverse? {})]  ; do not match before EOL
-    (let [ch (get-char-at-pos pos {})]
+    (let [ch (char-at-pos pos {})]
       (tset unique-chars ch (match (. unique-chars ch) nil pos _ false))))
   (each [ch pos-or-false (pairs unique-chars)]
     (when pos-or-false
@@ -331,9 +331,8 @@ early termination in loops."
 so we set a temporary highlight on it to see where we are."
   (let [[line col &as pos] (or ?pos (get-current-pos))
         ; nil means the cursor is on an empty line.
-        ch-at-curpos (or (get-char-at-pos pos {}) " ")]  ; get-char-at-pos needs 1,1-idx
-    ; (Ab)using extmarks even here, to be able to highlight the cursor
-    ; on empty lines too.
+        ch-at-curpos (or (char-at-pos pos {}) " ")]  ; char-at-pos needs 1,1-idx
+    ; (Ab)using extmarks even here, to be able to highlight the cursor on empty lines too.
     (hl:set-extmark (dec line) (dec col) {:virt_text [[ch-at-curpos hl.group.cursor]]
                                           :virt_text_pos "overlay"
                                           :hl_mode "combine"})))
@@ -392,11 +391,11 @@ interrupted change-operation."
                      ; below hack (thx Sneak).
                      (replace-vim-keycodes "<c-r>.<esc>"))
             seq (.. op (or count "") cmd (or change ""))]
-      ; Using pcall, since vim-repeat might not be installed.
-      ; Use the same register for the repeated operation.
-       (pcall vim.fn.repeat#setreg seq vim.v.register)
-      ; Note: we're feeding count inside the seq itself.
-       (pcall vim.fn.repeat#set seq -1)))))
+        ; Using pcall, since vim-repeat might not be installed.
+        ; Use the same register for the repeated operation.
+        (pcall vim.fn.repeat#setreg seq vim.v.register)
+        ; Note: we're feeding count inside the seq itself.
+        (pcall vim.fn.repeat#set seq -1)))))
 
 ; }}}
 ; 1-character search {{{
@@ -513,7 +512,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
     (each [[line col &as pos] (onscreen-match-positions pattern reverse? {})]
       (let [overlap-with-prev? (and (= line prev.line)
                                     (= col ((if reverse? dec inc) prev.col)))
-            ch2 (get-char-at-pos pos {:char-offset 1})
+            ch2 (char-at-pos pos {:char-offset 1})
             same-pair? (= ch2 prev.ch2)]
         (if (or (when-not opts.match_only_the_start_of_same_char_seqs
                   ; If match_only_the_start... is turned off, we are skipping
@@ -620,7 +619,6 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 ; functions. (It's nice that `get-match-map` groups the results by successor
 ; chars, and we can simply say in round 2 in the main function, "ok, then do the
 ; labeling for just a given ch2 now", and everything is set for us.)
-
 (fn get-shortcuts [match-map labels reverse? jump-to-first?]
   (let [collides-with-a-ch2? #(vim.tbl_contains (vim.tbl_keys match-map) $)
         by-distance-from-cursor (fn [[[l1 c1] _ _] [[l2 c2] _ _]]
@@ -679,7 +677,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         cmd-for-dot-repeat (replace-vim-keycodes
                              (.. "<Plug>Lightspeed_repeat_" (if reverse? "S" "s")))]
 
-    (fn save-for [{: repeat : dot-repeat}]
+    (fn save-state-for [{: repeat : dot-repeat}]
       ; Arbitrary choice: let dot-repeat _not_ update the previous
       ; normal/visual/yank search - this seems more useful.
       (if dot-repeatable-op?
@@ -785,8 +783,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                 (and repeat? (= ch2 self.prev-search.in2))
                 (and dot-repeat? (= ch2 self.prev-dot-repeatable-search.in2)))
           (do (when new-search? 
-                (save-for {:repeat {: in1 :in2 ch2}
-                           :dot-repeat {: in1 :in2 ch2 :in3 (. labels 1) : full-incl?}}))
+                (save-state-for {:repeat {: in1 :in2 ch2}
+                                 :dot-repeat {: in1 :in2 ch2 :in3 (. labels 1) : full-incl?}}))
               (set-dot-repeat-if-applies)
               (jump-and-ignore-ch2-until-timeout! pos full-incl? new-search? ch2))
           (exit-with (echo-not-found (.. in1 ch2))))
@@ -811,22 +809,22 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                      dot-repeat? self.prev-dot-repeatable-search.in2
                      (get-input-and-clean-up))
             in2
-            (match (when new-search? (. shortcuts in2))  ; ##X
+            (match (when new-search? (. shortcuts in2))
               ; Successful exit, option #2: selecting a shortcut-label.
               [pos ch2] (do (when new-search?
-                              (save-for {:repeat {: in1 :in2 ch2}
-                                         :dot-repeat {: in1 :in2 ch2 :in3 in2 : full-incl?}}))
+                              (save-state-for {:repeat {: in1 :in2 ch2}
+                                               :dot-repeat {: in1 :in2 ch2 :in3 in2 : full-incl?}}))
                             (set-dot-repeat-if-applies)
                             (jump-to! pos full-incl?))
               nil
               (do
                 (when new-search?  ; endnote #1
-                  (save-for {:repeat {: in1 : in2}
-                             ; For the moment, set the first match as the target.
-                             ; (Food for thought: is there a reason _not_ to save
-                             ; dot-repeat state too for a possibly unsuccesful
-                             ; search, once we have the full search pattern?)
-                             :dot-repeat {: in1 : in2 :in3 (. labels 1) : full-incl?}}))
+                  (save-state-for {:repeat {: in1 : in2}
+                                   ; For the moment, set the first match as the target.
+                                   ; (Food for thought: is there a reason _not_ to save
+                                   ; dot-repeat state too for a possibly unsuccesful
+                                   ; search, once we have the full search pattern?)
+                                   :dot-repeat {: in1 : in2 :in3 (. labels 1) : full-incl?}}))
                 (match (or (. match-map in2)
                            (exit-with (echo-not-found (.. in1 in2))))
                   positions
