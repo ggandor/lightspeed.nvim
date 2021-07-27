@@ -684,10 +684,6 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         (set self.prev-dot-repeatable-search dot-repeat)
         (set self.prev-search repeat)))
 
-    (fn set-dot-repeat-if-applies []
-      (when (and dot-repeatable-op? (not dot-repeat?))
-        (set-dot-repeat {:cmd cmd-for-dot-repeat})))
-
     ; `first-jump?` should only be persisted inside `to` (i.e. the lifetime is
     ; one invocation) and should be managed by the function itself (it is
     ; error-prone if we have to set a flag manually), so setting up a closure
@@ -695,6 +691,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
     (local jump-to!
       (do (var first-jump? true)
           (fn [pos full-incl?]
+            (when (and dot-repeatable-op? (not dot-repeat?))
+              (set-dot-repeat {:cmd cmd-for-dot-repeat}))
             ; When jumping to a labeled target _after_ an autojump, do not
             ; register the intermediate step on the jumplist.
             (when first-jump?
@@ -785,7 +783,6 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
           (do (when new-search? 
                 (save-state-for {:repeat {: in1 :in2 ch2}
                                  :dot-repeat {: in1 :in2 ch2 :in3 (. labels 1) : full-incl?}}))
-              (set-dot-repeat-if-applies)
               (jump-and-ignore-ch2-until-timeout! pos full-incl? new-search? ch2))
           (exit-with (echo-not-found (.. in1 ch2))))
 
@@ -814,7 +811,6 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
               [pos ch2] (do (when new-search?
                               (save-state-for {:repeat {: in1 :in2 ch2}
                                                :dot-repeat {: in1 :in2 ch2 :in3 in2 : full-incl?}}))
-                            (set-dot-repeat-if-applies)
                             (jump-to! pos full-incl?))
               nil
               (do
@@ -831,7 +827,6 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                   (let [[first & rest] positions]
                     ; Succesful exit, option #3: jumping to the only match automatically.
                     (when (or jump-to-first? (empty? rest))
-                      (set-dot-repeat-if-applies)
                       (jump-to! first full-incl?)
                       (when jump-to-first? (force-statusline-update)))
                     (when-not (empty? rest)
@@ -884,8 +879,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                              ; so that we can continue editing right away.
                                              (exit-with (when jump-to-first? (vim.fn.feedkeys in3 :i))))
                                     ; Succesful exit, option #4: selecting a valid label.
-                                    pos (do (set-dot-repeat-if-applies)
-                                            (jump-to! pos full-incl?)))))))))))))))))))
+                                    pos (jump-to! pos full-incl?))))))))))))))))))
 
 ; }}}
 ; Mappings {{{

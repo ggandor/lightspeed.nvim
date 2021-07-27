@@ -987,15 +987,13 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
       return nil
     end
   end
-  local function set_dot_repeat_if_applies()
-    if (dot_repeatable_op_3f and not dot_repeat_3f) then
-      return set_dot_repeat({cmd = cmd_for_dot_repeat})
-    end
-  end
   local jump_to_21
   do
     local first_jump_3f = true
     local function _14_(pos, full_incl_3f)
+      if (dot_repeatable_op_3f and not dot_repeat_3f) then
+        set_dot_repeat({cmd = cmd_for_dot_repeat})
+      end
       if first_jump_3f then
         vim.cmd("norm! m`")
         first_jump_3f = false
@@ -1133,7 +1131,6 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
         if new_search_3f then
           save_state_for({["dot-repeat"] = {["full-incl?"] = full_incl_3f, in1 = in1, in2 = ch2, in3 = labels[1]}, ["repeat"] = {in1 = in1, in2 = ch2}})
         end
-        set_dot_repeat_if_applies()
         return jump_and_ignore_ch2_until_timeout_21(pos, full_incl_3f, new_search_3f, ch2)
       else
         if change_operation_3f() then
@@ -1195,7 +1192,6 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
           if new_search_3f then
             save_state_for({["dot-repeat"] = {["full-incl?"] = full_incl_3f, in1 = in1, in2 = ch2, in3 = in2}, ["repeat"] = {in1 = in1, in2 = ch2}})
           end
-          set_dot_repeat_if_applies()
           return jump_to_21(pos, full_incl_3f)
         elseif (_23_ == nil) then
           if new_search_3f then
@@ -1218,7 +1214,6 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
             local first = _let_1_[1]
             local rest = {(table.unpack or unpack)(_let_1_, 2)}
             if (jump_to_first_3f or empty_3f(rest)) then
-              set_dot_repeat_if_applies()
               jump_to_21(first, full_incl_3f)
               if jump_to_first_3f then
                 force_statusline_update()
@@ -1317,7 +1312,6 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
                     _36_ = (_38_ or _39_())
                     if (nil ~= _36_) then
                       local pos = _36_
-                      set_dot_repeat_if_applies()
                       jump_to_21(pos, full_incl_3f)
                     end
                   end
