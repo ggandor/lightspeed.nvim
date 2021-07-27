@@ -1186,9 +1186,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
         if ((type(_22_) == "table") and (nil ~= (_22_)[1]) and (nil ~= (_22_)[2])) then
           local pos = (_22_)[1]
           local ch2 = (_22_)[2]
-          if new_search_3f then
-            save_state_for({["dot-repeat"] = {["full-incl?"] = full_incl_3f, in1 = in1, in2 = ch2, in3 = in2}, ["repeat"] = {in1 = in1, in2 = ch2}})
-          end
+          save_state_for({["dot-repeat"] = {["full-incl?"] = full_incl_3f, in1 = in1, in2 = ch2, in3 = in2}, ["repeat"] = {in1 = in1, in2 = ch2}})
           return jump_to_21(pos, full_incl_3f)
         elseif (_22_ == nil) then
           if new_search_3f then

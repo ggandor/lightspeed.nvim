@@ -808,9 +808,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
             in2
             (match (when new-search? (. shortcuts in2))
               ; Successful exit, option #2: selecting a shortcut-label.
-              [pos ch2] (do (when new-search?
-                              (save-state-for {:repeat {: in1 :in2 ch2}
-                                               :dot-repeat {: in1 :in2 ch2 :in3 in2 : full-incl?}}))
+              [pos ch2] (do (save-state-for {:repeat {: in1 :in2 ch2}  ; implicit `new-search?`
+                                             :dot-repeat {: in1 :in2 ch2 :in3 in2 : full-incl?}})
                             (jump-to! pos full-incl?))
               nil
               (do
