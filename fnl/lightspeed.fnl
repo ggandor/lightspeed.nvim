@@ -381,7 +381,7 @@ interrupted change-operation."
 ; repeat.vim support 
 ; (see the docs in the script:
 ; https://github.com/tpope/vim-repeat/blob/master/autoload/repeat.vim)
-(fn set-dot-repeat [{: cmd : count}]
+(fn set-dot-repeat [cmd ?count]
   (when (operator-pending-mode?)
     (local op vim.v.operator)
     (when (not= op :y)
@@ -390,7 +390,7 @@ interrupted change-operation."
                      ; change has not happened yet - therefore the
                      ; below hack (thx Sneak).
                      (replace-vim-keycodes "<c-r>.<esc>"))
-            seq (.. op (or count "") cmd (or change ""))]
+            seq (.. op (or ?count "") cmd (or change ""))]
         ; Using pcall, since vim-repeat might not be installed.
         ; Use the same register for the repeated operation.
         (pcall vim.fn.repeat#setreg seq vim.v.register)
@@ -454,7 +454,7 @@ interrupted change-operation."
         (when new-search?  ; endnote #1
           (if dot-repeatable-op?
             (do (set self.prev-dot-repeatable-search in1)
-                (set-dot-repeat {:cmd cmd-for-dot-repeat :count count}))
+                (set-dot-repeat cmd-for-dot-repeat count))
             (do (set self.prev-search in1)
                 (set self.prev-t-like? t-like?))))
         (var i 0)
@@ -692,7 +692,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
       (do (var first-jump? true)
           (fn [pos full-incl?]
             (when (and dot-repeatable-op? (not dot-repeat?))
-              (set-dot-repeat {:cmd cmd-for-dot-repeat}))
+              (set-dot-repeat cmd-for-dot-repeat))
             ; When jumping to a labeled target _after_ an autojump, do not
             ; register the intermediate step on the jumplist.
             (when first-jump?
