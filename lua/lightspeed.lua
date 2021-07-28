@@ -1052,6 +1052,55 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
       return hl:cleanup()
     end
   end
+  local function cycle_through_match_groups(in2, positions_to_label, shortcuts, repeat_3f)
+    local ret = nil
+    local group_offset = 0
+    local loop_3f = true
+    while loop_3f do
+      local _14_
+      local _15_
+      if dot_repeat_3f then
+        _15_ = self["prev-dot-repeatable-search"].in3
+      else
+      _15_ = nil
+      end
+      local function _17_()
+        loop_3f = false
+        ret = nil
+        return nil
+      end
+      _14_ = (_15_ or get_input_and_clean_up() or _17_())
+      if (nil ~= _14_) then
+        local input = _14_
+        if not ((input == cycle_fwd_key) or (input == cycle_bwd_key)) then
+          loop_3f = false
+          ret = {group_offset, input}
+        else
+          local max_offset = math.floor((#positions_to_label / #labels))
+          local _19_
+          do
+            local _18_ = input
+            if (_18_ == cycle_fwd_key) then
+              _19_ = inc
+            else
+              local _ = _18_
+              _19_ = dec
+            end
+          end
+          group_offset = clamp(_19_(group_offset), 0, max_offset)
+          if opts.grey_out_search_area then
+            grey_out_search_area(reverse_3f)
+          end
+          do
+            set_beacon_groups(in2, positions_to_label, labels, shortcuts, {["group-offset"] = group_offset, ["repeat?"] = repeat_3f})
+          end
+          highlight_cursor()
+          vim.cmd("redraw")
+        end
+      end
+    end
+    return ret
+  end
   if not dot_repeat_3f then
     echo("")
     if opts.grey_out_search_area then
@@ -1231,88 +1280,58 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
                 highlight_cursor()
                 vim.cmd("redraw")
               end
-              local loop_3f = true
-              local group_offset = 0
-              while loop_3f do
-                local _30_
-                local _31_
-                if dot_repeat_3f then
-                  _31_ = self["prev-dot-repeatable-search"].in3
-                else
-                _31_ = nil
+              local _30_
+              local function _31_()
+                if change_operation_3f() then
+                  handle_interrupted_change_op_21()
                 end
-                local function _33_()
-                  loop_3f = false
-                  return nil
+                do
                 end
-                _30_ = (_31_ or get_input_and_clean_up() or _33_())
-                if (nil ~= _30_) then
-                  local in3 = _30_
-                  if ((in3 == cycle_fwd_key) or (in3 == cycle_bwd_key)) then
-                    local max_offset = math.floor((#positions_to_label / #labels))
-                    local _35_
-                    do
-                      local _34_ = in3
-                      if (_34_ == cycle_fwd_key) then
-                        _35_ = inc
-                      else
-                        local _ = _34_
-                        _35_ = dec
-                      end
-                    end
-                    group_offset = clamp(_35_(group_offset), 0, max_offset)
-                    if opts.grey_out_search_area then
-                      grey_out_search_area(reverse_3f)
-                    end
-                    do
-                      set_beacon_groups(in2, positions_to_label, labels, shortcuts, {["group-offset"] = group_offset, ["repeat?"] = repeat_3f})
-                    end
-                    highlight_cursor()
-                    vim.cmd("redraw")
-                  elseif "else" then
-                    loop_3f = false
-                    if (dot_repeatable_op_3f and not dot_repeat_3f) then
-                      if (group_offset == 0) then
-                        self["prev-dot-repeatable-search"].in3 = in3
-                      else
-                        self["prev-dot-repeatable-search"].in3 = nil
-                      end
-                    end
-                    local _35_
-                    local _37_
-                    do
-                      local _36_ = label_indexes[in3]
-                      if _36_ then
-                        local _38_ = ((group_offset * #labels) + _36_)
-                        if _38_ then
-                          _37_ = positions_to_label[_38_]
-                        else
-                          _37_ = _38_
-                        end
-                      else
-                        _37_ = _36_
-                      end
-                    end
-                    local function _38_()
-                      if change_operation_3f() then
-                        handle_interrupted_change_op_21()
-                      end
-                      do
-                        if jump_to_first_3f then
-                          vim.fn.feedkeys(in3, "i")
-                        end
-                      end
-                      return nil
-                    end
-                    _35_ = (_37_ or _38_())
-                    if (nil ~= _35_) then
-                      local pos = _35_
-                      jump_to_21(pos, full_incl_3f)
-                    end
+                return nil
+              end
+              _30_ = (cycle_through_match_groups(in2, positions_to_label, shortcuts, repeat_3f) or _31_())
+              if ((type(_30_) == "table") and (nil ~= (_30_)[1]) and (nil ~= (_30_)[2])) then
+                local group_offset = (_30_)[1]
+                local in3 = (_30_)[2]
+                if (dot_repeatable_op_3f and not dot_repeat_3f) then
+                  if (group_offset == 0) then
+                    self["prev-dot-repeatable-search"].in3 = in3
+                  else
+                    self["prev-dot-repeatable-search"].in3 = nil
                   end
                 end
+                local _33_
+                local _35_
+                do
+                  local _34_ = label_indexes[in3]
+                  if _34_ then
+                    local _36_ = ((group_offset * #labels) + _34_)
+                    if _36_ then
+                      _35_ = positions_to_label[_36_]
+                    else
+                      _35_ = _36_
+                    end
+                  else
+                    _35_ = _34_
+                  end
+                end
+                local function _36_()
+                  if change_operation_3f() then
+                    handle_interrupted_change_op_21()
+                  end
+                  do
+                    if jump_to_first_3f then
+                      vim.fn.feedkeys(in3, "i")
+                    end
+                  end
+                  return nil
+                end
+                _33_ = (_35_ or _36_())
+                if (nil ~= _33_) then
+                  local pos = _33_
+                  return jump_to_21(pos, full_incl_3f)
+                end
               end
-              return nil
             end
           end
         end
