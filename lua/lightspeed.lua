@@ -687,7 +687,7 @@ local function get_cycle_keys()
       return "<tab>"
     end
   end
-  return {replace_vim_keycodes((opts.cycle_group_fwd_key or _8_())), replace_vim_keycodes((opts.cycle_group_bwd_key or _9_()))}
+  return vim.tbl_map(replace_vim_keycodes, {(opts.cycle_group_fwd_key or _8_()), (opts.cycle_group_bwd_key or _9_())})
 end
 local function get_match_map_for(ch1, reverse_3f)
   local match_map = {}
