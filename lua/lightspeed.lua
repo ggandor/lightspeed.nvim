@@ -1280,16 +1280,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
                 highlight_cursor()
                 vim.cmd("redraw")
               end
-              local _30_
-              local function _31_()
-                if change_operation_3f() then
-                  handle_interrupted_change_op_21()
-                end
-                do
-                end
-                return nil
-              end
-              _30_ = (cycle_through_match_groups(in2, positions_to_label, shortcuts, repeat_3f) or _31_())
+              local _30_ = cycle_through_match_groups(in2, positions_to_label, shortcuts, repeat_3f)
               if ((type(_30_) == "table") and (nil ~= (_30_)[1]) and (nil ~= (_30_)[2])) then
                 local group_offset = (_30_)[1]
                 local in3 = (_30_)[2]
@@ -1300,22 +1291,22 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
                     self["prev-dot-repeatable-search"].in3 = nil
                   end
                 end
-                local _33_
-                local _35_
+                local _32_
+                local _34_
                 do
-                  local _34_ = label_indexes[in3]
-                  if _34_ then
-                    local _36_ = ((group_offset * #labels) + _34_)
-                    if _36_ then
-                      _35_ = positions_to_label[_36_]
+                  local _33_ = label_indexes[in3]
+                  if _33_ then
+                    local _35_ = ((group_offset * #labels) + _33_)
+                    if _35_ then
+                      _34_ = positions_to_label[_35_]
                     else
-                      _35_ = _36_
+                      _34_ = _35_
                     end
                   else
-                    _35_ = _34_
+                    _34_ = _33_
                   end
                 end
-                local function _36_()
+                local function _35_()
                   if change_operation_3f() then
                     handle_interrupted_change_op_21()
                   end
@@ -1326,9 +1317,9 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
                   end
                   return nil
                 end
-                _33_ = (_35_ or _36_())
-                if (nil ~= _33_) then
-                  local pos = _33_
+                _32_ = (_34_ or _35_())
+                if (nil ~= _32_) then
+                  local pos = _32_
                   return jump_to_21(pos, full_incl_3f)
                 end
               end

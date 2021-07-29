@@ -864,10 +864,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                           (with-hl-chores
                             (set-beacon-groups in2 positions-to-label labels shortcuts
                                                {: repeat?})))
-                        (match (or (cycle-through-match-groups
-                                     ; Potential state change (highlight), but cleans up after itself.
-                                     in2 positions-to-label shortcuts repeat?)
-                                   (exit-with nil))
+                        ; Note: cycle-through... cleans up everything after itself (highlight,
+                        ; interrupted change op), nothing more to do here if there's no match.
+                        (match (cycle-through-match-groups in2 positions-to-label shortcuts repeat?)
                           [group-offset in3]
                           (do (when (and dot-repeatable-op? (not dot-repeat?))
                                 ; Reminder: above we have already set this to the character
