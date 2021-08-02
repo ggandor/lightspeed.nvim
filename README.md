@@ -122,7 +122,8 @@ below.
 
 Lightspeed exposes a configuration table (`opts`), that can be set directly, or
 via a `setup` function that updates the current settings with the values given
-in its argument table.
+in its argument table. (Note: There is no need to call `setup` in your config,
+if you are fine with the defaults.)
 
 ```Lua
 require'lightspeed'.setup {
