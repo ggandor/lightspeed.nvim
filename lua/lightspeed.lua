@@ -1052,6 +1052,24 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
       return hl:cleanup()
     end
   end
+  local function switch_off_scrolloff()
+    if jump_to_first_3f then
+      local _3floc
+      if (api.nvim_eval("&l:scrolloff") ~= -1) then
+        _3floc = "l:"
+      else
+        _3floc = ""
+      end
+      local saved_val = api.nvim_eval(("&" .. _3floc .. "scrolloff"))
+      self["restore-scrolloff-cmd"] = ("let &" .. _3floc .. "scrolloff=" .. saved_val)
+      return vim.cmd(("let &" .. _3floc .. "scrolloff=0"))
+    end
+  end
+  local function restore_scrolloff()
+    if jump_to_first_3f then
+      return (vim.cmd(self["restore-scrolloff-cmd"]) or "")
+    end
+  end
   local function cycle_through_match_groups(in2, positions_to_label, shortcuts, repeat_3f)
     local ret = nil
     local group_offset = 0
@@ -1066,6 +1084,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
       end
       local function _17_()
         loop_3f = false
+        restore_scrolloff()
         ret = nil
         return nil
       end
@@ -1264,6 +1283,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
               end
             end
             if not empty_3f(rest) then
+              switch_off_scrolloff()
               local positions_to_label
               if jump_to_first_3f then
                 positions_to_label = rest
@@ -1312,6 +1332,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
                   end
                   do
                     if jump_to_first_3f then
+                      restore_scrolloff()
                       vim.fn.feedkeys(in3, "i")
                     end
                   end
@@ -1320,6 +1341,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
                 _32_ = (_34_ or _35_())
                 if (nil ~= _32_) then
                   local pos = _32_
+                  restore_scrolloff()
                   return jump_to_21(pos, full_incl_3f)
                 end
               end

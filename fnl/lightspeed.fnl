@@ -734,6 +734,19 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
           (when change-op? (echo ""))
           (hl:cleanup))))
 
+    ; For scrolloff, it's better not to use the Lua API now, because of Nvim #13964.
+    ; Note that these too use the `s` table as `self`.
+    (fn switch-off-scrolloff []
+      (when jump-to-first?
+        (let [?loc (if (not= (api.nvim_eval "&l:scrolloff") -1) "l:" "")
+              saved-val (api.nvim_eval (.. "&" ?loc "scrolloff"))]
+          (set self.restore-scrolloff-cmd (.. "let &" ?loc "scrolloff=" saved-val))
+          (vim.cmd (.. "let &" ?loc "scrolloff=0")))))
+
+    (fn restore-scrolloff []
+      (when jump-to-first?
+        (or (vim.cmd self.restore-scrolloff-cmd) "")))
+
     (fn cycle-through-match-groups [in2 positions-to-label shortcuts repeat?]
       (var ret nil)
       (var group-offset 0)
@@ -744,7 +757,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                    ; Beware of calling `exit-with` again, after
                    ; `get-input-and-clean-up`. (As of now, it calls
                    ; `handle-interrupted-change-op!` automatically.)
-                   (do (set loop? false) (set ret nil)))  ; <esc> should exit the loop
+                   (do (set loop? false)  ; <esc> should exit the loop
+                       (restore-scrolloff)
+                       (set ret nil)))
           input
           (if (not (one-of? input cycle-fwd-key cycle-bwd-key))
             ; Note: dot-repeat arrives here, and short-circuits.
@@ -855,6 +870,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                     (when-not (empty? rest)
                       ; Else lighting up beacons again, now only for pairs with `in2`
                       ; as second character.
+                      (switch-off-scrolloff)
                       (let [positions-to-label (if jump-to-first? rest positions)]
                         ; Operations that spanned multiple groups are dot-repeated as
                         ; <enter>-repeat, i.e., only the search pattern is saved then
@@ -864,7 +880,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                             (set-beacon-groups in2 positions-to-label labels shortcuts
                                                {: repeat?})))
                         ; Note: cycle-through... cleans up everything after itself (highlight,
-                        ; interrupted change op), nothing more to do here if there's no match.
+                        ; interrupted change op, scrolloff), nothing more to do if there's
+                        ; no match.
                         (match (cycle-through-match-groups in2 positions-to-label shortcuts repeat?)
                           [group-offset in3]
                           (do (when (and dot-repeatable-op? (not dot-repeat?))
@@ -880,9 +897,12 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                                (. positions-to-label))  ; ...currently in use?
                                          ; When "autojump" is on, fall through with any other key,
                                          ; so that we can continue editing right away.
-                                         (exit-with (when jump-to-first? (vim.fn.feedkeys in3 :i))))
+                                         (exit-with (when jump-to-first? 
+                                                      (restore-scrolloff)
+                                                      (vim.fn.feedkeys in3 :i))))
                                 ; Succesful exit, option #4: selecting a valid label.
-                                pos (jump-to! pos full-incl?))))))))))))))))
+                                pos (do (restore-scrolloff)
+                                        (jump-to! pos full-incl?)))))))))))))))))
 
 ; }}}
 ; Mappings {{{
