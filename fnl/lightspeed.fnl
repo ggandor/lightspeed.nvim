@@ -25,7 +25,7 @@
 (macro one-of? [x ...]
   "Expands to an `or` form, like (or (= x y1) (= x y2) ...)"
   `(or ,(unpack 
-          (icollect [_ y (ipairs (table.pack ...))]
+          (icollect [_ y (ipairs [...])]
             `(= ,x ,y)))))
 
 (macro when-not [condition ...]
