@@ -1067,7 +1067,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
   end
   local function restore_scrolloff()
     if jump_to_first_3f then
-      return (vim.cmd(self["restore-scrolloff-cmd"]) or "")
+      return vim.cmd((self["restore-scrolloff-cmd"] or ""))
     end
   end
   local function cycle_through_match_groups(in2, positions_to_label, shortcuts, repeat_3f)

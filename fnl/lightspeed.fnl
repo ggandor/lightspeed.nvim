@@ -745,7 +745,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 
     (fn restore-scrolloff []
       (when jump-to-first?
-        (or (vim.cmd self.restore-scrolloff-cmd) "")))
+        (vim.cmd (or self.restore-scrolloff-cmd ""))))
 
     (fn cycle-through-match-groups [in2 positions-to-label shortcuts repeat?]
       (var ret nil)
