@@ -50,7 +50,7 @@ Other quality-of-life features:
 
 Last but not least (bonus):
 
-* **multiline 1-character (f/t-like) search modes**, with _instant-repeat_
+* **multiline 1-character (f/t-like) search modes**, with "instant-repeat"
   available (similar to [clever-f](https://github.com/rhysd/clever-f.vim) or
   Sneak's "clever" modes)
 
@@ -62,22 +62,22 @@ Last but not least (bonus):
 
 ### Installation
 
-#### [vim-plug](https://github.com/junegunn/vim-plug)
-```Vim
-Plug 'ggandor/lightspeed.nvim'
-```
-
 #### [packer](https://github.com/wbthomason/packer.nvim)
 ```Lua
 use 'ggandor/lightspeed.nvim'
+```
+
+#### [vim-plug](https://github.com/junegunn/vim-plug)
+```Vim
+Plug 'ggandor/lightspeed.nvim'
 ```
 
 ### Usage
 
 #### 2-character search
 
-Command sequence for 2-character search in Normal mode, with the default
-settings:
+Command sequence for 2-character search in Normal and Visual mode, with the
+default settings:
 
 `(s|S) <c-x>? char1 (char2|label)? (<tab>|<s-tab>)* label?`
 
@@ -86,22 +86,30 @@ That is,
 - optionally turn on "full-inclusive" mode (moves the cursor to the end of the
   match)
 - enter 1st character of the search pattern (might short-circuit after this, if
-  the character is unique in the search direction)
+  the character is unique in the search direction) 
+- _the "beacons" are lit at this point; all potential matches are labeled (char1 + ?)_
 - enter 2nd character of the search pattern (might short-circuit after this, if
   there is only one match), or the label character, if the target is
   [shortcutable](https://github.com/ggandor/lightspeed.nvim#shortcuts).
-- optionally cycle through the groups of targets that can be labeled at once
+- _certain beacons are extinguished; only char1 + char2 matches remain_
+- optionally cycle through the groups of matches that can be labeled at once
 - choose a labeled target to jump to (in the current group)
+
+In Operator-pending mode the search is invoked with `z`/`Z`, acknowledging that
+"surround" plugins may benefit even more from being able to use `s`/`S` then.
 
 #### 1-character search
 
-`f`, `F`, `t`, `T` work as their native counterparts, but are not limited to the
-current line. In Normal and Visual mode, the motion can be repeated via pressing
-the same key (`f` for `f`, etc.) or one of the others (changing the direction or
-the inclusiveness on the fly) - this "instant-repeat" mode is active until you
-type any other character. (If you want to keep using `;` and `,` to trigger
-repeat, you can configure that manually - see
-`:h lightspeed-custom-ft-repeat-mappings`.)
+Lightspeed also overrides the native `f`/`F`/`t`/`T` motions with enhanced
+versions that work over multiple lines. In Normal and Visual mode, the motions
+can be repeated by pressing the same key again (`f` for `f`, etc.), or one of
+the others (changing the direction or inclusiveness on the fly). This
+"instant-repeat" mode is active until you type any other character.
+
+`;` and `,` are not utilized by the plugin anymore - you are free to remap them
+to more useful things (`:` and `localleader` are great contenders). If you are
+too used to the native Vim way, and want to keep using them to trigger repeat,
+you can configure that manually - see `:h lightspeed-custom-ft-repeat-mappings`.
 
 #### Repeating motions
 
@@ -122,8 +130,8 @@ below.
 
 Lightspeed exposes a configuration table (`opts`), that can be set directly, or
 via a `setup` function that updates the current settings with the values given
-in its argument table. (Note: There is no need to call `setup` in your config,
-if you are fine with the defaults.)
+in its argument table. (Note: There is no need to call `setup` at all, if you
+are fine with the defaults.)
 
 ```Lua
 require'lightspeed'.setup {
@@ -156,9 +164,9 @@ For customizing the highlight colors, see `:h lightspeed-highlight`.
 
 #### Notes
 
-* Note that Lightspeed will not override your - or other plugins' - custom
-  mappings, unless explicitly told so. If you, for any reason, would like to
-  revert to the _native_ behaviour of certain keys, check `:h
+* Lightspeed will not override your - or other plugins' - custom mappings,
+  unless explicitly told so. If you, for any reason, would like to revert to the
+  _native_ behaviour of certain keys, check `:h
   lightspeed-disable-default-mappings` (spoiler alert: `unmap`).
 
 * While the plugin is active, the actual cursor is down on the command line, but
@@ -243,7 +251,7 @@ if there are lots of `<Plug>` forms in a section of a Vim config file).
 
 ### Grouping matches by distance
 
-When there is a large number of targets, we cycle through groups instead of
+When there is a large number of matches, we cycle through groups instead of
 trying to label everything at once (just like Sneak does it). However, the
 immediate next group is always shown ahead of time too, with a different
 color, so your brain has a bit of time to process the label, even in case of a
@@ -308,7 +316,7 @@ frequently make you reach the target faster - so start using them!
 
 That is practically labeling `/?` matches, right? It is overkill for our
 purposes, IMO. Again, we are optimizing for the common case. A 2-character
-pattern, with the secondary group of targets displayed ahead of time, should be
+pattern, with the secondary group of matches displayed ahead of time, should be
 enough for making an on-screen jump efficiently 99% of the time; in that
 remaining 1%, please use `H/M/L/{/}` first, or just live with having to press
 `Tab/Space` multiple times. (What the heck are you editing, on what size of

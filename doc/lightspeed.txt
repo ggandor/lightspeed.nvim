@@ -1,4 +1,4 @@
-*lightspeed.txt*        For Neovim version 0.5        Last change: 2021 July 12
+*lightspeed.txt*        For Neovim version 0.5       Last change: 2021 August 08
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -45,7 +45,7 @@ That is,
 - enter 2nd character of the search pattern (might short-circuit after this,
   if there is only one match), or the label character, if the target is
   shortcutable.
-- optionally cycle through the groups of targets that can be labeled at once
+- optionally cycle through the groups of matches that can be labeled at once
 - choose a labeled target to jump to (in the current group)
 
                                               *lightspeed-jump-on-partial-input*
@@ -267,11 +267,8 @@ Available <Plug> keys for all modes:
 `<Plug>Lightspeed_t` - forward, 1-character, exclusive
 `<Plug>Lightspeed_T` - backward, 1-character, exclusive
 
-You may use them like:
-`{mode}map {preferred-key} <Plug>Lightspeed_s`
-
-Note: Be sure not to use the `-noremap` versions, as <Plug> mappings should be
-      used recursively, by design.
+Note: Be sure not to use `-noremap`, as <Plug> mappings should be used
+      recursively, by design.
 
 For 2-character search, the keys for cycling between groups of matches, and
 the prefix triggering full-inclusive mode can be set in the `opts` table, see
@@ -279,8 +276,8 @@ the prefix triggering full-inclusive mode can be set in the `opts` table, see
 
                                            *lightspeed-disable-default-mappings*
 Lightspeed does not remap any keys for which there is a custom mapping already
-defined. If you wish to preserve the the _native_ behaviour of some of the
-keys, for example f/t, simply |unmap| the given keys after the plugin has been
+defined. If you wish to preserve the _native_ behaviour of some of the keys,
+for example f/t, simply |unmap| the given keys after the plugin has been
 loaded, or equivalently, map anything unused to the corresponding <Plug> keys,
 before the plugin has been loaded.
 
@@ -290,7 +287,11 @@ table, that stores the state for 1-character search. This way you can fool
 Lightspeed into restarting instant-repeat even after exiting; in effect, this
 allows for mapping custom keys instead of relying on the "clever-f" method.
 
+Note: The state tables are not considered as part of the official API yet;
+      changes might happen.
+
 To keep using `;` and `,` in the native way, add the following to your config: >
+
     function repeat_ft(reverse)
       local ls = require'lightspeed'
       ls.ft['instant-repeat?'] = true
@@ -305,6 +306,9 @@ To keep using `;` and `,` in the native way, add the following to your config: >
     vim.api.nvim_set_keymap('x', ',', '<cmd>lua repeat_ft(true)<cr>',
                             {noremap = true, silent = true})
 <
+Note: Make sure to use `<cmd>`, and not `:`, at the beginning of the right
+      hand side, as Visual mode will be broken otherwise.
+
 The same in Vimscript: >
     fun! s:RepeatFt(reverse)
       lua require'lightspeed'.ft['instant-repeat?'] = true
@@ -316,9 +320,6 @@ The same in Vimscript: >
     nnoremap <silent> , <cmd>call <SID>RepeatFt(v:true)<cr>
     xnoremap <silent> , <cmd>call <SID>RepeatFt(v:true)<cr>
 <
-Note: The state tables are not considered as part of the official API yet;
-      changes might happen.
-
 ==============================================================================
 HIGHLIGHTING                                              *lightspeed-highlight*
 
