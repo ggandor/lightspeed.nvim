@@ -413,6 +413,7 @@ interrupted change-operation."
 (local ft {:instant-repeat? nil
            :started-reverse? nil
            :prev-t-like? nil
+           :prev-reverse? nil
            :prev-search nil
            :prev-dot-repeatable-search nil})
 
@@ -428,8 +429,18 @@ interrupted change-operation."
                    reverse?)
         ; When instant-repeating t-like motion, we increment the count by one,
         ; else we would find the same target in front of us again and again,
-        ; and be stuck.
-        count (if (and instant-repeat? t-like?) (inc vim.v.count1) vim.v.count1)
+        ; and be stuck. (Except when we have just changed directions or between
+        ; f/t mode.) Note that we have created a new edge case: given '[q]uux',
+        ; and inputing 'fu', pressing 't' for the first time will not move the
+        ; cursor, just switches the mode. And we could not care less, this whole
+        ; stuff is overengineering anyway.
+        switched-directions? (or (and reverse? (not self.prev-reverse?))
+                                 (and (not reverse?) self.prev-reverse?))
+        switched-f->t? (and t-like? (not self.prev-t-like?))
+        count (if (and instant-repeat? t-like?
+                       (not (or switched-f->t? switched-directions?)))
+                (inc vim.v.count1)
+                vim.v.count1)
         op-mode? (operator-pending-mode?)
         dot-repeatable-op? (dot-repeatable-operation?)
         motion (if (and (not t-like?) (not reverse?)) "f"
@@ -455,8 +466,9 @@ interrupted change-operation."
           (if dot-repeatable-op?
             (do (set self.prev-dot-repeatable-search in1)
                 (set-dot-repeat cmd-for-dot-repeat count))
-            (do (set self.prev-search in1)
-                (set self.prev-t-like? t-like?))))
+            (set self.prev-search in1)))
+        (set self.prev-t-like? t-like?)
+        (set self.prev-reverse? reverse?)
         (var i 0)
         (var target-pos nil)
         (each [[line col &as pos] 
