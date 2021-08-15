@@ -240,11 +240,6 @@ character instead."
     (if (= (type ch) :number) (vim.fn.nr2char ch) ch)))
 
 
-(fn force-statusline-update []
-  ; Heartfelt thanks: https://vi.stackexchange.com/a/17876
-  (set vim.o.statusline vim.o.statusline))
-
-
 (fn push-cursor! [direction]
   "Push cursor 1 character to the left or right, possibly beyond EOL."
   (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW") ?stopline))
@@ -877,8 +872,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                   (let [[first & rest] positions]
                     (when (or jump-to-first? (empty? rest))
                       ; Succesful exit, option #3: jumping to the only match automatically.
-                      (jump-to! first full-incl?)
-                      (when jump-to-first? (force-statusline-update)))
+                      (jump-to! first full-incl?))
                     (when-not (empty? rest)
                       ; Else lighting up beacons again, now only for pairs with `in2`
                       ; as second character.
