@@ -240,6 +240,13 @@ character instead."
     (if (= (type ch) :number) (vim.fn.nr2char ch) ch)))
 
 
+(fn disable-matchparen-highlight []
+  ; After autojumping to the first match, or to a unique char, the parens remain
+  ; highlighted while our plugin is executing, even though the cursor has been
+  ; moved.
+  (vim.cmd ":3match"))  ; :h :3match
+
+
 (fn push-cursor! [direction]
   "Push cursor 1 character to the left or right, possibly beyond EOL."
   (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW") ?stopline))
@@ -477,6 +484,7 @@ interrupted change-operation."
         (if (= i 0) (exit-with (echo-not-found in1))  ; note: no highlight to clean up if no match found
             (do
               (when-not instant-repeat? (vim.cmd "norm! m`"))  ; save start position on jumplist (endnote #2)
+              (disable-matchparen-highlight)
               (vim.fn.cursor target-pos)
               (when t-like? (push-cursor! (if reverse? :fwd :bwd)))
               (when (and op-mode? (not reverse?)) (push-cursor! :fwd))  ; endnote #3
@@ -710,6 +718,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
             (when first-jump?
               (vim.cmd "norm! m`")  ; save start position on jumplist (endnote #2)
               (set first-jump? false))
+            (disable-matchparen-highlight)
             (vim.fn.cursor pos)
             (when (and full-incl? (not reverse?))
               (push-cursor! :fwd) (when op-mode? (push-cursor! :fwd))))))  ; endnote #3

@@ -275,6 +275,9 @@ local function get_char()
     return ch
   end
 end
+local function disable_matchparen_highlight()
+  return vim.cmd(":3match")
+end
 local function push_cursor_21(direction)
   local _76_
   do
@@ -632,6 +635,7 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f)
       if not instant_repeat_3f then
         vim.cmd("norm! m`")
       end
+      disable_matchparen_highlight()
       vim.fn.cursor(target_pos)
       if t_like_3f then
         local function _149_()
@@ -994,6 +998,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
         vim.cmd("norm! m`")
         first_jump_3f = false
       end
+      disable_matchparen_highlight()
       vim.fn.cursor(pos)
       if (full_incl_3f and not reverse_3f) then
         push_cursor_21("fwd")
