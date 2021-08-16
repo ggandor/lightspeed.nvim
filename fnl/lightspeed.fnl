@@ -240,11 +240,15 @@ character instead."
     (if (= (type ch) :number) (vim.fn.nr2char ch) ch)))
 
 
-(fn disable-matchparen-highlight []
+(fn remove-matchparen-highlight []
   ; After autojumping to the first match, or to a unique char, the parens remain
   ; highlighted while our plugin is executing, even though the cursor has been
   ; moved.
   (vim.cmd ":3match"))  ; :h :3match
+
+
+(fn force-matchparen-highlight []
+  (when vim.g.loaded_matchparen (vim.cmd :DoMatchParen)))
 
 
 (fn push-cursor! [direction]
@@ -484,10 +488,11 @@ interrupted change-operation."
         (if (= i 0) (exit-with (echo-not-found in1))  ; note: no highlight to clean up if no match found
             (do
               (when-not instant-repeat? (vim.cmd "norm! m`"))  ; save start position on jumplist (endnote #2)
-              (disable-matchparen-highlight)
+              (remove-matchparen-highlight)
               (vim.fn.cursor target-pos)
               (when t-like? (push-cursor! (if reverse? :fwd :bwd)))
               (when (and op-mode? (not reverse?)) (push-cursor! :fwd))  ; endnote #3
+              (force-matchparen-highlight)
               ; Set instant-repeat.
               (when-not op-mode?
                 (highlight-cursor) (vim.cmd :redraw)
@@ -718,10 +723,11 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
             (when first-jump?
               (vim.cmd "norm! m`")  ; save start position on jumplist (endnote #2)
               (set first-jump? false))
-            (disable-matchparen-highlight)
+            (remove-matchparen-highlight)
             (vim.fn.cursor pos)
             (when (and full-incl? (not reverse?))
-              (push-cursor! :fwd) (when op-mode? (push-cursor! :fwd))))))  ; endnote #3
+              (push-cursor! :fwd) (when op-mode? (push-cursor! :fwd)))  ; endnote #3
+            (force-matchparen-highlight))))
 
     (fn jump-and-ignore-ch2-until-timeout! [[line col _ &as pos] full-incl? new-search? ch2]
       (let [from-pos (get-current-pos)]
