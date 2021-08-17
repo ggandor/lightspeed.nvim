@@ -248,6 +248,8 @@ character instead."
 
 
 (fn force-matchparen-highlight []
+  ; NOTE: :DoMatchParen overwrites the current dot-repeat setting,
+  ;       that should be (re)set after this call!
   (when vim.g.loaded_matchparen (vim.cmd :DoMatchParen)))
 
 
@@ -493,6 +495,9 @@ interrupted change-operation."
               (when t-like? (push-cursor! (if reverse? :fwd :bwd)))
               (when (and op-mode? (not reverse?)) (push-cursor! :fwd))  ; endnote #3
               (force-matchparen-highlight)
+              ; The above call just broke our dot-repeat with `doautocmd CursorMoved`,
+              ; so we need to set it again.
+              (when dot-repeatable-op? (set-dot-repeat cmd-for-dot-repeat count))
               ; Set instant-repeat.
               (when-not op-mode?
                 (highlight-cursor) (vim.cmd :redraw)
@@ -716,8 +721,6 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
     (local jump-to!
       (do (var first-jump? true)
           (fn [pos full-incl?]
-            (when (and dot-repeatable-op? (not dot-repeat?))
-              (set-dot-repeat cmd-for-dot-repeat))
             ; When jumping to a labeled target _after_ an autojump, do not
             ; register the intermediate step on the jumplist.
             (when first-jump?
@@ -727,7 +730,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
             (vim.fn.cursor pos)
             (when (and full-incl? (not reverse?))
               (push-cursor! :fwd) (when op-mode? (push-cursor! :fwd)))  ; endnote #3
-            (force-matchparen-highlight))))
+            (force-matchparen-highlight)
+            (when (and dot-repeatable-op? (not dot-repeat?))
+              (set-dot-repeat cmd-for-dot-repeat)))))
 
     (fn jump-and-ignore-ch2-until-timeout! [[line col _ &as pos] full-incl? new-search? ch2]
       (let [from-pos (get-current-pos)]
