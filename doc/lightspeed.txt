@@ -1,4 +1,4 @@
-*lightspeed.txt*        For Neovim version 0.5       Last change: 2021 August 08
+*lightspeed.txt*        For Neovim version 0.5       Last change: 2021 August 17
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -70,8 +70,8 @@ pressing the same key (`f` for `f`, etc.) or one of the others (changing the
 direction or the inclusiveness on the fly). This "instant-repeat" mode is
 active until you type any other character.
 
-Note: If you would like to keep using `;` and `,` to trigger repeat, see
-      |lightspeed-custom-ft-repeat-mappings| for a workaround.
+Note: If you would like to keep using `;` and `,` to trigger repeat in the
+      native way, see |lightspeed-custom-ft-repeat-mappings| for a workaround.
 
                                                        *lightspeed-enter-repeat*
 Pressing <enter> after invoking any of Lightspeed's commands searches with the
@@ -110,7 +110,7 @@ Setting multiple options via the `setup` function: >
         limit_ft_matches = 10,
     }
 <
-    Note: These will be "merged" with the current/default settings. (Settings
+    Note: These will be merged with the current/default settings. (Settings
           not mentioned here are not disturbed.)
 
 Available options~
@@ -170,6 +170,17 @@ Available options~
           character of the match, at the end of the match, or even in the
           column _after_ the end of the match.
     
+`instant_repeat_fwd_key = nil'`
+`instant_repeat_bwd_key = nil'`
+
+    Custom keys to trigger instant-repeat. These will only be "hijacked" while
+    1-character search is active, so you are free to use any key here, the
+    original mappings will not be disturbed.
+
+    Note: If you would like to keep using `;` and `,` to trigger repeat
+          at any time, even after `ft:to` has finished executing, see
+          |lightspeed-custom-ft-repeat-mappings| for a workaround.
+
 If the following attributes are not specified by the user, Lightspeed will
 decide their values at runtime, based on whether `jump_to_first_match` is
 active. (In that case we should use only such keys that are unlikely to be
@@ -284,8 +295,7 @@ before the plugin has been loaded.
                                           *lightspeed-custom-ft-repeat-mappings*
 You can trigger instant-repeat manually by tweaking the publicly exposed `ft`
 table, that stores the state for 1-character search. This way you can fool
-Lightspeed into restarting instant-repeat even after exiting; in effect, this
-allows for mapping custom keys instead of relying on the "clever-f" method.
+Lightspeed into restarting instant-repeat even after exiting.
 
 Note: The state tables are not considered as part of the official API yet;
       changes might happen.
@@ -370,7 +380,7 @@ own liking:
     LightspeedPendingChangeOpArea~
         When jumping based on partial input in operator-pending mode, we do
         not see the operation executed right away, because of the "safety"
-        timeout (see |lightspeed-jump-on-partial-input|) - therefore we set a
+        timeout (see |lightspeed-jump-on-partial-input|), therefore we set a
         temporary highlight on the operated area. ("Destructive" operations -
         change and delete - get a different highlight, with strikethrough, by
         default.)

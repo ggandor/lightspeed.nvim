@@ -116,6 +116,8 @@ character instead."
            :match_only_the_start_of_same_char_seqs true
            :limit_ft_matches 5
            :full_inclusive_prefix_key "<c-x>"
+           :instant_repeat_fwd_key nil
+           :instant_repeat_bwd_key nil
            :cycle_group_fwd_key nil
            :cycle_group_bwd_key nil
            :labels nil})
@@ -449,6 +451,9 @@ interrupted change-operation."
                        (not (or switched-f->t? switched-directions?)))
                 (inc vim.v.count1)
                 vim.v.count1)
+        [repeat-fwd-key repeat-bwd-key] (->> [opts.instant_repeat_fwd_key
+                                              opts.instant_repeat_bwd_key]
+                                             (vim.tbl_map replace-vim-keycodes))
         op-mode? (operator-pending-mode?)
         dot-repeatable-op? (dot-repeatable-operation?)
         motion (if (and (not t-like?) (not reverse?)) "f"
@@ -495,17 +500,24 @@ interrupted change-operation."
                                       (push-cursor! (if reverse? :fwd :bwd)))
                                     (when (and op-mode? (not reverse?))  ; endnote #3
                                       (push-cursor! :fwd)))})
-              ; The above call just broke our dot-repeat (see `force-matchparen-highlight`).
+              ; The above call just broke our dot-repeat (see `force-matchparen-highlight`),
               ; so we need to set it again.
-              (when dot-repeatable-op? (set-dot-repeat cmd-for-dot-repeat count))
-              ; Set instant-repeat.
+              (when dot-repeatable-op?
+                (set-dot-repeat cmd-for-dot-repeat count))
               (when-not op-mode?
                 (highlight-cursor)
                 (vim.cmd :redraw)
-                (local (ok? in2) (pcall get-char))  ; pcall for handling <C-c>
-                (set self.instant-repeat? 
-                     (and ok? (string.match (vim.fn.maparg in2) "<Plug>Lightspeed_[fFtT]")))
-                (vim.fn.feedkeys (if ok? in2 (replace-vim-keycodes "<esc>")) :i))
+                (let [(ok? in2) (pcall get-char)  ; pcall for handling <C-c>
+                      custom-repeat-key-used? (one-of? in2 repeat-fwd-key repeat-bwd-key)]
+                  (set self.instant-repeat?
+                       (and ok? (or custom-repeat-key-used?
+                                    (string.match (vim.fn.maparg in2)
+                                                  "<Plug>Lightspeed_[fFtT]"))))
+                  (if custom-repeat-key-used?
+                    (do (hl:cleanup)
+                        (ft:to (= in2 repeat-bwd-key) t-like?))
+                    ; f/F/t/T can be fed forward too, no need for a recursive call.
+                    (vim.fn.feedkeys (if ok? in2 (replace-vim-keycodes "<esc>")) :i))))
               (hl:cleanup)))))))
 
 ; }}}

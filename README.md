@@ -50,7 +50,7 @@ Other quality-of-life features:
 
 Last but not least (bonus):
 
-* **multiline 1-character (f/t-like) search modes**, with "instant-repeat"
+* **multiline 1-character (f/t-like) search modes**, with same-key repeat
   available (similar to [clever-f](https://github.com/rhysd/clever-f.vim) or
   Sneak's "clever" modes)
 
@@ -106,10 +106,16 @@ can be repeated by pressing the same key again (`f` for `f`, etc.), or one of
 the others (changing the direction or inclusiveness on the fly). This
 "instant-repeat" mode is active until you type any other character.
 
-`;` and `,` are not utilized by the plugin anymore - you are free to remap them
-to more useful things (`:` and `localleader` are great contenders). If you are
-too used to the native Vim way, and want to keep using them to trigger repeat,
-you can configure that manually - see `:h lightspeed-custom-ft-repeat-mappings`.
+By default, `;` and `,` are not utilized by the plugin anymore - you are free to
+remap them to more useful things (`:` and `localleader` are great contenders).
+If you are too used to the native Vim way, and want to keep using them for
+repeating, there are two different possibilities. First, you can specify custom
+trigger keys for instant-repeat, in the `opts` table (see the configuration
+section). The keys will be temporarily hijacked by the plugin then, but the
+actual mappings will not be disturbed. If you would like the keys to trigger
+repeat at any time, even after the plugin has finished executing (i.e., 100%
+native behaviour), there is a workaround for that too - see `:h
+lightspeed-custom-ft-repeat-mappings`.
 
 #### Repeating motions
 
@@ -144,6 +150,8 @@ require'lightspeed'.setup {
   match_only_the_start_of_same_char_seqs = true,
   limit_ft_matches = 5,
   full_inclusive_prefix_key = '<c-x>',
+  instant_repeat_fwd_key = nil,
+  instant_repeat_bwd_key = nil,
   -- By default, the values of these will be decided at runtime,
   -- based on `jump_to_first_match`.
   labels = nil,
@@ -318,9 +326,9 @@ That is practically labeling `/?` matches, right? It is overkill for our
 purposes, IMO. Again, we are optimizing for the common case. A 2-character
 pattern, with the secondary group of matches displayed ahead of time, should be
 enough for making an on-screen jump efficiently 99% of the time; in that
-remaining 1%, please use `H/M/L/{/}` first, or just live with having to press
-`Tab/Space` multiple times. (What the heck are you editing, on what size of
-display, by the way?)
+remaining 1%, please use `H`/`M`/`L`/`{`/`}` first, or just live with having to
+press `Tab`/`Space` multiple times. (What the heck are you editing, on what size
+of display, by the way?)
 
 For regex patterns specifically, I have yet to find a compelling use case in
 this context. Couldn't we just type the exact characters on the screen? (See
