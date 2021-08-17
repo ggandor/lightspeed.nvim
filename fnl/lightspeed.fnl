@@ -241,7 +241,8 @@ character instead."
 (fn force-matchparen-highlight []
   ; NOTE: :DoMatchParen overwrites the current dot-repeat setting,
   ;       that should be (re)set after this call!
-  (when vim.g.loaded_matchparen (vim.cmd :DoMatchParen)))
+  (when (= (vim.fn.exists ":DoMatchParen") 2)
+    (vim.cmd :DoMatchParen)))
 
 
 (fn push-cursor! [direction]

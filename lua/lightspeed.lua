@@ -254,7 +254,7 @@ local function remove_matchparen_highlight()
   return vim.cmd(":3match")
 end
 local function force_matchparen_highlight()
-  if vim.g.loaded_matchparen then
+  if (vim.fn.exists(":DoMatchParen") == 2) then
     return vim.cmd("DoMatchParen")
   end
 end
