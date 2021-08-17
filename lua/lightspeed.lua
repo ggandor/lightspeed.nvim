@@ -637,25 +637,29 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f)
       end
       return nil
     else
-      if not instant_repeat_3f then
-        vim.cmd("norm! m`")
-      end
-      remove_matchparen_highlight()
-      vim.fn.cursor(target_pos)
-      if t_like_3f then
-        local function _150_()
-          if reverse_3f0 then
-            return "fwd"
-          else
-            return "bwd"
+      do
+        remove_matchparen_highlight()
+        if not instant_repeat_3f then
+          vim.cmd("norm! m`")
+        end
+        vim.fn.cursor(target_pos)
+        do
+          if t_like_3f then
+            local function _150_()
+              if reverse_3f0 then
+                return "fwd"
+              else
+                return "bwd"
+              end
+            end
+            push_cursor_21(_150_())
+          end
+          if (op_mode_3f and not reverse_3f0) then
+            push_cursor_21("fwd")
           end
         end
-        push_cursor_21(_150_())
+        force_matchparen_highlight()
       end
-      if (op_mode_3f and not reverse_3f0) then
-        push_cursor_21("fwd")
-      end
-      force_matchparen_highlight()
       if dot_repeatable_op_3f then
         set_dot_repeat(cmd_for_dot_repeat, count)
       end
@@ -996,76 +1000,6 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
       return nil
     end
   end
-  local jump_to_21
-  do
-    local first_jump_3f = true
-    local function _225_(pos, full_incl_3f)
-      if first_jump_3f then
-        vim.cmd("norm! m`")
-        first_jump_3f = false
-      end
-      remove_matchparen_highlight()
-      vim.fn.cursor(pos)
-      if (full_incl_3f and not reverse_3f) then
-        push_cursor_21("fwd")
-        if op_mode_3f then
-          push_cursor_21("fwd")
-        end
-      end
-      force_matchparen_highlight()
-      if (dot_repeatable_op_3f and not dot_repeat_3f) then
-        return set_dot_repeat(cmd_for_dot_repeat)
-      end
-    end
-    jump_to_21 = _225_
-  end
-  local function jump_and_ignore_ch2_until_timeout_21(_230_, full_incl_3f, new_search_3f, ch2)
-    local _arg_231_ = _230_
-    local line = _arg_231_[1]
-    local col = _arg_231_[2]
-    local _ = _arg_231_[3]
-    local pos = _arg_231_
-    local from_pos = get_current_pos()
-    jump_to_21(pos, full_incl_3f)
-    if new_search_3f then
-      if not change_op_3f then
-        local function _232_()
-          if (op_mode_3f and not reverse_3f) then
-            return from_pos
-          end
-        end
-        highlight_cursor(_232_())
-      end
-      if op_mode_3f then
-        local _let_234_ = {vim.tbl_map(dec, from_pos), {dec(line), dec(col)}}
-        local from_pos0 = _let_234_[1]
-        local to_pos = _let_234_[2]
-        local function _236_()
-          if reverse_3f then
-            return {to_pos, from_pos0}
-          else
-            return {from_pos0, to_pos}
-          end
-        end
-        local _let_235_ = _236_()
-        local startpos = _let_235_[1]
-        local endpos = _let_235_[2]
-        local hl_group
-        if (change_op_3f or delete_op_3f) then
-          hl_group = hl.group["pending-change-op-area"]
-        else
-          hl_group = hl.group["pending-op-area"]
-        end
-        highlight_area_between(startpos, endpos, hl_group)
-      end
-      vim.cmd("redraw")
-      ignore_char_until_timeout(ch2)
-      if change_op_3f then
-        echo("")
-      end
-      return hl:cleanup()
-    end
-  end
   local function switch_off_scrolloff()
     if jump_to_first_3f then
       local _3floc
@@ -1089,37 +1023,37 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
     local group_offset = 0
     local loop_3f = true
     while loop_3f do
-      local _244_
-      local function _245_()
+      local _228_
+      local function _229_()
         if dot_repeat_3f then
           return self["prev-dot-repeatable-search"].in3
         end
       end
-      local function _246_()
+      local function _230_()
         loop_3f = false
         restore_scrolloff()
         ret = nil
         return nil
       end
-      _244_ = (_245_() or get_input_and_clean_up() or _246_())
-      if (nil ~= _244_) then
-        local input = _244_
+      _228_ = (_229_() or get_input_and_clean_up() or _230_())
+      if (nil ~= _228_) then
+        local input = _228_
         if not ((input == cycle_fwd_key) or (input == cycle_bwd_key)) then
           loop_3f = false
           ret = {group_offset, input}
         else
           local max_offset = math.floor((#positions_to_label / #labels))
-          local _248_
+          local _232_
           do
-            local _247_ = input
-            if (_247_ == cycle_fwd_key) then
-              _248_ = inc
+            local _231_ = input
+            if (_231_ == cycle_fwd_key) then
+              _232_ = inc
             else
-              local _ = _247_
-              _248_ = dec
+              local _ = _231_
+              _232_ = dec
             end
           end
-          group_offset = clamp(_248_(group_offset), 0, max_offset)
+          group_offset = clamp(_232_(group_offset), 0, max_offset)
           if opts.grey_out_search_area then
             grey_out_search_area(reverse_3f)
           end
@@ -1132,6 +1066,82 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
       end
     end
     return ret
+  end
+  local repeat_3f = nil
+  local new_search_3f = nil
+  local full_incl_3f = nil
+  local jump_with_wrap_21
+  do
+    local first_jump_3f = true
+    local function _239_(target)
+      do
+        remove_matchparen_highlight()
+        if first_jump_3f then
+          vim.cmd("norm! m`")
+        end
+        vim.fn.cursor(target)
+        if (full_incl_3f and not reverse_3f) then
+          push_cursor_21("fwd")
+          if op_mode_3f then
+            push_cursor_21("fwd")
+          end
+        end
+        force_matchparen_highlight()
+      end
+      if dot_repeatable_op_3f then
+        set_dot_repeat(cmd_for_dot_repeat)
+      end
+      first_jump_3f = false
+      return nil
+    end
+    jump_with_wrap_21 = _239_
+  end
+  local function jump_and_ignore_ch2_until_timeout_21(_244_, ch2)
+    local _arg_245_ = _244_
+    local line = _arg_245_[1]
+    local col = _arg_245_[2]
+    local _ = _arg_245_[3]
+    local target = _arg_245_
+    local orig_pos = get_current_pos()
+    jump_with_wrap_21(target)
+    if new_search_3f then
+      if not change_op_3f then
+        local function _246_()
+          if (op_mode_3f and not reverse_3f) then
+            return orig_pos
+          end
+        end
+        highlight_cursor(_246_())
+      end
+      if op_mode_3f then
+        local _let_248_ = {vim.tbl_map(dec, orig_pos), {dec(line), dec(col)}}
+        local from_pos = _let_248_[1]
+        local to_pos = _let_248_[2]
+        local function _250_()
+          if reverse_3f then
+            return {to_pos, from_pos}
+          else
+            return {from_pos, to_pos}
+          end
+        end
+        local _let_249_ = _250_()
+        local start = _let_249_[1]
+        local finish = _let_249_[2]
+        local hl_group
+        if (change_op_3f or delete_op_3f) then
+          hl_group = hl.group["pending-change-op-area"]
+        else
+          hl_group = hl.group["pending-op-area"]
+        end
+        highlight_area_between(start, finish, hl_group)
+      end
+      vim.cmd("redraw")
+      ignore_char_until_timeout(ch2)
+      if change_op_3f then
+        echo("")
+      end
+      return hl:cleanup()
+    end
   end
   if not dot_repeat_3f then
     echo("")
@@ -1146,9 +1156,6 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
     highlight_cursor()
     vim.cmd("redraw")
   end
-  local repeat_3f = nil
-  local new_search_3f = nil
-  local full_incl_3f = nil
   local _258_
   if dot_repeat_3f then
     full_incl_3f = self["prev-dot-repeatable-search"]["full-incl?"]
@@ -1209,7 +1216,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
         if new_search_3f then
           save_state_for({["dot-repeat"] = {["full-incl?"] = full_incl_3f, in1 = in1, in2 = ch2, in3 = labels[1]}, ["repeat"] = {in1 = in1, in2 = ch2}})
         end
-        return jump_and_ignore_ch2_until_timeout_21(pos, full_incl_3f, new_search_3f, ch2)
+        return jump_and_ignore_ch2_until_timeout_21(pos, ch2)
       else
         if change_operation_3f() then
           handle_interrupted_change_op_21()
@@ -1268,7 +1275,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
           local pos = (_280_)[1]
           local ch2 = (_280_)[2]
           save_state_for({["dot-repeat"] = {["full-incl?"] = full_incl_3f, in1 = in1, in2 = ch2, in3 = in2}, ["repeat"] = {in1 = in1, in2 = ch2}})
-          return jump_to_21(pos, full_incl_3f)
+          return jump_with_wrap_21(pos)
         elseif (_280_ == nil) then
           if new_search_3f then
             save_state_for({["dot-repeat"] = {["full-incl?"] = full_incl_3f, in1 = in1, in2 = in2, in3 = labels[1]}, ["repeat"] = {in1 = in1, in2 = in2}})
@@ -1290,7 +1297,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
             local first = _let_286_[1]
             local rest = {(table.unpack or unpack)(_let_286_, 2)}
             if (jump_to_first_3f or empty_3f(rest)) then
-              jump_to_21(first, full_incl_3f)
+              jump_with_wrap_21(first)
             end
             if not empty_3f(rest) then
               switch_off_scrolloff()
@@ -1351,7 +1358,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
                 if (nil ~= _294_) then
                   local pos = _294_
                   restore_scrolloff()
-                  return jump_to_21(pos, full_incl_3f)
+                  return jump_with_wrap_21(pos)
                 end
               end
             end

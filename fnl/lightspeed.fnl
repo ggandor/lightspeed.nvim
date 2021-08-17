@@ -258,6 +258,14 @@ character instead."
   (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW") ?stopline))
 
 
+(macro jump-to! [target {: add-to-jumplist? : after}]
+  `(do (remove-matchparen-highlight)
+       (when ,add-to-jumplist? (vim.cmd "norm! m`"))
+       (vim.fn.cursor ,target)
+       ,after
+       (force-matchparen-highlight)))
+
+
 (fn onscreen-match-positions [pattern reverse? {: ft-search? : limit}]
   "Returns an iterator streaming the return values of `searchpos` for
 the given pattern, stopping at the window edge; in case of 2-character
@@ -489,20 +497,21 @@ interrupted change-operation."
                 (hl:add-hl hl.group.one-char-match (dec line) (dec col) col))))
         (if (= i 0) (exit-with (echo-not-found in1))  ; note: no highlight to clean up if no match found
             (do
-              (when-not instant-repeat? (vim.cmd "norm! m`"))  ; save start position on jumplist (endnote #2)
-              (remove-matchparen-highlight)
-              (vim.fn.cursor target-pos)
-              (when t-like? (push-cursor! (if reverse? :fwd :bwd)))
-              (when (and op-mode? (not reverse?)) (push-cursor! :fwd))  ; endnote #3
-              (force-matchparen-highlight)
-              ; The above call just broke our dot-repeat with `doautocmd CursorMoved`,
+              (jump-to! target-pos
+                        {:add-to-jumplist? (not instant-repeat?)
+                         :after (do (when t-like? 
+                                      (push-cursor! (if reverse? :fwd :bwd)))
+                                    (when (and op-mode? (not reverse?))  ; endnote #3
+                                      (push-cursor! :fwd)))})
+              ; The above call just broke our dot-repeat (see `force-matchparen-highlight`).
               ; so we need to set it again.
               (when dot-repeatable-op? (set-dot-repeat cmd-for-dot-repeat count))
               ; Set instant-repeat.
               (when-not op-mode?
-                (highlight-cursor) (vim.cmd :redraw)
+                (highlight-cursor)
+                (vim.cmd :redraw)
                 (local (ok? in2) (pcall get-char))  ; pcall for handling <C-c>
-                (set self.instant-repeat?
+                (set self.instant-repeat? 
                      (and ok? (string.match (vim.fn.maparg in2) "<Plug>Lightspeed_[fFtT]")))
                 (vim.fn.feedkeys (if ok? in2 (replace-vim-keycodes "<esc>")) :i))
               (hl:cleanup)))))))
@@ -714,53 +723,6 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         (set self.prev-dot-repeatable-search dot-repeat)
         (set self.prev-search repeat)))
 
-    ; `first-jump?` should only be persisted inside `to` (i.e. the lifetime is
-    ; one invocation) and should be managed by the function itself (it is
-    ; error-prone if we have to set a flag manually), so setting up a closure
-    ; here.
-    (local jump-to!
-      (do (var first-jump? true)
-          (fn [pos full-incl?]
-            ; When jumping to a labeled target _after_ an autojump, do not
-            ; register the intermediate step on the jumplist.
-            (when first-jump?
-              (vim.cmd "norm! m`")  ; save start position on jumplist (endnote #2)
-              (set first-jump? false))
-            (remove-matchparen-highlight)
-            (vim.fn.cursor pos)
-            (when (and full-incl? (not reverse?))
-              (push-cursor! :fwd) (when op-mode? (push-cursor! :fwd)))  ; endnote #3
-            (force-matchparen-highlight)
-            (when (and dot-repeatable-op? (not dot-repeat?))
-              (set-dot-repeat cmd-for-dot-repeat)))))
-
-    (fn jump-and-ignore-ch2-until-timeout! [[line col _ &as pos] full-incl? new-search? ch2]
-      (let [from-pos (get-current-pos)]
-        (jump-to! pos full-incl?)
-        (when new-search?
-          ; Jumping based on partial input is nice, but in case operators, it's
-          ; annoying that we don't see the operation executed right away, so
-          ; here are a couple of hacks:
-          (when-not change-op?
-            ; In OP-mode, the cursor always ends up at the beginning of the
-            ; area - in the reverse direction, that means the jump target.
-            (highlight-cursor (when (and op-mode? (not reverse?)) from-pos)))
-          (when op-mode?
-            (let [[from-pos to-pos] [(vim.tbl_map dec from-pos) [(dec line) (dec col)]]
-                  [startpos endpos] (if reverse? [to-pos from-pos] [from-pos to-pos])
-                  hl-group (if (or change-op? delete-op?)
-                             hl.group.pending-change-op-area
-                             hl.group.pending-op-area)]
-                ; The column in `endpos` is exclusive, but that's OK, since the
-                ; operations are exclusive themselves, and we do not want to
-                ; include the target position in the highlight.
-                (highlight-area-between startpos endpos hl-group)))
-          (vim.cmd :redraw)
-          (ignore-char-until-timeout ch2)
-          ; Mitigate blink on the command line (see also `handle-interrupted-change-op!`).
-          (when change-op? (echo ""))
-          (hl:cleanup))))
-
     ; For scrolloff, it's better not to use the Lua API now, because of Nvim #13964.
     ; Note that these too use the `s` table as `self`.
     (fn switch-off-scrolloff []
@@ -801,6 +763,57 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                    {: group-offset : repeat?}))))))
       ret)
 
+    (var repeat? nil)
+    (var new-search? nil)
+    (var full-incl? nil)
+
+    (local jump-with-wrap!
+      (do 
+        ; `first-jump?` should only be persisted inside `to` (i.e. the lifetime
+        ; is one invocation) and should be managed by the function itself (it is
+        ; error-prone if we have to set a flag manually), so setting up a
+        ; closure here.
+        (var first-jump? true)
+        (fn [target]
+          (jump-to! target 
+                    {:add-to-jumplist? first-jump?
+                     :after (when (and full-incl? (not reverse?))
+                              (push-cursor! :fwd)
+                              (when op-mode?
+                                (push-cursor! :fwd)))})  ; endnote #3
+          (when dot-repeatable-op? (set-dot-repeat cmd-for-dot-repeat))
+          (set first-jump? false))))
+
+    (fn jump-and-ignore-ch2-until-timeout! [[line col _ &as target] ch2]
+      (local orig-pos (get-current-pos))
+      (jump-with-wrap! target)
+      (when new-search?
+        ; Jumping based on partial input is nice, but in case operators, it's
+        ; annoying that we don't see the operation executed right away, so
+        ; here are a couple of hacks:
+        (when-not change-op?
+          ; In OP-mode, the cursor always ends up at the beginning of the
+          ; area - in the reverse direction, that means the jump target.
+          (highlight-cursor (when (and op-mode? (not reverse?)) orig-pos)))
+        (when op-mode?
+          (let [[from-pos to-pos] [(vim.tbl_map dec orig-pos)
+                                   ; `target` is a 3-tuple, with a bool at the end.
+                                   ; (We should probably refactor that...)
+                                   [(dec line) (dec col)]]
+                [start finish] (if reverse? [to-pos from-pos] [from-pos to-pos])
+                hl-group (if (or change-op? delete-op?)
+                           hl.group.pending-change-op-area
+                           hl.group.pending-op-area)]
+              ; The column in `finish` is exclusive, but that's OK, since the
+              ; operations are exclusive themselves, and we do not want to
+              ; include the target position in the highlight.
+              (highlight-area-between start finish hl-group)))
+        (vim.cmd :redraw)
+        (ignore-char-until-timeout ch2)
+        ; Mitigate blink on the command line (see also `handle-interrupted-change-op!`).
+        (when change-op? (echo ""))
+        (hl:cleanup)))
+
     ; After all the stage-setting, here comes the main action you've all been
     ; waiting for:
 
@@ -808,10 +821,6 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
       (echo "")  ; Clean up the command line.
       (with-hl-chores
         (when opts.highlight_unique_chars (highlight-unique-chars reverse?))))
-
-    (var repeat? nil)
-    (var new-search? nil)
-    (var full-incl? nil)
 
     ; A note on a design decision: when a function encapsulates an inherently
     ; complex flow of logic, it is most important to get a good overview of the
@@ -849,7 +858,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
           (do (when new-search? 
                 (save-state-for {:repeat {: in1 :in2 ch2}
                                  :dot-repeat {: in1 :in2 ch2 :in3 (. labels 1) : full-incl?}}))
-              (jump-and-ignore-ch2-until-timeout! pos full-incl? new-search? ch2))
+              (jump-and-ignore-ch2-until-timeout! pos ch2))
           (exit-with (echo-not-found (.. in1 ch2))))
 
         match-map
@@ -876,7 +885,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
               ; Successful exit, option #2: selecting a shortcut-label.
               [pos ch2] (do (save-state-for {:repeat {: in1 :in2 ch2}  ; implicit `new-search?`
                                              :dot-repeat {: in1 :in2 ch2 :in3 in2 : full-incl?}})
-                            (jump-to! pos full-incl?))
+                            (jump-with-wrap! pos))
               nil  ; no shortcut found
               (do
                 (when new-search?  ; endnote #1
@@ -892,7 +901,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                   (let [[first & rest] positions]
                     (when (or jump-to-first? (empty? rest))
                       ; Succesful exit, option #3: jumping to the only match automatically.
-                      (jump-to! first full-incl?))
+                      (jump-with-wrap! first))
                     (when-not (empty? rest)
                       ; Else lighting up beacons again, now only for pairs with `in2`
                       ; as second character.
@@ -928,7 +937,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                                       (vim.fn.feedkeys in3 :i))))
                                 ; Succesful exit, option #4: selecting a valid label.
                                 pos (do (restore-scrolloff)
-                                        (jump-to! pos full-incl?)))))))))))))))))
+                                        (jump-with-wrap! pos)))))))))))))))))
 
 ; }}}
 ; Mappings {{{
