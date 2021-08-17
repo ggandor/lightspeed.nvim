@@ -210,23 +210,14 @@ character instead."
 (add-highlight-autocmds)
 
 
-; Expects 0,0-indexed args; `endcol` is exclusive.
-(fn highlight-area-between [[startline startcol] [endline endcol] hl-group]
-  (let [add-hl (partial hl:add-hl hl-group)]
-    (if (= startline endline)
-      (add-hl startline startcol endcol)
-      (do (add-hl startline startcol -1)
-          (for [line (inc startline) (dec endline)] (add-hl line 0 -1))
-          (add-hl endline 0 endcol)))))
-
-
 (fn grey-out-search-area [reverse?]
   (let [[curline curcol] (vim.tbl_map dec (get-current-pos))
         [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]
-        [startpos endpos] (if reverse?
-                            [[win-top 0] [curline curcol]]  ; endpos has exclusive col
-                            [[curline (inc curcol)] [win-bot -1]])]
-    (highlight-area-between startpos endpos hl.group.greywash)))
+        [start finish] (if reverse?
+                         [[win-top 0] [curline curcol]]
+                         [[curline (inc curcol)] [win-bot -1]])]
+    ; Expects 0,0-indexed args; `finish` is exclusive.
+    (vim.highlight.range 0 hl.ns hl.group.greywash start finish)))
 
 ; }}}
 ; Common {{{
@@ -804,10 +795,10 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                 hl-group (if (or change-op? delete-op?)
                            hl.group.pending-change-op-area
                            hl.group.pending-op-area)]
-              ; The column in `finish` is exclusive, but that's OK, since the
+              ; The `finish` column is exclusive, but that's OK, since the
               ; operations are exclusive themselves, and we do not want to
               ; include the target position in the highlight.
-              (highlight-area-between start finish hl-group)))
+              (vim.highlight.range 0 hl.ns hl-group start finish)))
         (vim.cmd :redraw)
         (ignore-char-until-timeout ch2)
         ; Mitigate blink on the command line (see also `handle-interrupted-change-op!`).
