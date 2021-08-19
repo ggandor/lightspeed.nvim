@@ -175,7 +175,8 @@ character instead."
      [hl.group.one-char-match           {:guibg "#f00077" :ctermbg "Red"
                                          :guifg "#ffffff" :ctermfg "White"
                                          :gui "bold" :cterm "bold"}]  ; shortcut without underline 
-     [hl.group.masked-ch                {:guifg "#cc9999" :ctermfg "DarkGrey"}]
+     [hl.group.masked-ch                {:guifg (match bg :light "#cc9999" _ "#b38080")
+                                         :ctermfg "DarkGrey"}]
      [hl.group.unlabeled-match          {:guifg (match bg :light "#272020" _ "#f3ecec")
                                          :ctermfg (match bg :light "Black" _ "White")
                                          :gui "bold"
