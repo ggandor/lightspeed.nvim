@@ -502,7 +502,7 @@ interrupted change-operation."
                                       (push-cursor! :fwd)))})
               ; The above call just broke our dot-repeat (see `force-matchparen-highlight`),
               ; so we need to set it again.
-              (when dot-repeatable-op?
+              (when (and new-search? dot-repeatable-op?)
                 (set-dot-repeat cmd-for-dot-repeat count))
               (when-not op-mode?
                 (highlight-cursor)
@@ -720,13 +720,6 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
            (highlight-cursor)
            (vim.cmd :redraw)))
 
-    (fn save-state-for [{: repeat : dot-repeat}]
-      ; Arbitrary choice: let dot-repeat _not_ update the previous
-      ; normal/visual/yank search - this seems more useful.
-      (if dot-repeatable-op?
-        (set self.prev-dot-repeatable-search dot-repeat)
-        (set self.prev-search repeat)))
-
     ; For scrolloff, it's better not to use the Lua API now, because of Nvim #13964.
     ; Note that these too use the `s` table as `self`.
     (fn switch-off-scrolloff []
@@ -770,6 +763,17 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
     (var repeat? nil)
     (var new-search? nil)
     (var full-incl? nil)
+
+    (fn save-state-for [{: repeat : dot-repeat}]
+      (when new-search?
+        ; Arbitrary choice: let dot-repeat _not_ update the previous
+        ; normal/visual/yank search - this seems more useful.
+        (if dot-repeatable-op? (when dot-repeat
+                                 (tset dot-repeat :full-incl? full-incl?)
+                                 (set self.prev-dot-repeatable-search dot-repeat))
+            ; FIXME: We should save `full-incl?` for enter-repeat too,
+            ;        or pressing <enter> should be alowed after the prefix.
+            repeat (set self.prev-search repeat))))
 
     (local jump-with-wrap!
       (do 
@@ -859,9 +863,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         (if (or new-search?
                 (and repeat? (= ch2 self.prev-search.in2))
                 (and dot-repeat? (= ch2 self.prev-dot-repeatable-search.in2)))
-          (do (when new-search? 
-                (save-state-for {:repeat {: in1 :in2 ch2}
-                                 :dot-repeat {: in1 :in2 ch2 :in3 (. labels 1) : full-incl?}}))
+          (do (save-state-for {:repeat {: in1 :in2 ch2}
+                               :dot-repeat {: in1 :in2 ch2 :in3 (. labels 1)}})
               (jump-and-ignore-ch2-until-timeout! pos ch2))
           (exit-with (echo-not-found (.. in1 ch2))))
 
@@ -887,18 +890,14 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
             in2
             (match (when new-search? (. shortcuts in2))
               ; Successful exit, option #2: selecting a shortcut-label.
-              [pos ch2] (do (save-state-for {:repeat {: in1 :in2 ch2}  ; implicit `new-search?`
-                                             :dot-repeat {: in1 :in2 ch2 :in3 in2 : full-incl?}})
+              [pos ch2] (do (save-state-for {:repeat {: in1 :in2 ch2}
+                                             :dot-repeat {: in1 :in2 ch2 :in3 in2}})
                             (jump-with-wrap! pos))
               nil  ; no shortcut found
               (do
-                (when new-search?  ; endnote #1
-                  (save-state-for {:repeat {: in1 : in2}
-                                   ; For the moment, set the first match as the target.
-                                   ; (Food for thought: is there a reason _not_ to save
-                                   ; dot-repeat state too for a possibly unsuccesful
-                                   ; search, once we have the full search pattern?)
-                                   :dot-repeat {: in1 : in2 :in3 (. labels 1) : full-incl?}}))
+                (save-state-for {:repeat {: in1 : in2}  ; endnote #1
+                                 ; For the moment, set the first match as the target.
+                                 :dot-repeat {: in1 : in2 :in3 (. labels 1)}})
                 (match (or (. match-map in2)
                            (exit-with (echo-not-found (.. in1 in2))))
                   positions
