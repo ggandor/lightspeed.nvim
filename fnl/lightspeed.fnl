@@ -875,15 +875,15 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
             ; (Assigning labels for each list of positions independently.)
             (with-hl-chores
               (each [ch2 positions (pairs match-map)]
-                (let [[first & rest] positions]
+                (let [[first & rest] positions
+                      positions-to-label (if jump-to-first? rest positions)]
                   ; If `rest` is empty (only one match for `ch2`), we will jump anyway.
                   (when (or jump-to-first? (empty? rest))  ; Fennel gotcha: empty rest = [], _not_ nil
                     ; Highlight these pairs with a "direct route" differently.
                     (set-beacon-at first in1 ch2 {:init-round? true :unlabeled? true}))
                   (when-not (empty? rest)
-                    (let [positions-to-label (if jump-to-first? rest positions)]
-                      (set-beacon-groups ch2 positions-to-label labels shortcuts
-                                         {:init-round? true})))))))
+                    (set-beacon-groups ch2 positions-to-label labels shortcuts
+                                       {:init-round? true}))))))
           (match (if repeat? self.prev-search.in2
                      dot-repeat? self.prev-dot-repeatable-search.in2
                      (get-input-and-clean-up))
@@ -901,7 +901,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                 (match (or (. match-map in2)
                            (exit-with (echo-not-found (.. in1 in2))))
                   positions
-                  (let [[first & rest] positions]
+                  (let [[first & rest] positions
+                        positions-to-label (if jump-to-first? rest positions)]
                     (when (or jump-to-first? (empty? rest))
                       ; Succesful exit, option #3: jumping to the only match automatically.
                       (jump-with-wrap! first))
@@ -909,38 +910,37 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                       ; Else lighting up beacons again, now only for pairs with `in2`
                       ; as second character.
                       (switch-off-scrolloff)
-                      (let [positions-to-label (if jump-to-first? rest positions)]
-                        ; Operations that spanned multiple groups are dot-repeated as
-                        ; <enter>-repeat, i.e., only the search pattern is saved then
-                        ; (endnote #4).
-                        (when-not (and dot-repeat? self.prev-dot-repeatable-search.in3)
-                          (with-hl-chores
-                            (set-beacon-groups in2 positions-to-label labels shortcuts
-                                               {: repeat?})))
-                        ; Note: cycle-through... cleans up everything after itself (highlight,
-                        ; interrupted change op, scrolloff), nothing more to do if there's
-                        ; no match.
-                        (match (cycle-through-match-groups in2 positions-to-label shortcuts repeat?)
-                          [group-offset in3]
-                          (do (when (and dot-repeatable-op? (not dot-repeat?))
-                                ; Reminder: above we have already set this to the character
-                                ; of the first label, as a default. (We might had only one
-                                ; match, and jumped automatically, not reaching this point.)
-                                (set self.prev-dot-repeatable-search.in3
-                                     ; If the operation spanned multiple groups, we are
-                                     ; switching dot-repeat to <enter>-repeat (endnote #4).
-                                     (if (= group-offset 0) in3 nil)))
-                              (match (or (-?>> (. label-indexes in3)  ; Valid label...
-                                               (+ (* group-offset (length labels)))
-                                               (. positions-to-label))  ; ...currently in use?
-                                         ; When "autojump" is on, fall through with any other key,
-                                         ; so that we can continue editing right away.
-                                         (exit-with (when jump-to-first? 
-                                                      (restore-scrolloff)
-                                                      (vim.fn.feedkeys in3 :i))))
-                                ; Succesful exit, option #4: selecting a valid label.
-                                pos (do (restore-scrolloff)
-                                        (jump-with-wrap! pos)))))))))))))))))
+                      ; Operations that spanned multiple groups are dot-repeated as
+                      ; <enter>-repeat, i.e., only the search pattern is saved then
+                      ; (endnote #4).
+                      (when-not (and dot-repeat? self.prev-dot-repeatable-search.in3)
+                        (with-hl-chores
+                          (set-beacon-groups in2 positions-to-label labels shortcuts
+                                             {: repeat?})))
+                      ; Note: cycle-through... cleans up everything after itself (highlight,
+                      ; interrupted change op, scrolloff), nothing more to do if there's
+                      ; no match.
+                      (match (cycle-through-match-groups in2 positions-to-label shortcuts repeat?)
+                        [group-offset in3]
+                        (do (when (and dot-repeatable-op? (not dot-repeat?))
+                              ; Reminder: above we have already set this to the character
+                              ; of the first label, as a default. (We might had only one
+                              ; match, and jumped automatically, not reaching this point.)
+                              (set self.prev-dot-repeatable-search.in3
+                                   ; If the operation spanned multiple groups, we are
+                                   ; switching dot-repeat to <enter>-repeat (endnote #4).
+                                   (if (= group-offset 0) in3 nil)))
+                            (match (or (-?>> (. label-indexes in3)  ; Valid label...
+                                             (+ (* group-offset (length labels)))
+                                             (. positions-to-label))  ; ...currently in use?
+                                       ; When "autojump" is on, fall through with any other key,
+                                       ; so that we can continue editing right away.
+                                       (exit-with (when jump-to-first? 
+                                                    (restore-scrolloff)
+                                                    (vim.fn.feedkeys in3 :i))))
+                              ; Succesful exit, option #4: selecting a valid label.
+                              pos (do (restore-scrolloff)
+                                      (jump-with-wrap! pos))))))))))))))))
 
 ; }}}
 ; Mappings {{{

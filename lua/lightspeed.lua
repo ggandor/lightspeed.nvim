@@ -1225,16 +1225,16 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
             local _let_269_ = positions
             local first = _let_269_[1]
             local rest = {(table.unpack or unpack)(_let_269_, 2)}
+            local positions_to_label
+            if jump_to_first_3f then
+              positions_to_label = rest
+            else
+              positions_to_label = positions
+            end
             if (jump_to_first_3f or empty_3f(rest)) then
               set_beacon_at(first, in1, ch2, {["init-round?"] = true, ["unlabeled?"] = true})
             end
             if not empty_3f(rest) then
-              local positions_to_label
-              if jump_to_first_3f then
-                positions_to_label = rest
-              else
-                positions_to_label = positions
-              end
               set_beacon_groups(ch2, positions_to_label, labels, shortcuts, {["init-round?"] = true})
             end
           end
@@ -1281,17 +1281,17 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
             local _let_281_ = positions
             local first = _let_281_[1]
             local rest = {(table.unpack or unpack)(_let_281_, 2)}
+            local positions_to_label
+            if jump_to_first_3f then
+              positions_to_label = rest
+            else
+              positions_to_label = positions
+            end
             if (jump_to_first_3f or empty_3f(rest)) then
               jump_with_wrap_21(first)
             end
             if not empty_3f(rest) then
               switch_off_scrolloff()
-              local positions_to_label
-              if jump_to_first_3f then
-                positions_to_label = rest
-              else
-                positions_to_label = positions
-              end
               if not (dot_repeat_3f and self["prev-dot-repeatable-search"].in3) then
                 if opts.grey_out_search_area then
                   grey_out_search_area(reverse_3f)
