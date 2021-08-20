@@ -1055,7 +1055,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
   local function save_state_for(_236_)
     local _arg_237_ = _236_
     local dot_repeat = _arg_237_["dot-repeat"]
-    local _repeat = _arg_237_["repeat"]
+    local enter_repeat = _arg_237_["enter-repeat"]
     if new_search_3f then
       if dot_repeatable_op_3f then
         if dot_repeat then
@@ -1063,8 +1063,8 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
           self["prev-dot-repeatable-search"] = dot_repeat
           return nil
         end
-      elseif _repeat then
-        self["prev-search"] = _repeat
+      elseif enter_repeat then
+        self["prev-search"] = enter_repeat
         return nil
       end
     end
@@ -1212,7 +1212,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
       local ch2 = (_267_)[1]
       local pos = (_267_)[2]
       if (new_search_3f or (enter_repeat_3f and (ch2 == self["prev-search"].in2)) or (dot_repeat_3f and (ch2 == self["prev-dot-repeatable-search"].in2))) then
-        save_state_for({["dot-repeat"] = {in1 = in1, in2 = ch2, in3 = labels[1]}, ["repeat"] = {in1 = in1, in2 = ch2}})
+        save_state_for({["dot-repeat"] = {in1 = in1, in2 = ch2, in3 = labels[1]}, ["enter-repeat"] = {in1 = in1, in2 = ch2}})
         return jump_and_ignore_ch2_until_timeout_21(pos, ch2)
       else
         if change_operation_3f() then
@@ -1271,10 +1271,10 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
         if ((type(_281_) == "table") and (nil ~= (_281_)[1]) and (nil ~= (_281_)[2])) then
           local pos = (_281_)[1]
           local ch2 = (_281_)[2]
-          save_state_for({["dot-repeat"] = {in1 = in1, in2 = ch2, in3 = in2}, ["repeat"] = {in1 = in1, in2 = ch2}})
+          save_state_for({["dot-repeat"] = {in1 = in1, in2 = ch2, in3 = in2}, ["enter-repeat"] = {in1 = in1, in2 = ch2}})
           return jump_with_wrap_21(pos)
         elseif (_281_ == nil) then
-          save_state_for({["dot-repeat"] = {in1 = in1, in2 = in2, in3 = labels[1]}, ["repeat"] = {in1 = in1, in2 = in2}})
+          save_state_for({["dot-repeat"] = {in1 = in1, in2 = in2, in3 = labels[1]}, ["enter-repeat"] = {in1 = in1, in2 = in2}})
           local _283_
           local function _284_()
             if change_operation_3f() then

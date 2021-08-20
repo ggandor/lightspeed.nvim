@@ -765,7 +765,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
     (var new-search? nil)
     (var full-incl? nil)
 
-    (fn save-state-for [{: repeat : dot-repeat}]
+    (fn save-state-for [{: enter-repeat : dot-repeat}]
       (when new-search?
         ; Arbitrary choice: let dot-repeat _not_ update the previous
         ; normal/visual/yank search - this seems more useful.
@@ -774,7 +774,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                  (set self.prev-dot-repeatable-search dot-repeat))
             ; FIXME: We should save `full-incl?` for enter-repeat too,
             ;        or pressing <enter> should be alowed after the prefix.
-            repeat (set self.prev-search repeat))))
+            enter-repeat (set self.prev-search enter-repeat))))
 
     (local jump-with-wrap!
       (do 
@@ -864,7 +864,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         (if (or new-search?
                 (and enter-repeat? (= ch2 self.prev-search.in2))
                 (and dot-repeat? (= ch2 self.prev-dot-repeatable-search.in2)))
-          (do (save-state-for {:repeat {: in1 :in2 ch2}
+          (do (save-state-for {:enter-repeat {: in1 :in2 ch2}
                                :dot-repeat {: in1 :in2 ch2 :in3 (. labels 1)}})
               (jump-and-ignore-ch2-until-timeout! pos ch2))
           (exit-with (echo-not-found (.. in1 ch2))))
@@ -891,12 +891,12 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
             in2
             (match (when new-search? (. shortcuts in2))
               ; Successful exit, option #2: selecting a shortcut-label.
-              [pos ch2] (do (save-state-for {:repeat {: in1 :in2 ch2}
+              [pos ch2] (do (save-state-for {:enter-repeat {: in1 :in2 ch2}
                                              :dot-repeat {: in1 :in2 ch2 :in3 in2}})
                             (jump-with-wrap! pos))
               nil  ; no shortcut found
               (do
-                (save-state-for {:repeat {: in1 : in2}  ; endnote #1
+                (save-state-for {:enter-repeat {: in1 : in2}  ; endnote #1
                                  ; For the moment, set the first match as the target.
                                  :dot-repeat {: in1 : in2 :in3 (. labels 1)}})
                 (match (or (. match-map in2)
