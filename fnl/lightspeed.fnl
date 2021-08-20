@@ -466,16 +466,16 @@ interrupted change-operation."
     (when-not (or instant-repeat? dot-repeat?)
       (echo "") (highlight-cursor) (vim.cmd :redraw))
 
-    (var repeat? nil)
+    (var enter-repeat? nil)
     (match (if instant-repeat? self.prev-search
                dot-repeat? self.prev-dot-repeatable-search
                (match (get-input-and-clean-up)
-                 "\r" (do (set repeat? true)
+                 "\r" (do (set enter-repeat? true)
                           (or self.prev-search
                               (exit-with (echo-no-prev-search))))
                  in in))
       in1
-      (let [new-search? (not (or repeat? instant-repeat? dot-repeat?))] 
+      (let [new-search? (not (or enter-repeat? instant-repeat? dot-repeat?))]
         (when new-search?  ; endnote #1
           (if dot-repeatable-op?
             (do (set self.prev-dot-repeatable-search in1)
@@ -734,7 +734,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
       (when jump-to-first?
         (vim.cmd (or self.restore-scrolloff-cmd ""))))
 
-    (fn cycle-through-match-groups [in2 positions-to-label shortcuts repeat?]
+    (fn cycle-through-match-groups [in2 positions-to-label shortcuts enter-repeat?]
       (var ret nil)
       (var group-offset 0)
       (var loop? true)
@@ -758,10 +758,10 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                     (clamp 0 max-offset)))
               (with-hl-chores
                 (set-beacon-groups in2 positions-to-label labels shortcuts
-                                   {: group-offset : repeat?}))))))
+                                   {: group-offset :repeat? enter-repeat?}))))))
       ret)
 
-    (var repeat? nil)
+    (var enter-repeat? nil)
     (var new-search? nil)
     (var full-incl? nil)
 
@@ -846,23 +846,23 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
              (match (get-input-and-clean-up)
                ; Here we can handle any other modifier keys as "zeroth" input,
                ; if the need arises (e.g. regex search).
-               in0 (do (set repeat? (= in0 "\r"))  ; User hit <enter> right away: repeat previous search.
-                       (set new-search? (not (or repeat? dot-repeat?)))
+               in0 (do (set enter-repeat? (= in0 "\r"))  ; User hit <enter> right away: repeat previous search.
+                       (set new-search? (not (or enter-repeat? dot-repeat?)))
                        (set full-incl? (= in0 full-inclusive-prefix-key))
-                       (if repeat? (or self.prev-search.in1
-                                       (exit-with (echo-no-prev-search)))
+                       (if enter-repeat? (or self.prev-search.in1
+                                             (exit-with (echo-no-prev-search)))
                            full-incl? (get-input-and-clean-up)  ; Get the "true" first input.
                            in0))))
       in1
       (match (or (get-match-map-for in1 reverse?)
                  (exit-with (echo-not-found 
-                              (if repeat? (.. in1 self.prev-search.in2)
+                              (if enter-repeat? (.. in1 self.prev-search.in2)
                                   dot-repeat? (.. in1 self.prev-dot-repeatable-search.in2)
                                   in1))))
         [ch2 pos]
         ; Successful exit, option #1: jump to a unique character right after the first input.
         (if (or new-search?
-                (and repeat? (= ch2 self.prev-search.in2))
+                (and enter-repeat? (= ch2 self.prev-search.in2))
                 (and dot-repeat? (= ch2 self.prev-dot-repeatable-search.in2)))
           (do (save-state-for {:repeat {: in1 :in2 ch2}
                                :dot-repeat {: in1 :in2 ch2 :in3 (. labels 1)}})
@@ -885,7 +885,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                   (when-not (empty? rest)
                     (set-beacon-groups ch2 positions-to-label labels shortcuts
                                        {:init-round? true}))))))
-          (match (if repeat? self.prev-search.in2
+          (match (if enter-repeat? self.prev-search.in2
                      dot-repeat? self.prev-dot-repeatable-search.in2
                      (get-input-and-clean-up))
             in2
@@ -917,11 +917,12 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                       (when-not (and dot-repeat? self.prev-dot-repeatable-search.in3)
                         (with-hl-chores
                           (set-beacon-groups in2 positions-to-label labels shortcuts
-                                             {: repeat?})))
+                                             {:repeat? enter-repeat?})))
                       ; Note: cycle-through... cleans up everything after itself (highlight,
                       ; interrupted change op, scrolloff), nothing more to do if there's
                       ; no match.
-                      (match (cycle-through-match-groups in2 positions-to-label shortcuts repeat?)
+                      (match (cycle-through-match-groups in2 positions-to-label
+                                                         shortcuts enter-repeat?)
                         [group-offset in3]
                         (do (when (and dot-repeatable-op? (not dot-repeat?))
                               ; Reminder: above we have already set this to the character

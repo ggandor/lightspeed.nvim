@@ -550,7 +550,7 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f)
     highlight_cursor()
     vim.cmd("redraw")
   end
-  local repeat_3f = nil
+  local enter_repeat_3f = nil
   local _133_
   if instant_repeat_3f then
     _133_ = self["prev-search"]
@@ -559,7 +559,7 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f)
   else
     local _134_ = get_input_and_clean_up()
     if (_134_ == "\13") then
-      repeat_3f = true
+      enter_repeat_3f = true
       local function _135_()
         if change_operation_3f() then
           handle_interrupted_change_op_21()
@@ -579,7 +579,7 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f)
   end
   if (nil ~= _133_) then
     local in1 = _133_
-    local new_search_3f = not (repeat_3f or instant_repeat_3f or dot_repeat_3f)
+    local new_search_3f = not (enter_repeat_3f or instant_repeat_3f or dot_repeat_3f)
     if new_search_3f then
       if dot_repeatable_op_3f then
         self["prev-dot-repeatable-search"] = in1
@@ -1000,7 +1000,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
       return vim.cmd((self["restore-scrolloff-cmd"] or ""))
     end
   end
-  local function cycle_through_match_groups(in2, positions_to_label, shortcuts, repeat_3f)
+  local function cycle_through_match_groups(in2, positions_to_label, shortcuts, enter_repeat_3f)
     local ret = nil
     local group_offset = 0
     local loop_3f = true
@@ -1040,7 +1040,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
             grey_out_search_area(reverse_3f)
           end
           do
-            set_beacon_groups(in2, positions_to_label, labels, shortcuts, {["group-offset"] = group_offset, ["repeat?"] = repeat_3f})
+            set_beacon_groups(in2, positions_to_label, labels, shortcuts, {["group-offset"] = group_offset, ["repeat?"] = enter_repeat_3f})
           end
           highlight_cursor()
           vim.cmd("redraw")
@@ -1049,7 +1049,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
     end
     return ret
   end
-  local repeat_3f = nil
+  local enter_repeat_3f = nil
   local new_search_3f = nil
   local full_incl_3f = nil
   local function save_state_for(_236_)
@@ -1163,10 +1163,10 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
     local _261_ = get_input_and_clean_up()
     if (nil ~= _261_) then
       local in0 = _261_
-      repeat_3f = (in0 == "\13")
-      new_search_3f = not (repeat_3f or dot_repeat_3f)
+      enter_repeat_3f = (in0 == "\13")
+      new_search_3f = not (enter_repeat_3f or dot_repeat_3f)
       full_incl_3f = (in0 == full_inclusive_prefix_key)
-      if repeat_3f then
+      if enter_repeat_3f then
         local function _262_()
           if change_operation_3f() then
             handle_interrupted_change_op_21()
@@ -1195,7 +1195,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
       end
       do
         local function _270_()
-          if repeat_3f then
+          if enter_repeat_3f then
             return (in1 .. self["prev-search"].in2)
           elseif dot_repeat_3f then
             return (in1 .. self["prev-dot-repeatable-search"].in2)
@@ -1211,7 +1211,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
     if ((type(_267_) == "table") and (nil ~= (_267_)[1]) and (nil ~= (_267_)[2])) then
       local ch2 = (_267_)[1]
       local pos = (_267_)[2]
-      if (new_search_3f or (repeat_3f and (ch2 == self["prev-search"].in2)) or (dot_repeat_3f and (ch2 == self["prev-dot-repeatable-search"].in2))) then
+      if (new_search_3f or (enter_repeat_3f and (ch2 == self["prev-search"].in2)) or (dot_repeat_3f and (ch2 == self["prev-dot-repeatable-search"].in2))) then
         save_state_for({["dot-repeat"] = {in1 = in1, in2 = ch2, in3 = labels[1]}, ["repeat"] = {in1 = in1, in2 = ch2}})
         return jump_and_ignore_ch2_until_timeout_21(pos, ch2)
       else
@@ -1253,7 +1253,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
         vim.cmd("redraw")
       end
       local _279_
-      if repeat_3f then
+      if enter_repeat_3f then
         _279_ = self["prev-search"].in2
       elseif dot_repeat_3f then
         _279_ = self["prev-dot-repeatable-search"].in2
@@ -1307,12 +1307,12 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
                   grey_out_search_area(reverse_3f)
                 end
                 do
-                  set_beacon_groups(in2, positions_to_label, labels, shortcuts, {["repeat?"] = repeat_3f})
+                  set_beacon_groups(in2, positions_to_label, labels, shortcuts, {["repeat?"] = enter_repeat_3f})
                 end
                 highlight_cursor()
                 vim.cmd("redraw")
               end
-              local _291_ = cycle_through_match_groups(in2, positions_to_label, shortcuts, repeat_3f)
+              local _291_ = cycle_through_match_groups(in2, positions_to_label, shortcuts, enter_repeat_3f)
               if ((type(_291_) == "table") and (nil ~= (_291_)[1]) and (nil ~= (_291_)[2])) then
                 local group_offset = (_291_)[1]
                 local in3 = (_291_)[2]
