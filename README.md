@@ -1,12 +1,13 @@
 # 🌌 lightspeed.nvim
 
-Lightspeed is the next evolutionary step in the quest for making on-screen
-navigation as quick and efficient as possible: a minimal and opinionated motion
-plugin for [Neovim](https://neovim.io/), with a small interface and lots of
-automagic, that can be considered as a spiritual successor to
-[Sneak](https://github.com/justinmk/vim-sneak). It is built around 2-character
-search, and aims to maximize speed while minimizing cognitive load and breaks in
-the flow.
+Lightspeed is a minimal and opinionated motion plugin for
+[Neovim](https://neovim.io/), with a small interface and lots of innovative
+ideas, that allow for making on-screen movements with yet unprecedented
+efficiency and speed. The project originally started as a direct port of
+[Sneak](https://github.com/justinmk/vim-sneak), and can still be considered a
+spiritual successor: the aim is to maximize speed while minimizing mental effort
+and breaks in the flow, providing an intuitive, distractionless experience, that
+should feel as "native" as possible.
 
 ### A short pitch
 
@@ -150,6 +151,8 @@ require'lightspeed'.setup {
   match_only_the_start_of_same_char_seqs = true,
   limit_ft_matches = 5,
   full_inclusive_prefix_key = '<c-x>',
+  -- For instant-repeat, pressing the trigger key again (f/F/t/T)
+  -- always works, but here you can specify additional keys too.
   instant_repeat_fwd_key = nil,
   instant_repeat_bwd_key = nil,
   -- By default, the values of these will be decided at runtime,
