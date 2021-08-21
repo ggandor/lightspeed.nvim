@@ -509,10 +509,11 @@ interrupted change-operation."
                 (highlight-cursor)
                 (vim.cmd :redraw)
                 (let [(ok? in2) (pcall get-char)  ; pcall for handling <C-c>
-                      custom-repeat-key-used? (one-of? in2 repeat-fwd-key repeat-bwd-key)]
+                      custom-repeat-key-used? (one-of? in2 repeat-fwd-key repeat-bwd-key)
+                      mode (if (= (vim.fn.mode) :n) :n :x)]  ; vim-cutlass compatibility (#28)
                   (set self.instant-repeat?
                        (and ok? (or custom-repeat-key-used?
-                                    (string.match (vim.fn.maparg in2)
+                                    (string.match (vim.fn.maparg in2 mode)
                                                   "<Plug>Lightspeed_[fFtT]"))))
                   (if custom-repeat-key-used?
                     (do (hl:cleanup)
