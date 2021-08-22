@@ -258,7 +258,8 @@ character instead."
        (when ,add-to-jumplist? (vim.cmd "norm! m`"))
        (vim.fn.cursor ,target)
        ,after
-       (force-matchparen-highlight)))
+       ;(force-matchparen-highlight)  ; switched off until #38 is fixed
+       ))
 
 
 (fn onscreen-match-positions [pattern reverse? {: ft-search? : limit}]

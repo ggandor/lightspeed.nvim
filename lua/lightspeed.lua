@@ -631,22 +631,19 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f)
           vim.cmd("norm! m`")
         end
         vim.fn.cursor(target_pos)
-        do
-          if t_like_3f then
-            local function _149_()
-              if reverse_3f0 then
-                return "fwd"
-              else
-                return "bwd"
-              end
+        if t_like_3f then
+          local function _149_()
+            if reverse_3f0 then
+              return "fwd"
+            else
+              return "bwd"
             end
-            push_cursor_21(_149_())
           end
-          if (op_mode_3f and not reverse_3f0) then
-            push_cursor_21("fwd")
-          end
+          push_cursor_21(_149_())
         end
-        force_matchparen_highlight()
+        if (op_mode_3f and not reverse_3f0) then
+          push_cursor_21("fwd")
+        end
       end
       if (new_search_3f and dot_repeatable_op_3f) then
         set_dot_repeat(cmd_for_dot_repeat, count)
@@ -1091,7 +1088,6 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
             push_cursor_21("fwd")
           end
         end
-        force_matchparen_highlight()
       end
       if dot_repeatable_op_3f then
         set_dot_repeat(cmd_for_dot_repeat)
