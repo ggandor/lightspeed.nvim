@@ -170,8 +170,8 @@ Available options~
           character of the match, at the end of the match, or even in the
           column _after_ the end of the match.
     
-`instant_repeat_fwd_key = nil'`
-`instant_repeat_bwd_key = nil'`
+`instant_repeat_fwd_key = nil`
+`instant_repeat_bwd_key = nil`
 
     Custom keys to trigger instant-repeat. These will only be "hijacked" while
     1-character search is active, so you are free to use any key here, the
