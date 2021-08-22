@@ -92,12 +92,33 @@ That is,
 - enter 2nd character of the search pattern (might short-circuit after this, if
   there is only one match), or the label character, if the target is
   [shortcutable](https://github.com/ggandor/lightspeed.nvim#shortcuts).
+- _the cursor jumps to the first match by default (pressing any other key than
+  a group-switch or a target label exits the plugin now)_
 - _certain beacons are extinguished; only char1 + char2 matches remain_
 - optionally cycle through the groups of matches that can be labeled at once
 - choose a labeled target to jump to (in the current group)
 
 In Operator-pending mode the search is invoked with `z`/`Z`, acknowledging that
 "surround" plugins may benefit even more from being able to use `s`/`S` then.
+
+##### A note on the highlighting strategy
+
+Let's say you would like to jump to an `AB` pair, and you have already entered
+`A`, the first character of the search pattern.
+
+If `jump_to_first_match` is on, then the directly reachable ones among the `AX`
+matches will be highlighted as they are (with white/black for dark/light
+background, respectively), without a label. For these, it is enough to finish
+the pattern, i.e., type `B`, to land on the target.
+
+All other beacons on top of `A` `X` look like:
+
+`X` `label`
+
+where the first field (the place of `X`, the character masked by the label)
+might be overlapped by the label of another match, and `label` itself might
+be a [shortcut](https://github.com/ggandor/lightspeed.nvim#shortcuts), with a
+filled background (the inverse of a regular label).
 
 #### 1-character search
 
@@ -172,6 +193,10 @@ For a detailed description of the available options, see the docs: `:h
 lightspeed-config`.
 
 For customizing the highlight colors, see `:h lightspeed-highlight`.
+
+Colorscheme authors: let your creativity fly, but please keep in mind that
+`LightspeedMaskedChar` should in any case be _much_ dimmer and less obtrusive
+than the labels.
 
 #### Notes
 
