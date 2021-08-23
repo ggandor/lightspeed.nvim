@@ -253,12 +253,15 @@ local function echo_not_found(s)
   return echo(("not found: " .. s))
 end
 local function getchar_as_str()
-  local ch = vim.fn.getchar()
-  if (type(ch) == "number") then
-    return vim.fn.nr2char(ch)
-  else
-    return ch
+  local ok_3f, ch = pcall(vim.fn.getchar)
+  local function _72_()
+    if (type(ch) == "number") then
+      return vim.fn.nr2char(ch)
+    else
+      return ch
+    end
   end
+  return ok_3f, _72_()
 end
 local function remove_matchparen_highlight()
   return vim.cmd(":3match")
@@ -470,7 +473,7 @@ local function handle_interrupted_change_op_21()
   return api.nvim_feedkeys(replace_keycodes(("<C-\\><C-G>" .. _3fright)), "n", true)
 end
 local function get_input_and_clean_up()
-  local ok_3f, res = pcall(getchar_as_str)
+  local ok_3f, res = getchar_as_str()
   hl:cleanup()
   if (ok_3f and (res ~= replace_keycodes("<esc>"))) then
     return res
@@ -649,7 +652,7 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f)
       if not op_mode_3f then
         highlight_cursor()
         vim.cmd("redraw")
-        local ok_3f, in2 = pcall(getchar_as_str)
+        local ok_3f, in2 = getchar_as_str()
         local custom_repeat_key_used_3f = ((in2 == repeat_fwd_key) or (in2 == repeat_bwd_key))
         local mode
         if (vim.fn.mode() == "n") then
@@ -955,7 +958,7 @@ end
 local function ignore_char_until_timeout(char_to_ignore)
   local start = os.clock()
   local timeout_secs = (opts.jump_on_partial_input_safety_timeout / 1000)
-  local ok_3f, input = pcall(getchar_as_str)
+  local ok_3f, input = getchar_as_str()
   if not ((input == char_to_ignore) and (os.clock() < (start + timeout_secs))) then
     if ok_3f then
       return vim.fn.feedkeys(input, "i")

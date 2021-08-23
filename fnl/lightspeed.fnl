@@ -230,8 +230,8 @@ character instead."
 
 
 (fn getchar-as-str []
-  (let [ch (vim.fn.getchar)]
-    (if (= (type ch) :number) (vim.fn.nr2char ch) ch)))
+  (local (ok? ch) (pcall vim.fn.getchar))  ; handling <C-c>
+  (values ok? (if (= (type ch) :number) (vim.fn.nr2char ch) ch)))
 
 
 (fn remove-matchparen-highlight []
@@ -385,7 +385,7 @@ interrupted change-operation."
 
 
 (fn get-input-and-clean-up []
-  (let [(ok? res) (pcall getchar-as-str)]  ; Handling <C-c>.
+  (let [(ok? res) (getchar-as-str)]
     (hl:cleanup)  ; Cleaning up after every input religiously 
                   ; (trying to work in a more or less stateless manner).
     (if (and ok? (not= res (replace-keycodes "<esc>"))) res  ; <esc> cleanly exits anytime.
@@ -507,7 +507,7 @@ interrupted change-operation."
               (when-not op-mode?
                 (highlight-cursor)
                 (vim.cmd :redraw)
-                (let [(ok? in2) (pcall getchar-as-str)  ; pcall for handling <C-c>
+                (let [(ok? in2) (getchar-as-str)
                       custom-repeat-key-used? (one-of? in2 repeat-fwd-key repeat-bwd-key)
                       mode (if (= (vim.fn.mode) :n) :n :x)]  ; vim-cutlass compat (#28)
                   (set self.instant-repeat?
@@ -690,7 +690,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 (fn ignore-char-until-timeout [char-to-ignore]
   (let [start (os.clock)
         timeout-secs (/ opts.jump_on_partial_input_safety_timeout 1000)
-        (ok? input) (pcall getchar-as-str)]
+        (ok? input) (getchar-as-str)]
     (when-not (and (= input char-to-ignore) (< (os.clock) (+ start timeout-secs)))
       (when ok? (vim.fn.feedkeys input :i)))))
 
