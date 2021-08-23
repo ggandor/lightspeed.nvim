@@ -242,10 +242,13 @@ character instead."
 
 
 (fn force-matchparen-highlight []
-  ; NOTE: :DoMatchParen overwrites the current dot-repeat setting,
-  ;       that should be (re)set after this call!
-  (when (= (vim.fn.exists ":DoMatchParen") 2)
-    (vim.cmd :DoMatchParen)))
+  ; HACK: :DoMatchParen turns on matchparen simply by triggering
+  ;       CursorMoved events (see matchparen.vim). We can do the same,
+  ;       which is cleaner for us than calling :DoMatchParen directly,
+  ;       since that would wrap this in a `windo`, and might visit
+  ;       another buffer, breaking our visual selection (and thus also
+  ;       dot-repeat, apparently). (See discussion at #38.)
+  (vim.cmd "silent! doautocmd matchparen CursorMoved"))
 
 
 (fn push-cursor! [direction]
@@ -258,8 +261,7 @@ character instead."
        (when ,add-to-jumplist? (vim.cmd "norm! m`"))
        (vim.fn.cursor ,target)
        ,after
-       ;(force-matchparen-highlight)  ; switched off until #38 is fixed
-       ))
+       (force-matchparen-highlight)))
 
 
 (fn onscreen-match-positions [pattern reverse? {: ft-search? : limit}]
@@ -502,16 +504,12 @@ interrupted change-operation."
                                       (push-cursor! (if reverse? :fwd :bwd)))
                                     (when (and op-mode? (not reverse?))  ; endnote #3
                                       (push-cursor! :fwd)))})
-              ; The above call just broke our dot-repeat (see `force-matchparen-highlight`),
-              ; so we need to set it again.
-              (when (and new-search? dot-repeatable-op?)
-                (set-dot-repeat cmd-for-dot-repeat count))
               (when-not op-mode?
                 (highlight-cursor)
                 (vim.cmd :redraw)
                 (let [(ok? in2) (pcall get-char)  ; pcall for handling <C-c>
                       custom-repeat-key-used? (one-of? in2 repeat-fwd-key repeat-bwd-key)
-                      mode (if (= (vim.fn.mode) :n) :n :x)]  ; vim-cutlass compatibility (#28)
+                      mode (if (= (vim.fn.mode) :n) :n :x)]  ; vim-cutlass compat (#28)
                   (set self.instant-repeat?
                        (and ok? (or custom-repeat-key-used?
                                     (string.match (vim.fn.maparg in2 mode)
