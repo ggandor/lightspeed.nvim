@@ -261,7 +261,7 @@ character instead."
        (when ,add-to-jumplist? (vim.cmd "norm! m`"))
        (vim.fn.cursor ,target)
        ,after
-       (force-matchparen-highlight)))
+       (force-matchparen-highlight)))  ; triggers CursorMoved!
 
 
 (fn onscreen-match-positions [pattern reverse? {: ft-search? : limit}]
@@ -712,8 +712,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         ; We _never_ want to autojump in OP mode, since that would execute
         ; the operation without allowing us to select a labeled target.
         jump-to-first? (and opts.jump_to_first_match (not op-mode?))
-        cmd-for-dot-repeat (replace-keycodes
-                             (.. "<Plug>Lightspeed_repeat_" (if reverse? "S" "s")))]
+        cmd-for-dot-repeat (replace-keycodes (.. "<Plug>Lightspeed_repeat_"
+                                                 (if reverse? "S" "s")))]
 
     (macro with-hl-chores [...]
       `(do (when opts.grey_out_search_area (grey-out-search-area reverse?))
@@ -788,12 +788,12 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                     {:add-to-jumplist? first-jump?
                      :after (when (and full-incl? (not reverse?))
                               (push-cursor! :fwd)
-                              (when op-mode?
-                                (push-cursor! :fwd)))})  ; endnote #3
-          (when dot-repeatable-op? (set-dot-repeat cmd-for-dot-repeat))
+                              (when op-mode? (push-cursor! :fwd)))})  ; endnote #3
+          (when dot-repeatable-op?
+            (set-dot-repeat cmd-for-dot-repeat))
           (set first-jump? false))))
 
-    (fn jump-and-ignore-ch2-until-timeout! [[line col _ &as target] ch2]
+    (fn jump-and-ignore-ch2-until-timeout! [[target-line target-col _ &as target] ch2]
       (local orig-pos (get-cursor-pos))
       (jump-with-wrap! target)
       (when new-search?
@@ -808,7 +808,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
           (let [[from-pos to-pos] [(vim.tbl_map dec orig-pos)
                                    ; `target` is a 3-tuple, with a bool at the end.
                                    ; (We should probably refactor that...)
-                                   [(dec line) (dec col)]]
+                                   [(dec target-line) (dec target-col)]]
                 [start finish] (if reverse? [to-pos from-pos] [from-pos to-pos])
                 hl-group (if (or change-op? delete-op?)
                            hl.group.pending-change-op-area
@@ -1037,11 +1037,11 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 
 ; }}}
 
-{:opts opts
- :setup setup
+{: opts
+ : setup
  :init_highlight init-highlight
- :ft ft
- :s s
+ : ft
+ : s
  :add_default_mappings add-default-mappings}
 
 ; vim:foldmethod=marker

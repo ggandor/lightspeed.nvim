@@ -1101,8 +1101,8 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
   end
   local function jump_and_ignore_ch2_until_timeout_21(_245_, ch2)
     local _arg_246_ = _245_
-    local line = _arg_246_[1]
-    local col = _arg_246_[2]
+    local target_line = _arg_246_[1]
+    local target_col = _arg_246_[2]
     local _ = _arg_246_[3]
     local target = _arg_246_
     local orig_pos = get_cursor_pos()
@@ -1117,7 +1117,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
         highlight_cursor(_247_())
       end
       if op_mode_3f then
-        local _let_249_ = {vim.tbl_map(dec, orig_pos), {dec(line), dec(col)}}
+        local _let_249_ = {vim.tbl_map(dec, orig_pos), {dec(target_line), dec(target_col)}}
         local from_pos = _let_249_[1]
         local to_pos = _let_249_[2]
         local function _251_()
