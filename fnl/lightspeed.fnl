@@ -37,7 +37,7 @@
 (fn echo [msg]
   (vim.cmd :redraw) (api.nvim_echo [[msg]] false []))
 
-(fn replace-vim-keycodes [s]
+(fn replace-keycodes [s]
   (api.nvim_replace_termcodes s true false true))
 
 (fn operator-pending-mode? []
@@ -48,7 +48,7 @@
 (fn delete-operation? [] (and (operator-pending-mode?) (= vim.v.operator :d)))
 (fn dot-repeatable-operation? [] (and (operator-pending-mode?) (not= vim.v.operator :y)))
 
-(fn get-current-pos []
+(fn get-cursor-pos []
   [(vim.fn.line ".") (vim.fn.col ".")])
 
 
@@ -214,7 +214,7 @@ character instead."
 
 
 (fn grey-out-search-area [reverse?]
-  (let [[curline curcol] (vim.tbl_map dec (get-current-pos))
+  (let [[curline curcol] (vim.tbl_map dec (get-cursor-pos))
         [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]
         [start finish] (if reverse?
                          [[win-top 0] [curline curcol]]
@@ -229,7 +229,7 @@ character instead."
 (fn echo-not-found [s] (echo (.. "not found: " s)))
 
 
-(fn get-char []
+(fn getchar-as-str []
   (let [ch (vim.fn.getchar)]
     (if (= (type ch) :number) (vim.fn.nr2char ch) ch)))
 
@@ -296,7 +296,7 @@ early termination in loops."
                       :moved-the-cursor)))
 
     (fn skip-to-next-onscreen-pos! []
-      (local [line col &as from-pos] (get-current-pos))
+      (local [line col &as from-pos] (get-cursor-pos))
       (match (if (< col left-bound) (if reverse? (when (>= (dec line) stopline)
                                                    [(dec line) right-bound])
                                         [line left-bound])
@@ -343,7 +343,7 @@ early termination in loops."
 (fn highlight-cursor [?pos]
   "The cursor is down on the command line during `getchar`,
 so we set a temporary highlight on it to see where we are."
-  (let [[line col &as pos] (or ?pos (get-current-pos))
+  (let [[line col &as pos] (or ?pos (get-cursor-pos))
         ; nil means the cursor is on an empty line.
         ch-at-curpos (or (char-at-pos pos {}) " ")]  ; char-at-pos needs 1,1-idx
     ; (Ab)using extmarks even here, to be able to highlight the cursor on empty lines too.
@@ -364,7 +364,7 @@ interrupted change-operation."
         ?right (if (and (not vim.o.insertmode) (> curcol 1) (< curcol endcol))
                  "<RIGHT>"
                   "")]
-    (-> (replace-vim-keycodes (.. "<C-\\><C-G>" ?right))  ; :h CTRL-\_CTRL-G
+    (-> (replace-keycodes (.. "<C-\\><C-G>" ?right))  ; :h CTRL-\_CTRL-G
         (api.nvim_feedkeys :n true))))
 
 
@@ -385,10 +385,10 @@ interrupted change-operation."
 
 
 (fn get-input-and-clean-up []
-  (let [(ok? res) (pcall get-char)]  ; Handling <C-c>.
+  (let [(ok? res) (pcall getchar-as-str)]  ; Handling <C-c>.
     (hl:cleanup)  ; Cleaning up after every input religiously 
                   ; (trying to work in a more or less stateless manner).
-    (if (and ok? (not= res (replace-vim-keycodes "<esc>"))) res  ; <esc> cleanly exits anytime.
+    (if (and ok? (not= res (replace-keycodes "<esc>"))) res  ; <esc> cleanly exits anytime.
         (exit-with nil))))
 
 
@@ -403,7 +403,7 @@ interrupted change-operation."
                      ; We cannot getreg('.') at this point, since the
                      ; change has not happened yet - therefore the
                      ; below hack (thx Sneak).
-                     (replace-vim-keycodes "<c-r>.<esc>"))
+                     (replace-keycodes "<c-r>.<esc>"))
             seq (.. op (or ?count "") cmd (or change ""))]
         ; Using pcall, since vim-repeat might not be installed.
         ; Use the same register for the repeated operation.
@@ -457,14 +457,14 @@ interrupted change-operation."
                 vim.v.count1)
         [repeat-fwd-key repeat-bwd-key] (->> [opts.instant_repeat_fwd_key
                                               opts.instant_repeat_bwd_key]
-                                             (vim.tbl_map replace-vim-keycodes))
+                                             (vim.tbl_map replace-keycodes))
         op-mode? (operator-pending-mode?)
         dot-repeatable-op? (dot-repeatable-operation?)
         motion (if (and (not t-like?) (not reverse?)) "f"
                    (and (not t-like?) reverse?) "F"
                    (and t-like? (not reverse?)) "t"
                    (and t-like? reverse?) "T")
-        cmd-for-dot-repeat (.. (replace-vim-keycodes "<Plug>Lightspeed_repeat_") motion)]
+        cmd-for-dot-repeat (.. (replace-keycodes "<Plug>Lightspeed_repeat_") motion)]
 
     (when-not (or instant-repeat? dot-repeat?)
       (echo "") (highlight-cursor) (vim.cmd :redraw))
@@ -507,7 +507,7 @@ interrupted change-operation."
               (when-not op-mode?
                 (highlight-cursor)
                 (vim.cmd :redraw)
-                (let [(ok? in2) (pcall get-char)  ; pcall for handling <C-c>
+                (let [(ok? in2) (pcall getchar-as-str)  ; pcall for handling <C-c>
                       custom-repeat-key-used? (one-of? in2 repeat-fwd-key repeat-bwd-key)
                       mode (if (= (vim.fn.mode) :n) :n :x)]  ; vim-cutlass compat (#28)
                   (set self.instant-repeat?
@@ -518,7 +518,7 @@ interrupted change-operation."
                     (do (hl:cleanup)
                         (ft:to (= in2 repeat-bwd-key) t-like?))
                     ; f/F/t/T can be fed forward too, no need for a recursive call.
-                    (vim.fn.feedkeys (if ok? in2 (replace-vim-keycodes "<esc>")) :i))))
+                    (vim.fn.feedkeys (if ok? in2 (replace-keycodes "<esc>")) :i))))
               (hl:cleanup)))))))
 
 ; }}}
@@ -534,7 +534,7 @@ interrupted change-operation."
 (fn get-cycle-keys []
   (->> [(or opts.cycle_group_fwd_key (if opts.jump_to_first_match "<tab>" "<space>"))
         (or opts.cycle_group_bwd_key (if opts.jump_to_first_match "<s-tab>" "<tab>"))]
-       (vim.tbl_map replace-vim-keycodes)))
+       (vim.tbl_map replace-keycodes)))
 
 
 (fn get-match-map-for [ch1 reverse?]
@@ -690,7 +690,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 (fn ignore-char-until-timeout [char-to-ignore]
   (let [start (os.clock)
         timeout-secs (/ opts.jump_on_partial_input_safety_timeout 1000)
-        (ok? input) (pcall get-char)]
+        (ok? input) (pcall getchar-as-str)]
     (when-not (and (= input char-to-ignore) (< (os.clock) (+ start timeout-secs)))
       (when ok? (vim.fn.feedkeys input :i)))))
 
@@ -705,14 +705,14 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         change-op? (change-operation?)
         delete-op? (delete-operation?)
         dot-repeatable-op? (dot-repeatable-operation?)
-        full-inclusive-prefix-key (replace-vim-keycodes opts.full_inclusive_prefix_key)
+        full-inclusive-prefix-key (replace-keycodes opts.full_inclusive_prefix_key)
         [cycle-fwd-key cycle-bwd-key] (get-cycle-keys)
         labels (get-labels)
         label-indexes (reverse-lookup labels)
         ; We _never_ want to autojump in OP mode, since that would execute
         ; the operation without allowing us to select a labeled target.
         jump-to-first? (and opts.jump_to_first_match (not op-mode?))
-        cmd-for-dot-repeat (replace-vim-keycodes
+        cmd-for-dot-repeat (replace-keycodes
                              (.. "<Plug>Lightspeed_repeat_" (if reverse? "S" "s")))]
 
     (macro with-hl-chores [...]
@@ -794,7 +794,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
           (set first-jump? false))))
 
     (fn jump-and-ignore-ch2-until-timeout! [[line col _ &as target] ch2]
-      (local orig-pos (get-current-pos))
+      (local orig-pos (get-cursor-pos))
       (jump-with-wrap! target)
       (when new-search?
         ; Jumping based on partial input is nice, but in case operators, it's

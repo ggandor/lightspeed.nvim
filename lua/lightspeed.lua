@@ -34,7 +34,7 @@ local function echo(msg)
   vim.cmd("redraw")
   return api.nvim_echo({{msg}}, false, {})
 end
-local function replace_vim_keycodes(s)
+local function replace_keycodes(s)
   return api.nvim_replace_termcodes(s, true, false, true)
 end
 local function operator_pending_mode_3f()
@@ -52,7 +52,7 @@ end
 local function dot_repeatable_operation_3f()
   return (operator_pending_mode_3f() and (vim.v.operator ~= "y"))
 end
-local function get_current_pos()
+local function get_cursor_pos()
   return {vim.fn.line("."), vim.fn.col(".")}
 end
 local function char_at_pos(_5_, _7_)
@@ -228,7 +228,7 @@ local function add_highlight_autocmds()
 end
 add_highlight_autocmds()
 local function grey_out_search_area(reverse_3f)
-  local _let_68_ = vim.tbl_map(dec, get_current_pos())
+  local _let_68_ = vim.tbl_map(dec, get_cursor_pos())
   local curline = _let_68_[1]
   local curcol = _let_68_[2]
   local _let_69_ = {dec(vim.fn.line("w0")), dec(vim.fn.line("w$"))}
@@ -252,7 +252,7 @@ end
 local function echo_not_found(s)
   return echo(("not found: " .. s))
 end
-local function get_char()
+local function getchar_as_str()
   local ch = vim.fn.getchar()
   if (type(ch) == "number") then
     return vim.fn.nr2char(ch)
@@ -339,7 +339,7 @@ local function onscreen_match_positions(pattern, reverse_3f, _78_)
     end
   end
   local function skip_to_next_onscreen_pos_21()
-    local _local_88_ = get_current_pos()
+    local _local_88_ = get_cursor_pos()
     local line = _local_88_[1]
     local col = _local_88_[2]
     local from_pos = _local_88_
@@ -450,7 +450,7 @@ local function highlight_unique_chars(reverse_3f, ignorecase)
   return nil
 end
 local function highlight_cursor(_3fpos)
-  local _let_118_ = (_3fpos or get_current_pos())
+  local _let_118_ = (_3fpos or get_cursor_pos())
   local line = _let_118_[1]
   local col = _let_118_[2]
   local pos = _let_118_
@@ -467,12 +467,12 @@ local function handle_interrupted_change_op_21()
   else
     _3fright = ""
   end
-  return api.nvim_feedkeys(replace_vim_keycodes(("<C-\\><C-G>" .. _3fright)), "n", true)
+  return api.nvim_feedkeys(replace_keycodes(("<C-\\><C-G>" .. _3fright)), "n", true)
 end
 local function get_input_and_clean_up()
-  local ok_3f, res = pcall(get_char)
+  local ok_3f, res = pcall(getchar_as_str)
   hl:cleanup()
-  if (ok_3f and (res ~= replace_vim_keycodes("<esc>"))) then
+  if (ok_3f and (res ~= replace_keycodes("<esc>"))) then
     return res
   else
     if change_operation_3f() then
@@ -489,7 +489,7 @@ local function set_dot_repeat(cmd, _3fcount)
     if (op ~= "y") then
       local change
       if (op == "c") then
-        change = replace_vim_keycodes("<c-r>.<esc>")
+        change = replace_keycodes("<c-r>.<esc>")
       else
       change = nil
       end
@@ -525,7 +525,7 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f)
   else
     count = vim.v.count1
   end
-  local _let_129_ = vim.tbl_map(replace_vim_keycodes, {opts.instant_repeat_fwd_key, opts.instant_repeat_bwd_key})
+  local _let_129_ = vim.tbl_map(replace_keycodes, {opts.instant_repeat_fwd_key, opts.instant_repeat_bwd_key})
   local repeat_fwd_key = _let_129_[1]
   local repeat_bwd_key = _let_129_[2]
   local op_mode_3f = operator_pending_mode_3f()
@@ -542,7 +542,7 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f)
   else
   motion = nil
   end
-  local cmd_for_dot_repeat = (replace_vim_keycodes("<Plug>Lightspeed_repeat_") .. motion)
+  local cmd_for_dot_repeat = (replace_keycodes("<Plug>Lightspeed_repeat_") .. motion)
   if not (instant_repeat_3f or dot_repeat_3f) then
     echo("")
     highlight_cursor()
@@ -649,7 +649,7 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f)
       if not op_mode_3f then
         highlight_cursor()
         vim.cmd("redraw")
-        local ok_3f, in2 = pcall(get_char)
+        local ok_3f, in2 = pcall(getchar_as_str)
         local custom_repeat_key_used_3f = ((in2 == repeat_fwd_key) or (in2 == repeat_bwd_key))
         local mode
         if (vim.fn.mode() == "n") then
@@ -666,7 +666,7 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f)
           if ok_3f then
             _152_ = in2
           else
-            _152_ = replace_vim_keycodes("<esc>")
+            _152_ = replace_keycodes("<esc>")
           end
           vim.fn.feedkeys(_152_, "i")
         end
@@ -700,7 +700,7 @@ local function get_cycle_keys()
       return "<tab>"
     end
   end
-  return vim.tbl_map(replace_vim_keycodes, {(opts.cycle_group_fwd_key or _159_()), (opts.cycle_group_bwd_key or _160_())})
+  return vim.tbl_map(replace_keycodes, {(opts.cycle_group_fwd_key or _159_()), (opts.cycle_group_bwd_key or _160_())})
 end
 local function get_match_map_for(ch1, reverse_3f)
   local match_map = {}
@@ -955,7 +955,7 @@ end
 local function ignore_char_until_timeout(char_to_ignore)
   local start = os.clock()
   local timeout_secs = (opts.jump_on_partial_input_safety_timeout / 1000)
-  local ok_3f, input = pcall(get_char)
+  local ok_3f, input = pcall(getchar_as_str)
   if not ((input == char_to_ignore) and (os.clock() < (start + timeout_secs))) then
     if ok_3f then
       return vim.fn.feedkeys(input, "i")
@@ -968,7 +968,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
   local change_op_3f = change_operation_3f()
   local delete_op_3f = delete_operation_3f()
   local dot_repeatable_op_3f = dot_repeatable_operation_3f()
-  local full_inclusive_prefix_key = replace_vim_keycodes(opts.full_inclusive_prefix_key)
+  local full_inclusive_prefix_key = replace_keycodes(opts.full_inclusive_prefix_key)
   local _let_218_ = get_cycle_keys()
   local cycle_fwd_key = _let_218_[1]
   local cycle_bwd_key = _let_218_[2]
@@ -982,7 +982,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
   else
     _219_ = "s"
   end
-  cmd_for_dot_repeat = replace_vim_keycodes(("<Plug>Lightspeed_repeat_" .. _219_))
+  cmd_for_dot_repeat = replace_keycodes(("<Plug>Lightspeed_repeat_" .. _219_))
   local function switch_off_scrolloff()
     if jump_to_first_3f then
       local _3floc
@@ -1102,7 +1102,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
     local col = _arg_246_[2]
     local _ = _arg_246_[3]
     local target = _arg_246_
-    local orig_pos = get_current_pos()
+    local orig_pos = get_cursor_pos()
     jump_with_wrap_21(target)
     if new_search_3f then
       if not change_op_3f then
