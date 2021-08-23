@@ -34,11 +34,15 @@
 ; }}}
 ; Nvim utils {{{
 
-(fn echo [msg]
-  (vim.cmd :redraw) (api.nvim_echo [[msg]] false []))
+(fn getchar-as-str []
+  (local (ok? ch) (pcall vim.fn.getchar))  ; handling <C-c>
+  (values ok? (if (= (type ch) :number) (vim.fn.nr2char ch) ch)))
 
 (fn replace-keycodes [s]
   (api.nvim_replace_termcodes s true false true))
+
+(fn echo [msg]
+  (vim.cmd :redraw) (api.nvim_echo [[msg]] false []))
 
 (fn operator-pending-mode? []
   (-> (. (api.nvim_get_mode) :mode) (string.match "o")))
@@ -226,12 +230,13 @@ character instead."
 ; Common {{{
 
 (fn echo-no-prev-search [] (echo "no previous search"))
+
 (fn echo-not-found [s] (echo (.. "not found: " s)))
 
 
-(fn getchar-as-str []
-  (local (ok? ch) (pcall vim.fn.getchar))  ; handling <C-c>
-  (values ok? (if (= (type ch) :number) (vim.fn.nr2char ch) ch)))
+(fn push-cursor! [direction]
+  "Push cursor 1 character to the left or right, possibly beyond EOL."
+  (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW") ?stopline))
 
 
 (fn remove-matchparen-highlight []
@@ -249,11 +254,6 @@ character instead."
   ;       another buffer, breaking our visual selection (and thus also
   ;       dot-repeat, apparently). (See discussion at #38.)
   (vim.cmd "silent! doautocmd matchparen CursorMoved"))
-
-
-(fn push-cursor! [direction]
-  "Push cursor 1 character to the left or right, possibly beyond EOL."
-  (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW") ?stopline))
 
 
 (macro jump-to! [target {: add-to-jumplist? : after}]
@@ -740,10 +740,10 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
       (var loop? true)
       (while loop? 
         (match (or (when dot-repeat? self.prev-dot-repeatable-search.in3)
-                   (get-input-and-clean-up)
                    ; Beware of calling `exit-with` again, after
                    ; `get-input-and-clean-up`. (As of now, it calls
                    ; `handle-interrupted-change-op!` automatically.)
+                   (get-input-and-clean-up)
                    (do (set loop? false)  ; <esc> should exit the loop
                        (restore-scrolloff)
                        (set ret nil)))

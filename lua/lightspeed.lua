@@ -30,12 +30,23 @@ local function reverse_lookup(tbl)
   end
   return tbl_9_auto
 end
-local function echo(msg)
-  vim.cmd("redraw")
-  return api.nvim_echo({{msg}}, false, {})
+local function getchar_as_str()
+  local ok_3f, ch = pcall(vim.fn.getchar)
+  local function _5_()
+    if (type(ch) == "number") then
+      return vim.fn.nr2char(ch)
+    else
+      return ch
+    end
+  end
+  return ok_3f, _5_()
 end
 local function replace_keycodes(s)
   return api.nvim_replace_termcodes(s, true, false, true)
+end
+local function echo(msg)
+  vim.cmd("redraw")
+  return api.nvim_echo({{msg}}, false, {})
 end
 local function operator_pending_mode_3f()
   return string.match(api.nvim_get_mode().mode, "o")
@@ -55,12 +66,12 @@ end
 local function get_cursor_pos()
   return {vim.fn.line("."), vim.fn.col(".")}
 end
-local function char_at_pos(_5_, _7_)
-  local _arg_6_ = _5_
-  local line = _arg_6_[1]
-  local byte_col = _arg_6_[2]
-  local _arg_8_ = _7_
-  local char_offset = _arg_8_["char-offset"]
+local function char_at_pos(_6_, _8_)
+  local _arg_7_ = _6_
+  local line = _arg_7_[1]
+  local byte_col = _arg_7_[2]
+  local _arg_9_ = _8_
+  local char_offset = _arg_9_["char-offset"]
   local line_str = vim.fn.getline(line)
   local char_idx = vim.fn.charidx(line_str, dec(byte_col))
   local char_nr = vim.fn.strgetchar(line_str, (char_idx + (char_offset or 0)))
@@ -81,140 +92,140 @@ local function setup(user_opts)
   return nil
 end
 local hl
-local function _10_(self, hl_group, line, startcol, endcol)
+local function _11_(self, hl_group, line, startcol, endcol)
   return api.nvim_buf_add_highlight(0, self.ns, hl_group, line, startcol, endcol)
 end
-local function _11_(self, line, col, opts0)
+local function _12_(self, line, col, opts0)
   return api.nvim_buf_set_extmark(0, self.ns, line, col, opts0)
 end
-local function _12_(self)
+local function _13_(self)
   return api.nvim_buf_clear_namespace(0, self.ns, 0, -1)
 end
-hl = {["add-hl"] = _10_, ["set-extmark"] = _11_, cleanup = _12_, group = {["label-distant"] = "LightspeedLabelDistant", ["label-distant-overlapped"] = "LightspeedLabelDistantOverlapped", ["label-overlapped"] = "LightspeedLabelOverlapped", ["masked-ch"] = "LightspeedMaskedChar", ["one-char-match"] = "LightspeedOneCharMatch", ["pending-change-op-area"] = "LightspeedPendingChangeOpArea", ["pending-op-area"] = "LightspeedPendingOpArea", ["shortcut-overlapped"] = "LightspeedShortcutOverlapped", ["unique-ch"] = "LightspeedUniqueChar", ["unlabeled-match"] = "LightspeedUnlabeledMatch", cursor = "LightspeedCursor", greywash = "LightspeedGreyWash", label = "LightspeedLabel", shortcut = "LightspeedShortcut"}, ns = api.nvim_create_namespace("")}
+hl = {["add-hl"] = _11_, ["set-extmark"] = _12_, cleanup = _13_, group = {["label-distant"] = "LightspeedLabelDistant", ["label-distant-overlapped"] = "LightspeedLabelDistantOverlapped", ["label-overlapped"] = "LightspeedLabelOverlapped", ["masked-ch"] = "LightspeedMaskedChar", ["one-char-match"] = "LightspeedOneCharMatch", ["pending-change-op-area"] = "LightspeedPendingChangeOpArea", ["pending-op-area"] = "LightspeedPendingOpArea", ["shortcut-overlapped"] = "LightspeedShortcutOverlapped", ["unique-ch"] = "LightspeedUniqueChar", ["unlabeled-match"] = "LightspeedUnlabeledMatch", cursor = "LightspeedCursor", greywash = "LightspeedGreyWash", label = "LightspeedLabel", shortcut = "LightspeedShortcut"}, ns = api.nvim_create_namespace("")}
 local function init_highlight()
   local bg = vim.o.background
   local groupdefs
-  local _14_
+  local _15_
   do
-    local _13_ = bg
-    if (_13_ == "light") then
-      _14_ = "#f02077"
+    local _14_ = bg
+    if (_14_ == "light") then
+      _15_ = "#f02077"
     else
-      local _ = _13_
-      _14_ = "#ff2f87"
+      local _ = _14_
+      _15_ = "#ff2f87"
     end
   end
-  local _19_
+  local _20_
   do
-    local _18_ = bg
-    if (_18_ == "light") then
-      _19_ = "#ff4090"
+    local _19_ = bg
+    if (_19_ == "light") then
+      _20_ = "#ff4090"
     else
-      local _ = _18_
-      _19_ = "#e01067"
+      local _ = _19_
+      _20_ = "#e01067"
     end
   end
-  local _24_
+  local _25_
   do
-    local _23_ = bg
-    if (_23_ == "light") then
-      _24_ = "Blue"
+    local _24_ = bg
+    if (_24_ == "light") then
+      _25_ = "Blue"
     else
-      local _ = _23_
-      _24_ = "Cyan"
+      local _ = _24_
+      _25_ = "Cyan"
     end
   end
-  local _29_
+  local _30_
   do
-    local _28_ = bg
-    if (_28_ == "light") then
-      _29_ = "#399d9f"
+    local _29_ = bg
+    if (_29_ == "light") then
+      _30_ = "#399d9f"
     else
-      local _ = _28_
-      _29_ = "#99ddff"
+      local _ = _29_
+      _30_ = "#99ddff"
     end
   end
-  local _34_
+  local _35_
   do
-    local _33_ = bg
-    if (_33_ == "light") then
-      _34_ = "Cyan"
+    local _34_ = bg
+    if (_34_ == "light") then
+      _35_ = "Cyan"
     else
-      local _ = _33_
-      _34_ = "Blue"
+      local _ = _34_
+      _35_ = "Blue"
     end
   end
-  local _39_
+  local _40_
   do
-    local _38_ = bg
-    if (_38_ == "light") then
-      _39_ = "#59bdbf"
+    local _39_ = bg
+    if (_39_ == "light") then
+      _40_ = "#59bdbf"
     else
-      local _ = _38_
-      _39_ = "#79bddf"
+      local _ = _39_
+      _40_ = "#79bddf"
     end
   end
-  local _44_
+  local _45_
   do
-    local _43_ = bg
-    if (_43_ == "light") then
-      _44_ = "#cc9999"
+    local _44_ = bg
+    if (_44_ == "light") then
+      _45_ = "#cc9999"
     else
-      local _ = _43_
-      _44_ = "#b38080"
+      local _ = _44_
+      _45_ = "#b38080"
     end
   end
-  local _49_
+  local _50_
   do
-    local _48_ = bg
-    if (_48_ == "light") then
-      _49_ = "Black"
+    local _49_ = bg
+    if (_49_ == "light") then
+      _50_ = "Black"
     else
-      local _ = _48_
-      _49_ = "White"
+      local _ = _49_
+      _50_ = "White"
     end
   end
-  local _54_
+  local _55_
   do
-    local _53_ = bg
-    if (_53_ == "light") then
-      _54_ = "#272020"
+    local _54_ = bg
+    if (_54_ == "light") then
+      _55_ = "#272020"
     else
-      local _ = _53_
-      _54_ = "#f3ecec"
+      local _ = _54_
+      _55_ = "#f3ecec"
     end
   end
-  local _59_
+  local _60_
   do
-    local _58_ = bg
-    if (_58_ == "light") then
-      _59_ = "#f02077"
+    local _59_ = bg
+    if (_59_ == "light") then
+      _60_ = "#f02077"
     else
-      local _ = _58_
-      _59_ = "#ff2f87"
+      local _ = _59_
+      _60_ = "#ff2f87"
     end
   end
-  groupdefs = {{hl.group.label, {cterm = "bold,underline", ctermfg = "Red", gui = "bold,underline", guifg = _14_}}, {hl.group["label-overlapped"], {cterm = "underline", ctermfg = "Magenta", gui = "underline", guifg = _19_}}, {hl.group["label-distant"], {cterm = "bold,underline", ctermfg = _24_, gui = "bold,underline", guifg = _29_}}, {hl.group["label-distant-overlapped"], {cterm = "underline", ctermfg = _34_, gui = "underline", guifg = _39_}}, {hl.group.shortcut, {cterm = "bold,underline", ctermbg = "Red", ctermfg = "White", gui = "bold,underline", guibg = "#f00077", guifg = "#ffffff"}}, {hl.group["one-char-match"], {cterm = "bold", ctermbg = "Red", ctermfg = "White", gui = "bold", guibg = "#f00077", guifg = "#ffffff"}}, {hl.group["masked-ch"], {ctermfg = "DarkGrey", guifg = _44_}}, {hl.group["unlabeled-match"], {cterm = "bold", ctermfg = _49_, gui = "bold", guifg = _54_}}, {hl.group["pending-op-area"], {ctermbg = "Red", ctermfg = "White", guibg = "#f00077", guifg = "#ffffff"}}, {hl.group["pending-change-op-area"], {cterm = "strikethrough", ctermfg = "Red", gui = "strikethrough", guifg = _59_}}, {hl.group.greywash, {ctermfg = "Grey", guifg = "#777777"}}}
-  for _, _63_ in ipairs(groupdefs) do
-    local _each_64_ = _63_
-    local group = _each_64_[1]
-    local attrs = _each_64_[2]
+  groupdefs = {{hl.group.label, {cterm = "bold,underline", ctermfg = "Red", gui = "bold,underline", guifg = _15_}}, {hl.group["label-overlapped"], {cterm = "underline", ctermfg = "Magenta", gui = "underline", guifg = _20_}}, {hl.group["label-distant"], {cterm = "bold,underline", ctermfg = _25_, gui = "bold,underline", guifg = _30_}}, {hl.group["label-distant-overlapped"], {cterm = "underline", ctermfg = _35_, gui = "underline", guifg = _40_}}, {hl.group.shortcut, {cterm = "bold,underline", ctermbg = "Red", ctermfg = "White", gui = "bold,underline", guibg = "#f00077", guifg = "#ffffff"}}, {hl.group["one-char-match"], {cterm = "bold", ctermbg = "Red", ctermfg = "White", gui = "bold", guibg = "#f00077", guifg = "#ffffff"}}, {hl.group["masked-ch"], {ctermfg = "DarkGrey", guifg = _45_}}, {hl.group["unlabeled-match"], {cterm = "bold", ctermfg = _50_, gui = "bold", guifg = _55_}}, {hl.group["pending-op-area"], {ctermbg = "Red", ctermfg = "White", guibg = "#f00077", guifg = "#ffffff"}}, {hl.group["pending-change-op-area"], {cterm = "strikethrough", ctermfg = "Red", gui = "strikethrough", guifg = _60_}}, {hl.group.greywash, {ctermfg = "Grey", guifg = "#777777"}}}
+  for _, _64_ in ipairs(groupdefs) do
+    local _each_65_ = _64_
+    local group = _each_65_[1]
+    local attrs = _each_65_[2]
     local attrs_str
-    local _65_
+    local _66_
     do
       local tbl_12_auto = {}
       for k, v in pairs(attrs) do
         tbl_12_auto[(#tbl_12_auto + 1)] = (k .. "=" .. v)
       end
-      _65_ = tbl_12_auto
+      _66_ = tbl_12_auto
     end
-    attrs_str = table.concat(_65_, " ")
+    attrs_str = table.concat(_66_, " ")
     vim.cmd(("highlight default " .. group .. " " .. attrs_str))
   end
-  for _, _66_ in ipairs({{hl.group["unique-ch"], hl.group["unlabeled-match"]}, {hl.group["shortcut-overlapped"], hl.group.shortcut}, {hl.group.cursor, "Cursor"}}) do
-    local _each_67_ = _66_
-    local from_group = _each_67_[1]
-    local to_group = _each_67_[2]
+  for _, _67_ in ipairs({{hl.group["unique-ch"], hl.group["unlabeled-match"]}, {hl.group["shortcut-overlapped"], hl.group.shortcut}, {hl.group.cursor, "Cursor"}}) do
+    local _each_68_ = _67_
+    local from_group = _each_68_[1]
+    local to_group = _each_68_[2]
     vim.cmd(("highlight default link " .. from_group .. " " .. to_group))
   end
   return nil
@@ -228,22 +239,22 @@ local function add_highlight_autocmds()
 end
 add_highlight_autocmds()
 local function grey_out_search_area(reverse_3f)
-  local _let_68_ = vim.tbl_map(dec, get_cursor_pos())
-  local curline = _let_68_[1]
-  local curcol = _let_68_[2]
-  local _let_69_ = {dec(vim.fn.line("w0")), dec(vim.fn.line("w$"))}
-  local win_top = _let_69_[1]
-  local win_bot = _let_69_[2]
-  local function _71_()
+  local _let_69_ = vim.tbl_map(dec, get_cursor_pos())
+  local curline = _let_69_[1]
+  local curcol = _let_69_[2]
+  local _let_70_ = {dec(vim.fn.line("w0")), dec(vim.fn.line("w$"))}
+  local win_top = _let_70_[1]
+  local win_bot = _let_70_[2]
+  local function _72_()
     if reverse_3f then
       return {{win_top, 0}, {curline, curcol}}
     else
       return {{curline, inc(curcol)}, {win_bot, -1}}
     end
   end
-  local _let_70_ = _71_()
-  local start = _let_70_[1]
-  local finish = _let_70_[2]
+  local _let_71_ = _72_()
+  local start = _let_71_[1]
+  local finish = _let_71_[2]
   return vim.highlight.range(0, hl.ns, hl.group.greywash, start, finish)
 end
 local function echo_no_prev_search()
@@ -251,23 +262,6 @@ local function echo_no_prev_search()
 end
 local function echo_not_found(s)
   return echo(("not found: " .. s))
-end
-local function getchar_as_str()
-  local ok_3f, ch = pcall(vim.fn.getchar)
-  local function _72_()
-    if (type(ch) == "number") then
-      return vim.fn.nr2char(ch)
-    else
-      return ch
-    end
-  end
-  return ok_3f, _72_()
-end
-local function remove_matchparen_highlight()
-  return vim.cmd(":3match")
-end
-local function force_matchparen_highlight()
-  return vim.cmd("silent! doautocmd matchparen CursorMoved")
 end
 local function push_cursor_21(direction)
   local _74_
@@ -282,6 +276,12 @@ local function push_cursor_21(direction)
     end
   end
   return vim.fn.search("\\_.", _74_, __fnl_global___3fstopline)
+end
+local function remove_matchparen_highlight()
+  return vim.cmd(":3match")
+end
+local function force_matchparen_highlight()
+  return vim.cmd("silent! doautocmd matchparen CursorMoved")
 end
 local function onscreen_match_positions(pattern, reverse_3f, _78_)
   local _arg_79_ = _78_
