@@ -252,11 +252,33 @@ character instead."
   (vim.cmd "silent! doautocmd matchup_matchparen CursorMoved"))
 
 
-(macro jump-to! [target {: add-to-jumplist? : after}]
-  `(do (when ,add-to-jumplist? (vim.cmd "norm! m`"))
-       (vim.fn.cursor ,target)
-       ,after
-       (force-matchparen-refresh)))
+(fn cursor-before-eof? []
+  (and (= (vim.fn.line ".") (vim.fn.line "$"))
+       (= (vim.fn.virtcol ".") (dec (vim.fn.virtcol "$")))))
+
+
+(macro jump-to! [target {: reverse? : add-to-jumplist? : after}]
+  `(let [op-mode?# (operator-pending-mode?)
+         restore-virtualedit-autocmd#
+         (.. "autocmd CursorMoved,WinLeave,BufLeave"
+             ",InsertEnter,CmdlineEnter,CmdwinEnter"
+             " * ++once set virtualedit="
+             vim.o.virtualedit)]
+     (do (when ,add-to-jumplist? (vim.cmd "norm! m`"))
+         (vim.fn.cursor ,target)
+         ,after
+         ; For operator-pending mode, an additional push is needed,
+         ; to even out that the motion is interpreted as exclusive.
+         (when (and op-mode?# (not ,reverse?))
+           (if (not (cursor-before-eof?)) (push-cursor! :fwd)
+               ; The EOF edge case requires some hackery.
+               (do (vim.cmd "set virtualedit=onemore")
+                   ; Note: The cursor will be moved to the end of the
+                   ;       operated area anyway, no need to restore.
+                   (vim.cmd "norm! l")
+                   (vim.cmd restore-virtualedit-autocmd#))))
+         (when (not op-mode?#)
+           (force-matchparen-refresh)))))
 
 
 (fn onscreen-match-positions [pattern reverse? {: ft-search? : limit}]
@@ -494,11 +516,10 @@ interrupted change-operation."
         (if (= i 0) (exit-with (echo-not-found in1))  ; note: no highlight to clean up if no match found
             (do
               (jump-to! target-pos
-                        {:add-to-jumplist? (not instant-repeat?)
-                         :after (do (when t-like? 
-                                      (push-cursor! (if reverse? :fwd :bwd)))
-                                    (when (and op-mode? (not reverse?))  ; endnote #3
-                                      (push-cursor! :fwd)))})
+                        {: reverse?
+                         :add-to-jumplist? (not instant-repeat?)
+                         :after (when t-like?
+                                  (push-cursor! (if reverse? :fwd :bwd)))})
               (when-not op-mode?
                 (highlight-cursor)
                 (vim.cmd :redraw)
@@ -780,10 +801,10 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         (var first-jump? true)
         (fn [target]
           (jump-to! target 
-                    {:add-to-jumplist? first-jump?
-                     :after (when (and full-incl? (not reverse?))
-                              (push-cursor! :fwd)
-                              (when op-mode? (push-cursor! :fwd)))})  ; endnote #3
+                    {: reverse?
+                     :add-to-jumplist? first-jump?
+                     :after (when (and (not reverse?) full-incl?)
+                              (push-cursor! :fwd))})
           (when dot-repeatable-op?
             (set-dot-repeat cmd-for-dot-repeat))
           (set first-jump? false))))
@@ -908,7 +929,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                       (switch-off-scrolloff)
                       ; Operations that spanned multiple groups are dot-repeated as
                       ; <enter>-repeat, i.e., only the search pattern is saved then
-                      ; (endnote #4).
+                      ; (endnote #3).
                       (when-not (and dot-repeat? self.prev-dot-repeatable-search.in3)
                         (with-hl-chores
                           (set-beacon-groups in2 positions-to-label labels shortcuts
@@ -925,7 +946,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                               ; match, and jumped automatically, not reaching this point.)
                               (set self.prev-dot-repeatable-search.in3
                                    ; If the operation spanned multiple groups, we are
-                                   ; switching dot-repeat to <enter>-repeat (endnote #4).
+                                   ; switching dot-repeat to <enter>-repeat (endnote #3).
                                    (if (= group-offset 0) in3 nil)))
                             (match (or (-?>> (. label-indexes in3)  ; Valid label...
                                              (+ (* group-offset (length labels)))
@@ -1022,10 +1043,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 ; (2) <C-o> will unfortunately ignore this if the line has not changed.
 ;     https://github.com/neovim/neovim/issues/9874
 
-; (3) For operator-pending mode, yet another push needed, to even out
-;     that the motion is interpreted as exclusive.
-
-; (4) It makes no practical sense to dot-repeat an operation spanning
+; (3) It makes no practical sense to dot-repeat an operation spanning
 ;     multiple groups exactly as it went ("delete again till the 27th
 ;     match..."?). The most intuitive/logical behaviour is repeating as
 ;     <enter>-repeat in these cases, prompting for a target label again.
