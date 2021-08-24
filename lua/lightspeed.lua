@@ -277,11 +277,9 @@ local function push_cursor_21(direction)
   end
   return vim.fn.search("\\_.", _74_, __fnl_global___3fstopline)
 end
-local function remove_matchparen_highlight()
-  return vim.cmd(":3match")
-end
-local function force_matchparen_highlight()
-  return vim.cmd("silent! doautocmd matchparen CursorMoved")
+local function force_matchparen_refresh()
+  vim.cmd("silent! doautocmd matchparen CursorMoved")
+  return vim.cmd("silent! doautocmd matchup_matchparen CursorMoved")
 end
 local function onscreen_match_positions(pattern, reverse_3f, _78_)
   local _arg_79_ = _78_
@@ -627,7 +625,6 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f)
       return nil
     else
       do
-        remove_matchparen_highlight()
         if not instant_repeat_3f then
           vim.cmd("norm! m`")
         end
@@ -647,7 +644,7 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f)
             push_cursor_21("fwd")
           end
         end
-        force_matchparen_highlight()
+        force_matchparen_refresh()
       end
       if not op_mode_3f then
         highlight_cursor()
@@ -1078,7 +1075,6 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
     local first_jump_3f = true
     local function _240_(target)
       do
-        remove_matchparen_highlight()
         if first_jump_3f then
           vim.cmd("norm! m`")
         end
@@ -1089,7 +1085,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
             push_cursor_21("fwd")
           end
         end
-        force_matchparen_highlight()
+        force_matchparen_refresh()
       end
       if dot_repeatable_op_3f then
         set_dot_repeat(cmd_for_dot_repeat)

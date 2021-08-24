@@ -239,29 +239,24 @@ character instead."
   (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW") ?stopline))
 
 
-(fn remove-matchparen-highlight []
-  ; After autojumping to the first match, or to a unique char, the parens remain
-  ; highlighted while our plugin is executing, even though the cursor has been
-  ; moved.
-  (vim.cmd ":3match"))  ; :h :3match
-
-
-(fn force-matchparen-highlight []
-  ; HACK: :DoMatchParen turns on matchparen simply by triggering
+(fn force-matchparen-refresh []
+  ; HACK: :DoMatchParen turns matchparen on simply by triggering
   ;       CursorMoved events (see matchparen.vim). We can do the same,
   ;       which is cleaner for us than calling :DoMatchParen directly,
   ;       since that would wrap this in a `windo`, and might visit
   ;       another buffer, breaking our visual selection (and thus also
   ;       dot-repeat, apparently). (See discussion at #38.)
-  (vim.cmd "silent! doautocmd matchparen CursorMoved"))
+  (vim.cmd "silent! doautocmd matchparen CursorMoved")
+  ; If vim-matchup is installed, it can similarly be forced to refresh
+  ; by triggering a CursorMoved event.
+  (vim.cmd "silent! doautocmd matchup_matchparen CursorMoved"))
 
 
 (macro jump-to! [target {: add-to-jumplist? : after}]
-  `(do (remove-matchparen-highlight)
-       (when ,add-to-jumplist? (vim.cmd "norm! m`"))
+  `(do (when ,add-to-jumplist? (vim.cmd "norm! m`"))
        (vim.fn.cursor ,target)
        ,after
-       (force-matchparen-highlight)))  ; triggers CursorMoved!
+       (force-matchparen-refresh)))
 
 
 (fn onscreen-match-positions [pattern reverse? {: ft-search? : limit}]
