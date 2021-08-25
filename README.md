@@ -1,39 +1,55 @@
 # 🌌 lightspeed.nvim
 
-Lightspeed is a minimal and opinionated motion plugin for
-[Neovim](https://neovim.io/), with a small interface and lots of innovative
-ideas, that allow for making on-screen movements with yet unprecedented
-efficiency and speed. The project originally started as a direct port of
-[Sneak](https://github.com/justinmk/vim-sneak), and can still be considered a
-spiritual successor: the aim is to maximize speed while minimizing mental effort
-and breaks in the flow, providing an intuitive, distractionless experience, that
-should feel as "native" as possible.
+Lightspeed is a cutting-edge motion plugin for [Neovim](https://neovim.io/),
+with a small interface and lots of innovative ideas, that allow for making
+on-screen movements with yet unprecedented ease and efficiency. The aim is to
+maximize speed while minimizing mental effort and breaks in the flow, providing
+an intuitive, distractionless experience, that should feel as "native" as
+possible.
 
-### A short pitch
+### A lightning pitch
+
+The plugin's closest ancestor is Justin M. Keyes' beloved
+[vim-sneak](https://github.com/justinmk/vim-sneak), in that they share the same
+basic assumptions, namely: (1) to reach all kinds of distant targets, ideally we
+need _one_ command that is flexible enough to do the job all the time, and can
+be invoked/operated with _total automatism_; (2) for that, the most adequate
+basis is unidirectional 2-character search; (3) the interface should be
+optimized for the _common case_.
+
+#### Railways versus jetpacks
 
 [EasyMotion](https://github.com/easymotion/vim-easymotion) and its derivatives
 ([Hop](https://github.com/phaazon/hop.nvim), or
 [Avy](https://github.com/abo-abo/avy) for Emacs) are like a bunch of different -
-however sophisticated - railway networks, with pre-built stations: you have to
-think about which train to take, which exit point is the closest to your goal,
-etc. A user of Sneak, on the other hand, embraces a different philosophy: it is
-like having a _jetpack_ on you all the time.
+however sophisticated - railway (maglev, hyperloop...) networks, with pre-built
+stations: you have to think about which train to take, which exit point is the
+closest to your goal, etc.
 
-Lightspeed, in particular, is like having a jetpack _with a GPS_. It is all
-about processing the input incrementally - analyzing the available information
-after _each_ keystroke, to assist the user and offer shortcuts:
+A user of Sneak, on the other hand, embraces a different philosophy: you barely
+need to think about motions anymore - label-mode "sneaking" gets you everywhere
+you need to be, with maximal precision. It is like having a _jetpack_ on you all
+the time.
 
-* **target labels are assigned and displayed ahead of time, right after the
-  first input:** the key idea behind Lightspeed, that eliminates the major
-  problem of all of the current, general-purpose motion plugins, including Sneak
-  itself - the inevitable pause between entering the search pattern and
-  selecting the target. Once you try it, you will never look back.
+#### Always one step ahead of you
+
+Lightspeed, in particular, is like having a jetpack _with a GPS_. While
+preserving the minimalist approach of Sneak, it has a bunch of brand-new
+features, that blur the boundary between one- and two-character search. It is
+all about processing the input incrementally - analyzing the available
+information after _each_ keystroke, to assist the user and offer shortcuts:
+
+* **target labels are displayed ahead of time, right after the first input:**
+  the key idea behind Lightspeed, that eliminates the major problem of all of
+  the current, general-purpose motion plugins, including Sneak itself - the
+  inevitable pause between entering the search pattern and selecting the target.
+  Once you try it, you will never look back.
 * **shortcut-labels:** often you can type the target label right after the first
   input, as if doing 1-character search
 * **jump based on partial input:** 2-character search can jump right after the
   first input, if the character is unique in the search direction
 
-Other quality-of-life features:
+#### Other quality-of-life features
 
 * having a choice between automatically jumping to the first match (Sneak-like -
   default) or allowing for more comfortable target labels (EasyMotion-like)
@@ -49,7 +65,7 @@ Other quality-of-life features:
 * the cursor stays visible all the time
 * uses extmarks, and does not mess with the Conceal group
 
-Last but not least (bonus):
+#### Last but not least (bonus)
 
 * **multiline 1-character (f/t-like) search modes**, with same-key repeat
   available (similar to [clever-f](https://github.com/rhysd/clever-f.vim) or
@@ -225,18 +241,6 @@ than the labels.)
   all custom mappings, so that is only a half-measure.
 
 ## 📚 An in-depth introduction of the key features
-
-Lightspeed's closest ancestor is the beloved
-[Sneak](https://github.com/justinmk/vim-sneak) plugin, in that they share the
-same basic assumptions, namely: (1) to reach all kinds of distant targets,
-ideally we need _one_ command that is flexible enough to do the job all the
-time, and can be invoked/operated with _total automatism_; (2) for that, the
-most adequate basis is unidirectional 2-character search; (3) the interface
-should be optimized for the _common case_.
-
-While keeping that minimalist approach, Lightspeed nonetheless has a bunch of
-brand-new features, blurring the boundary between one- and two-character search,
-and offering some additional help at every single keypress.
 
 ### Jump on partial input
 
@@ -445,11 +449,12 @@ you can compile into the `lua` folder with the Fennel executable.
 As always, we are standing on the shoulders of giants:
 
 - [Sneak](https://github.com/justinmk/vim-sneak): a big fan of this - absolute
-  respect for Justin M. Keyes, besides his work on Neovim, for making a motion
-  plugin that I have considered to be close to perfect for a long time
+  respect for [justinmk](https://github.com/justinmk), besides his work on
+  Neovim, for making a motion plugin that I have considered to be close to
+  perfect for a long time
+- [clever-f](https://github.com/rhysd/clever-f.vim)
 - [Hop](https://github.com/phaazon/hop.nvim): a promising take on EasyMotion in
   the Neovim-era
 - [EasyMotion](https://github.com/easymotion/vim-easymotion): the venerable one,
   of course
-- [clever-f](https://github.com/rhysd/clever-f.vim)
 
