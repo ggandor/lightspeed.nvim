@@ -443,7 +443,6 @@ interrupted change-operation."
 ; State for 1-character search that is persisted between invocations.
 (local ft {:instant-repeat? nil
            :started-reverse? nil
-           :prev-t-like? nil
            :prev-reverse? nil
            :prev-search nil
            :prev-dot-repeatable-search nil})
@@ -458,18 +457,16 @@ interrupted change-operation."
                    (or (and (not reverse?) started-reverse?)
                        (and reverse? (not started-reverse?)))
                    reverse?)
-        ; When instant-repeating t-like motion, we increment the count by one,
-        ; else we would find the same target in front of us again and again,
-        ; and be stuck. (Except when we have just changed directions or between
-        ; f/t mode.) Note that we have created a new edge case: given '[q]uux',
-        ; and inputing 'fu', pressing 't' for the first time will not move the
-        ; cursor, just switches the mode. And we could not care less, this whole
-        ; stuff is overengineering anyway.
         switched-directions? (or (and reverse? (not self.prev-reverse?))
                                  (and (not reverse?) self.prev-reverse?))
-        switched-f->t? (and t-like? (not self.prev-t-like?))
-        count (if (and instant-repeat? t-like?
-                       (not (or switched-f->t? switched-directions?)))
+        ; When instant-repeating t-like motion, we increment the count by one,
+        ; else we would find the same target in front of us again and again,
+        ; and be stuck.
+        ; Food for thought: In fact, what 'T' should do is stepping back to the
+        ; previous position, instead of doing a reverse search... The only
+        ; real-life use case for switching directions is when you overshoot,
+        ; i.e. accidentally repeat one more time than necessary.
+        count (if (and instant-repeat? t-like? (not switched-directions?))
                 (inc vim.v.count1)
                 vim.v.count1)
         [repeat-fwd-key repeat-bwd-key] (->> [opts.instant_repeat_fwd_key
@@ -501,7 +498,6 @@ interrupted change-operation."
             (do (set self.prev-dot-repeatable-search in1)
                 (set-dot-repeat cmd-for-dot-repeat count))
             (set self.prev-search in1)))
-        (set self.prev-t-like? t-like?)
         (set self.prev-reverse? reverse?)
         (var i 0)
         (var target-pos nil)
@@ -529,10 +525,10 @@ interrupted change-operation."
                   (set self.instant-repeat?
                        (and ok? (or custom-repeat-key-used?
                                     (string.match (vim.fn.maparg in2 mode)
-                                                  "<Plug>Lightspeed_[fFtT]"))))
+                                                  (.. "<Plug>Lightspeed_"
+                                                      (if t-like? "[tT]" "[fF]"))))))
                   (if custom-repeat-key-used?
-                    (do (hl:cleanup)
-                        (ft:to (= in2 repeat-bwd-key) t-like?))
+                    (do (hl:cleanup) (ft:to (= in2 repeat-bwd-key) t-like?))
                     ; f/F/t/T can be fed forward too, no need for a recursive call.
                     (vim.fn.feedkeys (if ok? in2 (replace-keycodes "<esc>")) :i))))
               (hl:cleanup)))))))
