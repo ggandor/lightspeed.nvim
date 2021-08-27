@@ -1,4 +1,4 @@
-*lightspeed.txt*        For Neovim version 0.5       Last change: 2021 August 17
+*lightspeed.txt*        For Neovim version 0.5       Last change: 2021 August 28
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -39,7 +39,7 @@ settings:
 That is, 
 - invoke in the forward (`s`) or backward (`S`) direction
 - optionally turn on "full-inclusive" mode (moves the cursor to the end of the
-  match)
+  match, and makes the motion inclusive)
 - enter 1st character of the search pattern (might short-circuit after this,
   if the character is unique in the search direction)
 - enter 2nd character of the search pattern (might short-circuit after this,
@@ -163,13 +163,10 @@ Available options~
     Key to switch on "full-inclusive" mode for 2-character search. The cursor
     will jump to the end of the match instead of the start then. In
     operator-pending mode, the operated area is extended to the end of the
-    match. For this, you will probably want to use some special -
-    non-searchable - key (|keycodes| are supported).
+    match, i.e., the motion behaves as an |inclusive| one. Only has an effect
+    in the forward direction. For this, you will probably want to use some
+    special - non-searchable - key (|keycodes| are supported).
 
-    Note: Combined with |forced-motion|, you can land before or on the first
-          character of the match, at the end of the match, or even in the
-          column _after_ the end of the match.
-    
 `instant_repeat_fwd_key = nil`
 `instant_repeat_bwd_key = nil`
 

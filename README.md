@@ -101,7 +101,7 @@ default settings:
 That is, 
 - invoke in the forward (`s`) or backward (`S`) direction
 - optionally turn on "full-inclusive" mode (moves the cursor to the end of the
-  match)
+  match, and makes the motion inclusive)
 - enter 1st character of the search pattern (might short-circuit after this, if
   the character is unique in the search direction) 
 - _the "beacons" are lit at this point; all potential matches are labeled (char1 + ?)_

@@ -239,6 +239,11 @@ character instead."
   (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW") ?stopline))
 
 
+(fn cursor-before-eof? []
+  (and (= (vim.fn.line ".") (vim.fn.line "$"))
+       (= (vim.fn.virtcol ".") (dec (vim.fn.virtcol "$")))))
+
+
 (fn force-matchparen-refresh []
   ; HACK: :DoMatchParen turns matchparen on simply by triggering
   ;       CursorMoved events (see matchparen.vim). We can do the same,
@@ -252,33 +257,56 @@ character instead."
   (vim.cmd "silent! doautocmd matchup_matchparen CursorMoved"))
 
 
-(fn cursor-before-eof? []
-  (and (= (vim.fn.line ".") (vim.fn.line "$"))
-       (= (vim.fn.virtcol ".") (dec (vim.fn.virtcol "$")))))
-
-
-(macro jump-to! [target {: reverse? : add-to-jumplist? : after}]
+(macro jump-to! [target {: add-to-jumplist? : after : reverse? : inclusive-motion?}]
   `(let [op-mode?# (operator-pending-mode?)
+         ; Needs to be here, inside the returned form, as we need to get
+         ; `vim.o.virtualedit` at runtime.
          restore-virtualedit-autocmd#
          (.. "autocmd CursorMoved,WinLeave,BufLeave"
              ",InsertEnter,CmdlineEnter,CmdwinEnter"
              " * ++once set virtualedit="
              vim.o.virtualedit)]
-     (do (when ,add-to-jumplist? (vim.cmd "norm! m`"))
-         (vim.fn.cursor ,target)
-         ,after
-         ; For operator-pending mode, an additional push is needed,
-         ; to even out that the motion is interpreted as exclusive.
-         (when (and op-mode?# (not ,reverse?))
-           (if (not (cursor-before-eof?)) (push-cursor! :fwd)
-               ; The EOF edge case requires some hackery.
-               (do (vim.cmd "set virtualedit=onemore")
-                   ; Note: The cursor will be moved to the end of the
-                   ;       operated area anyway, no need to restore.
-                   (vim.cmd "norm! l")
-                   (vim.cmd restore-virtualedit-autocmd#))))
-         (when (not op-mode?#)
-           (force-matchparen-refresh)))))
+     (when ,add-to-jumplist? (vim.cmd "norm! m`"))
+     (vim.fn.cursor ,target)
+
+     ; Adjust position after the jump (for t-motion or full-inclusive mode).
+     ,after
+
+     ; Simulating inclusive/exclusive behaviour for operator-pending mode by
+     ; adjusting the cursor position.
+
+     ; For operators, our jump is always interpreted by Vim as an exclusive
+     ; motion, so whenever we'd like to behave as an inclusive one, an
+     ; additional push is needed to even that out (:h inclusive).
+     ; (This is only relevant in the forward direction.)
+     (when (and op-mode?# (not ,reverse?) ,inclusive-motion?)
+       ; Check for modifiers forcing motion types. (:h forced-motion)
+       (match (string.sub (vim.fn.mode :t) -1)
+         ; Note that we should _never_ push the cursor in the linewise case,
+         ; as we might push it beyond EOL, and that would add another line
+         ; to the selection.
+
+         ; Blockwise (<c-v>) itself makes the motion inclusive, we're done.
+
+         ; We want the `v` modifier to behave in the native way, that is, to
+         ; toggle between inclusive/exclusive if applied to a charwise
+         ; motion (:h o_v). As our jump is technically - i.e., from Vim's
+         ; perspective - an exclusive motion, `v` will change it to
+         ; _inclusive_, so we should push the cursor back to "undo" that.
+         ; (Previous column as inclusive = target column as exclusive.)
+         :v (push-cursor! :bwd)
+
+         ; Else, in the normal case (no modifier), we should push the cursor
+         ; forward (next column as exclusive = target column as inclusive).
+         :o (if (not (cursor-before-eof?)) (push-cursor! :fwd)
+                ; The EOF edge case requires some hackery.
+                ; (Note: The cursor will be moved to the end of the operated
+                ; area anyway, no need to undo the `l` afterwards.)
+                (do (vim.cmd "set virtualedit=onemore")
+                    (vim.cmd "norm! l")
+                    (vim.cmd restore-virtualedit-autocmd#)))))
+     (when (not op-mode?#)
+       (force-matchparen-refresh))))
 
 
 (fn onscreen-match-positions [pattern reverse? {: ft-search? : limit}]
@@ -512,10 +540,10 @@ interrupted change-operation."
         (if (= i 0) (exit-with (echo-not-found in1))  ; note: no highlight to clean up if no match found
             (do
               (jump-to! target-pos
-                        {: reverse?
-                         :add-to-jumplist? (not instant-repeat?)
-                         :after (when t-like?
-                                  (push-cursor! (if reverse? :fwd :bwd)))})
+                        {:add-to-jumplist? (not instant-repeat?)
+                         :after (when t-like? (push-cursor! (if reverse? :fwd :bwd)))
+                         : reverse?
+                         :inclusive-motion? true})  ; like the native f/t
               (when-not op-mode?
                 (highlight-cursor)
                 (vim.cmd :redraw)
@@ -797,43 +825,79 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         (var first-jump? true)
         (fn [target]
           (jump-to! target 
-                    {: reverse?
-                     :add-to-jumplist? first-jump?
-                     :after (when (and (not reverse?) full-incl?)
-                              (push-cursor! :fwd))})
+                    {:add-to-jumplist? first-jump?
+                     :after (when full-incl? (push-cursor! :fwd))
+                     : reverse?
+                     :inclusive-motion? full-incl?})
           (when dot-repeatable-op?
             (set-dot-repeat cmd-for-dot-repeat))
           (set first-jump? false))))
 
     (fn jump-and-ignore-ch2-until-timeout! [[target-line target-col _ &as target] ch2]
-      (local orig-pos (get-cursor-pos))
+      (local orig-pos (get-cursor-pos))  ; 1,1
+      ; TODO: what if `jump-to!` would return the final, adjusted position?
       (jump-with-wrap! target)
+      ; Jumping based on partial input is nice, but it's annoying that we don't
+      ; see the actual changes right away (we are waiting for another input, so
+      ; that we can introduce a safety timespan to ignore the character in the
+      ; next column). Therefore we highlight both the cursor's new position and
+      ; the operated area for a visual feedback, to tell the user that the
+      ; target has been found, and they can continue editing.
+      ; Brace yourselves, this is pure duct-tape programming below, pretty hard
+      ; to follow at the moment.
       (when new-search?
-        ; Jumping based on partial input is nice, but in case operators, it's
-        ; annoying that we don't see the operation executed right away, so
-        ; here are a couple of hacks:
-        (when-not change-op?
-          ; In OP-mode, the cursor always ends up at the beginning of the
-          ; area - in the reverse direction, that means the jump target.
-          (highlight-cursor (when (and op-mode? (not reverse?)) orig-pos)))
-        (when op-mode?
-          (let [[from-pos to-pos] [(vim.tbl_map dec orig-pos)
-                                   ; `target` is a 3-tuple, with a bool at the end.
-                                   ; (We should probably refactor that...)
-                                   [(dec target-line) (dec target-col)]]
-                [start finish] (if reverse? [to-pos from-pos] [from-pos to-pos])
-                hl-group (if (or change-op? delete-op?)
-                           hl.group.pending-change-op-area
-                           hl.group.pending-op-area)]
-              ; The `finish` column is exclusive, but that's OK, since the
-              ; operations are exclusive themselves, and we do not want to
-              ; include the target position in the highlight.
-              (vim.highlight.range 0 hl.ns hl-group start finish)))
-        (vim.cmd :redraw)
-        (ignore-char-until-timeout ch2)
-        ; Mitigate blink on the command line (see also `handle-interrupted-change-op!`).
-        (when change-op? (echo ""))
-        (hl:cleanup)))
+        (let [ctrl-v (replace-keycodes "<c-v>")
+              forced-motion (string.sub (vim.fn.mode :t) -1)
+              from-pos (vim.tbl_map dec orig-pos)
+               ; `target` is a 3-tuple, with a bool at the end, so don't try
+               ; to use map here. (We should probably refactor that...)
+              to-pos [(dec target-line) (if full-incl? target-col (dec target-col))]
+              ; (Preliminary) boundaries of the highlighted - operated - area.
+              [startline startcol &as start] (if reverse? to-pos from-pos)
+              [endline endcol &as end] (if reverse? from-pos to-pos)]
+          (when-not change-op?  ; in that case we're entering insert mode anyway
+            (local ?pos-to-highlight-at
+              (when op-mode?
+                ; In OP-mode, the cursor always ends up at the beginning of the
+                ; area, and that is _not_ necessarily our targeted position.
+                (if (= forced-motion ctrl-v)
+                    ; For blockwise mode, we need to find the top/leftmost "corner".
+                    ; (We increment these, because `start` and `end` were calculated
+                    ; for the area highlight, that needs 0,0-indexing.)
+                    [(inc startline) (inc (math.min startcol endcol))]
+                    ; Otherwise, in the forward direction, we need to stay at the
+                    ; start position with our virtual cursor.
+                    (not reverse?) orig-pos)))
+            ; In any other case, the actual position will be highlighted.
+            (highlight-cursor ?pos-to-highlight-at))
+          (when op-mode?
+            (let [hl-group (if (or change-op? delete-op?)
+                               hl.group.pending-change-op-area
+                               hl.group.pending-op-area)
+                  ; The column in `finish` (`$2`) is exclusive by default (will
+                  ; _not_ be included in the highlight), but that's OK, since
+                  ; our motion is also exclusive by default.
+                  hl-range #(vim.highlight.range 0 hl.ns hl-group $1 $2)]
+              (match forced-motion
+                ctrl-v (for [line startline endline]
+                         (hl-range [line (math.min startcol endcol)]
+                                   ; Blockwise operations make the motion
+                                   ; inclusive on both ends, so we should
+                                   ; increment the end column. (Reminder:
+                                   ; `highlight.range` will not include it.)
+                                   [line (inc (math.max startcol endcol))]))
+                :V (hl-range [startline 0] [endline -1])
+                ; We are in OP mode, doing chairwise motion, so 'v' forces
+                ; inclusiveness (:h o_v). If we have already been inclusive, it
+                ; forces exclusive motion.
+                :v (hl-range start [endline ((if full-incl? dec inc) endcol)])
+                :o (hl-range start end))))
+          (vim.cmd :redraw)
+          (ignore-char-until-timeout ch2)
+          ; Mitigate blink on the command line (see also
+          ; `handle-interrupted-change-op!`).
+          (when change-op? (echo ""))
+          (hl:cleanup))))
 
     ; After all the stage-setting, here comes the main action you've all been
     ; waiting for:
@@ -860,7 +924,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                ; if the need arises (e.g. regex search).
                in0 (do (set enter-repeat? (= in0 "\r"))  ; User hit <enter> right away: repeat previous search.
                        (set new-search? (not (or enter-repeat? dot-repeat?)))
-                       (set full-incl? (= in0 full-inclusive-prefix-key))
+                       (set full-incl? (and (not reverse?)
+                                            (= in0 full-inclusive-prefix-key)))
                        (if enter-repeat? (or self.prev-search.in1
                                              (exit-with (echo-no-prev-search)))
                            full-incl? (get-input-and-clean-up)  ; Get the "true" first input.
