@@ -351,6 +351,24 @@ that with the different shortcutting methods available, the lack of an "ignore
 case" option is less of a problem for us: in this plugin, capitals _can_ very
 frequently make you reach the target faster - so start using them!
 
+### Labeled matches for 1-character search?
+
+That would be pretty pointless, for two reasons. First, the "break" is
+inevitable then, since it is physically impossible to show labels ahead of time.
+Second, usually there are too many matches, so we should use multi-character
+labels. Now, ask yourself the question: isn't it much better to type two
+on-screen characters, and then a "little bit surprising" label, than to type one
+on-screen character, and wait for - most probably - two surprising characters
+to appear?
+
+1-character search is for short distances, or when you can clearly count the
+number of occurrences, and reach for `f` or `t` in a totally automatic way. In
+those cases they are invaluable shortcuts, but for everything else, `s` should
+be the default choice. The multiline enhancement has only been implemented
+because of that annoying situation when there is a unique character just a couple
+of lines above of below the current line, but we could not target it with the
+native `f`/`t`.
+
 ### Arbitrary(-length) search pattern?
 
 That is practically labeling `/?` matches, right? It is overkill for our
