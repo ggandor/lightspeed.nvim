@@ -96,7 +96,7 @@ Plug 'ggandor/lightspeed.nvim'
 Command sequence for 2-character search in Normal and Visual mode, with the
 default settings:
 
-`(s|S) <c-x>? char1 (char2|label)? (<tab>|<s-tab>)* label?`
+`s|S <c-x>? char1 (char2|label)? (<tab>|<s-tab>)* label?`
 
 That is, 
 - invoke in the forward (`s`) or backward (`S`) direction
@@ -122,12 +122,12 @@ In Operator-pending mode the search is invoked with `z`/`Z`, acknowledging that
 Let's say you would like to jump to an `AB` pair, and you have already entered
 `A`, the first character of the search pattern.
 
-If `jump_to_first_match` is on, then the directly reachable ones among the `AX`
-matches will be highlighted as they are, without a label (with white/black for
-dark/light background, respectively). For these, it is enough to finish the
-pattern, i.e., type `B`, to land on the target.
+If `jump_to_first_match` is on - the default setting -, then the directly
+reachable ones among the `AX` matches will be highlighted as they are (with
+white/black for dark/light themes, respectively). For these, it is enough to
+finish the pattern, i.e., type `B`, to land on the target.
 
-All other beacons on top of `A` `X` look like:
+All other beacons on top of `A` `X` matches look like:
 
 `X` `label`
 
@@ -209,16 +209,18 @@ For a detailed description of the available options, see the docs: `:h
 lightspeed-config`.
 
 For customizing the highlight colors, see `:h lightspeed-highlight`.
-(Colorscheme authors: let your creativity fly, but please keep in mind that
-`LightspeedMaskedChar` should in any case be _much_ dimmer and less obtrusive
-than the labels.)
+
+(Colorscheme authors: let your creativity fly, but please keep on thing in mind,
+that is, `LightspeedMaskedChar` should in any case be _much_ dimmer and less
+obtrusive than the labels.)
 
 #### Notes
 
 * Lightspeed will not override your - or other plugins' - custom mappings,
   unless explicitly told so. If you, for any reason, would like to revert to the
-  _native_ behaviour of certain keys, check `:h
-  lightspeed-disable-default-mappings` (spoiler alert: `unmap`).
+  native behaviour of certain keys, that is, would not like to use some features
+  of the plugin, check `:h lightspeed-disable-default-mappings` (spoiler alert:
+  `unmap`).
 
 * While the plugin is active, the actual cursor is down on the command line, but
   its position in the window is kept highlighted, using the attributes of the
@@ -245,9 +247,12 @@ than the labels.)
 ### Jump on partial input
 
 If you enter a character that is the only match in the search direction,
-Lightspeed jumps to it directly, without waiting for a second input.
-To mitigate accidents, a short timeout is set by default, until the second
-character in the pair (and only that) is "swallowed". 
+Lightspeed jumps to it directly, without waiting for a second input. To mitigate
+accidents, a short timeout is set by default, until the second character in the
+pair (and only that) is "swallowed". In operator-pending mode, the operated area
+gets a temporary highlight (strikethrough for "destructive" operations - change
+and delete -, colored background for others) until the next character is
+entered.
 
 ![jumping to unique characters](../media/intro_img1_jump_to_unique.gif?raw=true)
 
@@ -351,24 +356,6 @@ that with the different shortcutting methods available, the lack of an "ignore
 case" option is less of a problem for us: in this plugin, capitals _can_ very
 frequently make you reach the target faster - so start using them!
 
-### Labeled matches for 1-character search?
-
-That would be pretty pointless, for two reasons. First, the "break" is
-inevitable then, since it is physically impossible to show labels ahead of time.
-Second, usually there are too many matches, so we should use multi-character
-labels. Now, ask yourself the question: isn't it much better to type two
-on-screen characters, and then a "little bit surprising" label, than to type one
-on-screen character, and wait for - most probably - two surprising characters
-to appear?
-
-1-character search is for short distances, or when you can clearly count the
-number of occurrences, and reach for `f` or `t` in a totally automatic way. In
-those cases they are invaluable shortcuts, but for everything else, `s` should
-be the default choice. The multiline enhancement has only been implemented
-because of that annoying situation when there is a unique character just a couple
-of lines above of below the current line, but we could not target it with the
-native `f`/`t`.
-
 ### Arbitrary(-length) search pattern?
 
 That is practically labeling `/?` matches, right? It is overkill for our
@@ -400,6 +387,26 @@ instead of the other way around.  (Protip: `map Y y$`.) If you want to comment
 out an entire line, you should definitely use some plugin that offers a
 dedicated command, or make your own mapping, instead of doing it by hand. And so
 on...
+
+### Labeled matches for 1-character search?
+
+That would be pretty pointless, for two reasons. First, the "break" is
+inevitable then, since it is physically impossible to show labels ahead of time.
+Second, usually there are too many matches, so we should use multi-character
+labels. (The closer ones you could probably reach with `s` directly.) Now, ask
+yourself the question: isn't it much better to type two on-screen characters,
+and then a "little bit surprising" label, than to type one on-screen character,
+and wait for - most probably - two surprising characters to appear?
+
+Moreover, if you start thinking about whether to use `f` or `s`, then the whole
+thing is screwed already. Minimal mental effort. That is the mantra of
+Lightspeed. 1-character search is for very short distances, or when you can
+clearly count the number of occurrences, and reach for `f` or `t` in a totally
+automatic way. In those cases they are invaluable shortcuts, but for everything
+else, `s` should be the default choice. The multiline enhancement has only been
+implemented because of that annoying situation when there is a unique character
+just a couple of lines above of below the current line, but we could not target
+it with the native `f`/`t`.
 
 ### Bi-directional search?
 

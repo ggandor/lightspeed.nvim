@@ -34,7 +34,7 @@ USAGE                                                         *lightspeed-usage*
 Command sequence for 2-character search in Normal mode, with the default
 settings:
 
-`(s|S) <c-x>? char1 (char2|label)? (<tab>|<s-tab>)* label?`
+`s|S <c-x>? char1 (char2|label)? (<tab>|<s-tab>)* label?`
 
 That is, 
 - invoke in the forward (`s`) or backward (`S`) direction
