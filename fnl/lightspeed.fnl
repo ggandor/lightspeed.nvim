@@ -269,7 +269,7 @@ character instead."
      (when ,add-to-jumplist? (vim.cmd "norm! m`"))
      (vim.fn.cursor ,target)
 
-     ; Adjust position after the jump (for t-motion or full-inclusive mode).
+     ; Adjust position after the jump (for t-motion or x-mode).
      ,after
 
      ; Simulating inclusive/exclusive behaviour for operator-pending mode by
@@ -737,7 +737,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 
 ; State for 2-character search that is persisted between invocations.
 (local s {:prev-search {:in1 nil :in2 nil}
-          :prev-dot-repeatable-search {:in1 nil :in2 nil :in3 nil :full-incl? nil}})
+          :prev-dot-repeatable-search {:in1 nil :in2 nil :in3 nil :x-mode? nil}})
 
 (fn s.to [self reverse? dot-repeat?]
   "Entry point for 2-character search."
@@ -745,7 +745,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         change-op? (change-operation?)
         delete-op? (delete-operation?)
         dot-repeatable-op? (dot-repeatable-operation?)
-        full-inclusive-prefix-key (replace-keycodes opts.full_inclusive_prefix_key)
+        x-mode-prefix-key (replace-keycodes opts.full_inclusive_prefix_key)
         [cycle-fwd-key cycle-bwd-key] (get-cycle-keys)
         labels (get-labels)
         label-indexes (reverse-lookup labels)
@@ -803,17 +803,18 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 
     (var enter-repeat? nil)
     (var new-search? nil)
-    (var full-incl? nil)
+    (var x-mode? nil)
 
     (fn save-state-for [{: enter-repeat : dot-repeat}]
       (when new-search?
         ; Arbitrary choice: let dot-repeat _not_ update the previous
         ; normal/visual/yank search - this seems more useful.
         (if dot-repeatable-op? (when dot-repeat
-                                 (tset dot-repeat :full-incl? full-incl?)
+                                 (tset dot-repeat :x-mode? x-mode?)
                                  (set self.prev-dot-repeatable-search dot-repeat))
-            ; FIXME: We should save `full-incl?` for enter-repeat too,
+            ; FIXME: We should save `x-mode?` for enter-repeat too,
             ;        or pressing <enter> should be alowed after the prefix.
+            ;        (Probably the latter.)
             enter-repeat (set self.prev-search enter-repeat))))
 
     (local jump-with-wrap!
@@ -826,9 +827,11 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         (fn [target]
           (jump-to! target 
                     {:add-to-jumplist? first-jump?
-                     :after (when full-incl? (push-cursor! :fwd))
+                     :after (when x-mode?
+                              (push-cursor! :fwd)
+                              (when reverse? (push-cursor! :fwd)))
                      : reverse?
-                     :inclusive-motion? full-incl?})
+                     :inclusive-motion? (and x-mode? (not reverse?))})
           (when dot-repeatable-op?
             (set-dot-repeat cmd-for-dot-repeat))
           (set first-jump? false))))
@@ -851,7 +854,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
               from-pos (vim.tbl_map dec orig-pos)
                ; `target` is a 3-tuple, with a bool at the end, so don't try
                ; to use map here. (We should probably refactor that...)
-              to-pos [(dec target-line) (if full-incl? target-col (dec target-col))]
+              to-pos [(dec target-line) (if (and x-mode? reverse?) (inc target-col)
+                                            (and x-mode? (not reverse?)) target-col
+                                            (dec target-col))]
               ; (Preliminary) boundaries of the highlighted - operated - area.
               [startline startcol &as start] (if reverse? to-pos from-pos)
               [endline endcol &as end] (if reverse? from-pos to-pos)]
@@ -890,7 +895,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                 ; We are in OP mode, doing chairwise motion, so 'v' forces
                 ; inclusiveness (:h o_v). If we have already been inclusive, it
                 ; forces exclusive motion.
-                :v (hl-range start [endline ((if full-incl? dec inc) endcol)])
+                :v (hl-range start [endline ((if (and x-mode? (not reverse?)) dec inc)
+                                             endcol)])
                 :o (hl-range start end))))
           (vim.cmd :redraw)
           (ignore-char-until-timeout ch2)
@@ -917,18 +923,17 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
     ; that.
 
     (match (if dot-repeat?
-             (do (set full-incl? self.prev-dot-repeatable-search.full-incl?)
+             (do (set x-mode? self.prev-dot-repeatable-search.x-mode?)
                  self.prev-dot-repeatable-search.in1)
              (match (get-input-and-clean-up)
                ; Here we can handle any other modifier keys as "zeroth" input,
                ; if the need arises (e.g. regex search).
                in0 (do (set enter-repeat? (= in0 "\r"))  ; User hit <enter> right away: repeat previous search.
                        (set new-search? (not (or enter-repeat? dot-repeat?)))
-                       (set full-incl? (and (not reverse?)
-                                            (= in0 full-inclusive-prefix-key)))
+                       (set x-mode? (= in0 x-mode-prefix-key))
                        (if enter-repeat? (or self.prev-search.in1
                                              (exit-with (echo-no-prev-search)))
-                           full-incl? (get-input-and-clean-up)  ; Get the "true" first input.
+                           x-mode? (get-input-and-clean-up)  ; Get the "true" first input.
                            in0))))
       in1
       (match (or (get-match-map-for in1 reverse?)
