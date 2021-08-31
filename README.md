@@ -139,20 +139,32 @@ with a filled background (the inverse of a regular label).
 #### 1-character search
 
 Lightspeed also overrides the native `f`/`F`/`t`/`T` motions with enhanced
-versions that work over multiple lines. In Normal and Visual mode, the motions
-can be repeated by pressing the same key again (`f` for `f`, etc.), or one of
-the others (changing the direction or inclusiveness on the fly). This
-"instant-repeat" mode is active until you type any other character.
+versions that work over multiple lines. 
+
+In Normal and Visual mode, the motion can be repeated by pressing the
+corresponding key - `f` or `t` - again. (They continue in the original
+direction, whether it was forward or backward.) `F` and `T`, on the other hand,
+always _revert_ the previous repeat. Note that in the case of `T`, this results
+in a different, and presumably more useful behaviour than what you're used to in
+clever-f and Sneak: `T` does not repeat the search in the reverse direction, but
+puts the cursor back to its previous position - _before_ the previous match -,
+allowing for an easy correction when you accidentally overshoot your target.
+
+This "instant-repeat" mode is active until you type any other character.
 
 By default, `;` and `,` are not utilized by the plugin anymore - you are free to
 remap them to more useful things (`:` and `localleader` are great contenders).
 If you are too used to the native Vim way, and want to keep using them for
-repeating, there are two different possibilities. First, you can specify custom
-trigger keys for instant-repeat, in the `opts` table (see the configuration
-section). The keys will be temporarily hijacked by the plugin then, but the
-actual mappings will not be disturbed. If you would like the keys to trigger
-repeat at any time, even after the plugin has finished executing (i.e., 100%
-native behaviour), there is a workaround for that too - see `:h
+repeating, there are two different possibilities.
+
+First, you can specify custom keys for instant-repeat, in the `opts` table (see
+the configuration section). The keys will be temporarily hijacked by the plugin
+then, but the actual mappings will not be disturbed, so you can use them in
+multiple roles.
+
+If you would like the keys to actually restart the search and trigger repeat at
+any time, even after the plugin has finished executing (similar to the native
+behaviour), there is a workaround for that too - see `:h
 lightspeed-custom-ft-repeat-mappings`.
 
 #### Repeating motions

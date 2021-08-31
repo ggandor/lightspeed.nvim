@@ -472,34 +472,46 @@ interrupted change-operation."
 (local ft {:instant-repeat? nil
            :started-reverse? nil
            :prev-reverse? nil
+           ; For the workaround for native-like `;`/`,`-behaviour.
+           :prev-t-like? nil
            :prev-search nil
-           :prev-dot-repeatable-search nil})
+           :prev-dot-repeatable-search nil
+           ; Stack of previous positions (maintained only while
+           ; instant-repeat is active).
+           :stack []})
 
-(fn ft.to [self reverse? t-like? dot-repeat?]
+(fn ft.to [self reverse? t-like? dot-repeat? revert?]
   "Entry point for 1-character search."
-  (let [{: instant-repeat? : started-reverse?} self
-        _ (when-not instant-repeat? (set self.started-reverse? reverse?))
-        ; f/t always continue in the original direction (and F/T in the
-        ; reverse of the original).
-        reverse? (if instant-repeat?
-                   (or (and (not reverse?) started-reverse?)
-                       (and reverse? (not started-reverse?)))
+  (let [_ (when-not self.instant-repeat?
+            (set self.started-reverse? reverse?))
+        reverse? (if self.instant-repeat?
+                   ; f/t always continue in the original direction,
+                   ; and F/T in the reverse of the original (so they mean
+                   ; _relative_ reverse in case of instant-repeat).
+                   (or (and (not reverse?) self.started-reverse?)
+                       (and reverse? (not self.started-reverse?)))
                    reverse?)
+        ; This is only relevant for the workaround described at `:h
+        ; lightspeed-custom-ft-repeat-mappings`. (#19)
         switched-directions? (or (and reverse? (not self.prev-reverse?))
                                  (and (not reverse?) self.prev-reverse?))
-        ; When instant-repeating t-like motion, we increment the count by one,
-        ; else we would find the same target in front of us again and again,
-        ; and be stuck.
-        ; Food for thought: In fact, what 'T' should do is stepping back to the
-        ; previous position, instead of doing a reverse search... The only
-        ; real-life use case for switching directions is when you overshoot,
-        ; i.e. accidentally repeat one more time than necessary.
-        count (if (and instant-repeat? t-like? (not switched-directions?))
-                (inc vim.v.count1)
-                vim.v.count1)
-        [repeat-fwd-key repeat-bwd-key] (->> [opts.instant_repeat_fwd_key
-                                              opts.instant_repeat_bwd_key]
-                                             (vim.tbl_map replace-keycodes))
+        count (if self.instant-repeat?
+                  (if revert?
+                      ; When reverting the repeat, we highlight all matches, but
+                      ; will not move the cursor. In case of `T`, we still skip
+                      ; the first match, i.e., the immediate next character (we
+                      ; don't want to highlight that).
+                      (if t-like? 1 0)
+                      ; When instant-repeating t/T, we increment the count by
+                      ; one, else we would find the same target in front of us
+                      ; again and again, and be stuck.
+                      (if (and t-like? (not switched-directions?))
+                          (inc vim.v.count1)
+                          vim.v.count1))
+                  vim.v.count1)
+        [repeat-key revert-key] (->> [opts.instant_repeat_fwd_key
+                                      opts.instant_repeat_bwd_key]
+                                     (vim.tbl_map replace-keycodes))
         op-mode? (operator-pending-mode?)
         dot-repeatable-op? (dot-repeatable-operation?)
         motion (if (and (not t-like?) (not reverse?)) "f"
@@ -508,11 +520,11 @@ interrupted change-operation."
                    (and t-like? reverse?) "T")
         cmd-for-dot-repeat (.. (replace-keycodes "<Plug>Lightspeed_repeat_") motion)]
 
-    (when-not (or instant-repeat? dot-repeat?)
+    (when-not (or self.instant-repeat? dot-repeat?)
       (echo "") (highlight-cursor) (vim.cmd :redraw))
 
     (var enter-repeat? nil)
-    (match (if instant-repeat? self.prev-search
+    (match (if self.instant-repeat? self.prev-search
                dot-repeat? self.prev-dot-repeatable-search
                (match (get-input-and-clean-up)
                  "\r" (do (set enter-repeat? true)
@@ -520,46 +532,57 @@ interrupted change-operation."
                               (exit-with (echo-no-prev-search))))
                  in in))
       in1
-      (let [new-search? (not (or enter-repeat? instant-repeat? dot-repeat?))]
+      (let [new-search? (not (or enter-repeat? self.instant-repeat? dot-repeat?))]
         (when new-search?  ; endnote #1
           (if dot-repeatable-op?
             (do (set self.prev-dot-repeatable-search in1)
                 (set-dot-repeat cmd-for-dot-repeat count))
             (set self.prev-search in1)))
         (set self.prev-reverse? reverse?)
+        (set self.prev-t-like? t-like?)
+
         (var i 0)
-        (var target-pos nil)
+        (var match-pos nil)
         (each [[line col &as pos] 
                (let [pattern (.. "\\V" (in1:gsub "\\" "\\\\"))
                      limit (when opts.limit_ft_matches (+ count opts.limit_ft_matches))]
                  (onscreen-match-positions pattern reverse? {:ft-search? true : limit}))]
           (++ i)
-          (if (<= i count) (set target-pos pos)
+          (if (<= i count) (set match-pos pos)
               (when-not op-mode?
                 (hl:add-hl hl.group.one-char-match (dec line) (dec col) col))))
+
         (if (= i 0) (exit-with (echo-not-found in1))  ; note: no highlight to clean up if no match found
             (do
-              (jump-to! target-pos
-                        {:add-to-jumplist? (not instant-repeat?)
-                         :after (when t-like? (push-cursor! (if reverse? :fwd :bwd)))
-                         : reverse?
-                         :inclusive-motion? true})  ; like the native f/t
-              (when-not op-mode?
+              (when-not revert?
+                (jump-to! match-pos
+                          {:add-to-jumplist? (not self.instant-repeat?)
+                           :after (when t-like? (push-cursor! (if reverse? :fwd :bwd)))
+                           : reverse?
+                           :inclusive-motion? true}))  ; like the native f/t
+              (local new-pos (get-cursor-pos))
+              (when-not op-mode?  ; note: no highlight to clean up in op-mode
                 (highlight-cursor)
                 (vim.cmd :redraw)
                 (let [(ok? in2) (getchar-as-str)
-                      custom-repeat-key-used? (one-of? in2 repeat-fwd-key repeat-bwd-key)
-                      mode (if (= (vim.fn.mode) :n) :n :x)]  ; vim-cutlass compat (#28)
-                  (set self.instant-repeat?
-                       (and ok? (or custom-repeat-key-used?
-                                    (string.match (vim.fn.maparg in2 mode)
-                                                  (.. "<Plug>Lightspeed_"
-                                                      (if t-like? "[tT]" "[fF]"))))))
-                  (if custom-repeat-key-used?
-                    (do (hl:cleanup) (ft:to (= in2 repeat-bwd-key) t-like?))
-                    ; f/F/t/T can be fed forward too, no need for a recursive call.
-                    (vim.fn.feedkeys (if ok? in2 (replace-keycodes "<esc>")) :i))))
-              (hl:cleanup)))))))
+                      mode (if (= (vim.fn.mode) :n) :n :x)  ; vim-cutlass compat (#28)
+                      repeat? (or (= in2 repeat-key)
+                                  (string.match (vim.fn.maparg in2 mode)
+                                                (.. "<Plug>Lightspeed_"
+                                                    (if t-like? "t" "f"))))
+                      revert? (or (= in2 revert-key)
+                                  (string.match (vim.fn.maparg in2 mode)
+                                                (.. "<Plug>Lightspeed_"
+                                                    (if t-like? "T" "F"))))]
+                  (hl:cleanup)
+                  (set self.instant-repeat? (and ok? (or repeat? revert?)))
+                  (if (not self.instant-repeat?)
+                      (do (set self.stack [])
+                          (vim.fn.feedkeys (if ok? in2 (replace-keycodes "<esc>")) :i))
+                      (do (if revert? (match (table.remove self.stack)
+                                        prev-pos (vim.fn.cursor prev-pos))
+                              (table.insert self.stack new-pos))
+                          (ft:to false t-like? false revert?)))))))))))
 
 ; }}}
 ; 2-character search {{{

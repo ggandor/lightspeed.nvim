@@ -1,4 +1,4 @@
-*lightspeed.txt*        For Neovim version 0.5       Last change: 2021 August 28
+*lightspeed.txt*        For Neovim version 0.5       Last change: 2021 August 31
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -64,11 +64,22 @@ second one. The label gets a different highlight in these cases (by default,
 appears as an "inverse" block of the normal labels).
 
                        *lightspeed-1-character-search* *lightspeed-instant-repeat*
-`f`, `F`, `t`, `T` work as their native counterparts, but are not limited to
-the current line. In Normal and Visual mode, the motion can be repeated via
-pressing the same key (`f` for `f`, etc.) or one of the others (changing the
-direction or the inclusiveness on the fly). This "instant-repeat" mode is
-active until you type any other character.
+Lightspeed also overrides the native `f`/`F`/`t`/`T` motions with enhanced
+versions that work over multiple lines. 
+
+In Normal and Visual mode, the motion can be repeated by pressing the
+corresponding key - `f` or `t` - again (they continue in the original
+direction, whether it was forward or backward).
+
+`F` and `T` always _revert_ the previous repeat. In the case of `T`, this
+results in a different behaviour than the native `,` motion: `T` does not
+repeat the search in the reverse direction, but puts the cursor back to its
+previous position - before the previous match -, allowing for an easy
+correction when you accidentally overshoot your target.
+
+This "instant-repeat" mode is active until you type any other character.
+
+To specify custom keys for triggering repeat, see |lightspeed-config|.
 
 Note: If you would like to keep using `;` and `,` to trigger repeat in the
       native way, see |lightspeed-custom-ft-repeat-mappings| for a workaround.
@@ -313,6 +324,11 @@ To keep using `;` and `,` in the native way, add the following to your config: >
     vim.api.nvim_set_keymap('x', ',', '<cmd>lua repeat_ft(true)<cr>',
                             {noremap = true, silent = true})
 <
+This gives you 99% of the native behaviour - for the sake of completeness, it
+should be noted that a count cannot be given in the middle of a sequence of
+repeats, only at the beginning (since, in the end, the keys will enter into
+instant-repeat mode, just like `f`/`F`/`t`/`T`).
+
 Note: Make sure to use `<cmd>`, and not `:`, at the beginning of the right
       hand side, as Visual mode will be broken otherwise.
 
