@@ -1,4 +1,4 @@
-*lightspeed.txt*        For Neovim version 0.5       Last change: 2021 August 31
+*lightspeed.txt*      For Neovim version 0.5      Last change: 2021 September 03
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -62,6 +62,15 @@ followed by a certain other character in the search area). Those you can reach
 via typing the label character right after the first input, bypassing the
 second one. The label gets a different highlight in these cases (by default,
 appears as an "inverse" block of the normal labels).
+
+                                                             *lightspeed-x-mode*
+The mnemonic for X-mode could be "backward: exclusive, forward: extended
+inclusive". In the forward direction, the cursor goes to the end of the match;
+in the backward direction, the motion is the equivalent of `T` for
+two-character search, stopping the cursor just before the end of the match. In
+Operator-pending mode, the edge of the operated area always gets an offset of
++2. In the forward direction, this means the area too is extended to the end
+of the match, i.e., the motion will behave as an |inclusive| one.
 
                        *lightspeed-1-character-search* *lightspeed-instant-repeat*
 Lightspeed also overrides the native `f`/`F`/`t`/`T` motions with enhanced
@@ -161,6 +170,12 @@ Available options~
     available labels when you want to jump to a `==` or `--` beyond that. Also
     convenient for working with hex color codes.
 
+`x_mode_prefix_key = '<c-x>'`
+
+    Key to switch on |lightspeed-x-mode| for 2-character search. For this, you
+    will probably want to use some special - non-searchable - key (|keycodes|
+    are supported).
+
 `limit_ft_matches = 5`
     
     For 1-character search, only the next 'n' matches will be highlighted
@@ -168,15 +183,6 @@ Available options~
     reducing visual noise. (Highlighting matches can be turned off altogether
     by setting the value to 0, but that is not recommended, since this is also
     a visual signal about whether |lightspeed-instant-repeat| is active.)
-
-`full_inclusive_prefix_key = '<c-x>'`
-
-    Key to switch on "full-inclusive" mode for 2-character search. The cursor
-    will jump to the end of the match instead of the start then. In
-    operator-pending mode, the operated area is extended to the end of the
-    match, i.e., the motion behaves as an |inclusive| one. Only has an effect
-    in the forward direction. For this, you will probably want to use some
-    special - non-searchable - key (|keycodes| are supported).
 
 `instant_repeat_fwd_key = nil`
 `instant_repeat_bwd_key = nil`

@@ -53,7 +53,8 @@ information after _each_ keystroke, to assist the user and offer shortcuts:
 
 * having a choice between automatically jumping to the first match (Sneak-like -
   default) or allowing for more comfortable target labels (EasyMotion-like)
-* **full-inclusive mode** extends the operated area to the end of the match
+* **X-mode** (backward exclusive, forward "extended inclusive") allows for more
+  precision and comfort especially in Visual and Operator-pending mode
 * flawless **dot-repeat support** for operators (with
   [repeat.vim](https://github.com/tpope/vim-repeat) installed)
 * skips folds
@@ -100,8 +101,7 @@ default settings:
 
 That is, 
 - invoke in the forward (`s`) or backward (`S`) direction
-- optionally turn on "full-inclusive" mode (moves the cursor to the end of the
-  match, and makes the motion inclusive)
+- optionally turn on "X-mode" (exclusive/extended)
 - enter 1st character of the search pattern (might short-circuit after this, if
   the character is unique in the search direction) 
 - _the "beacons" are lit at this point; all potential matches are labeled (char1 + ?)_
@@ -116,6 +116,16 @@ That is,
 
 In Operator-pending mode the search is invoked with `z`/`Z`, acknowledging that
 "surround" plugins may benefit even more from being able to use `s`/`S` then.
+
+##### X mode
+
+The mnemonic for X-mode could be "backward: exclusive, forward: extended
+inclusive". In the forward direction, the cursor goes to the end of the match;
+in the backward direction, the motion is the equivalent of `T` for two-character
+search, stopping the cursor just before the end of the match. In
+Operator-pending mode, the edge of the operated area always gets an offset of
++2. In the forward direction, this means the area too is extended to the end of
+the match, i.e., the motion will behave as an inclusive one.
 
 ##### A note on the highlighting strategy
 
@@ -199,7 +209,7 @@ require'lightspeed'.setup {
   grey_out_search_area = true,
   match_only_the_start_of_same_char_seqs = true,
   limit_ft_matches = 5,
-  full_inclusive_prefix_key = '<c-x>',
+  x_mode_prefix_key = '<c-x>',
   -- For instant-repeat, pressing the trigger key again (f/F/t/T)
   -- always works, but here you can specify additional keys too.
   instant_repeat_fwd_key = nil,

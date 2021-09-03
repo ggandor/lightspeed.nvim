@@ -86,7 +86,7 @@ local function leftmost_editable_wincol()
   vim.fn.winrestview(view)
   return wincol
 end
-local opts = {cycle_group_bwd_key = nil, cycle_group_fwd_key = nil, full_inclusive_prefix_key = "<c-x>", grey_out_search_area = true, highlight_unique_chars = false, instant_repeat_bwd_key = nil, instant_repeat_fwd_key = nil, jump_on_partial_input_safety_timeout = 400, jump_to_first_match = true, labels = nil, limit_ft_matches = 5, match_only_the_start_of_same_char_seqs = true}
+local opts = {cycle_group_bwd_key = nil, cycle_group_fwd_key = nil, grey_out_search_area = true, highlight_unique_chars = false, instant_repeat_bwd_key = nil, instant_repeat_fwd_key = nil, jump_on_partial_input_safety_timeout = 400, jump_to_first_match = true, labels = nil, limit_ft_matches = 5, match_only_the_start_of_same_char_seqs = true, x_mode_prefix_key = "<c-x>"}
 local function setup(user_opts)
   opts = setmetatable(user_opts, {__index = opts})
   return nil
@@ -1017,7 +1017,7 @@ s.to = function(self, reverse_3f, dot_repeat_3f)
   local change_op_3f = change_operation_3f()
   local delete_op_3f = delete_operation_3f()
   local dot_repeatable_op_3f = dot_repeatable_operation_3f()
-  local x_mode_prefix_key = replace_keycodes(opts.full_inclusive_prefix_key)
+  local x_mode_prefix_key = replace_keycodes((opts.x_mode_prefix_key or opts.full_inclusive_prefix_key))
   local _let_232_ = get_cycle_keys()
   local cycle_fwd_key = _let_232_[1]
   local cycle_bwd_key = _let_232_[2]

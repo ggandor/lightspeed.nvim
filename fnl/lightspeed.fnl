@@ -119,7 +119,7 @@ character instead."
            :grey_out_search_area true
            :match_only_the_start_of_same_char_seqs true
            :limit_ft_matches 5
-           :full_inclusive_prefix_key "<c-x>"
+           :x_mode_prefix_key "<c-x>"
            :instant_repeat_fwd_key nil
            :instant_repeat_bwd_key nil
            :cycle_group_fwd_key nil
@@ -768,7 +768,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         change-op? (change-operation?)
         delete-op? (delete-operation?)
         dot-repeatable-op? (dot-repeatable-operation?)
-        x-mode-prefix-key (replace-keycodes opts.full_inclusive_prefix_key)
+        x-mode-prefix-key (replace-keycodes
+                            (or opts.x_mode_prefix_key
+                                opts.full_inclusive_prefix_key))  ; deprecated
         [cycle-fwd-key cycle-bwd-key] (get-cycle-keys)
         labels (get-labels)
         label-indexes (reverse-lookup labels)
