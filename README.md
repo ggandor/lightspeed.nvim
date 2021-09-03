@@ -12,10 +12,10 @@ possible.
 The plugin's closest ancestor is Justin M. Keyes' beloved
 [vim-sneak](https://github.com/justinmk/vim-sneak), in that they share the same
 basic assumptions, namely: (1) to reach all kinds of distant targets, ideally we
-need _one_ command that is flexible enough to do the job all the time, and can
-be invoked/operated with _total automatism_; (2) for that, the most adequate
-basis is unidirectional 2-character search; (3) the interface should be
-optimized for the _common case_.
+need one _universal_ motion, with its variations, that are flexible enough to do
+the job all the time, and can be invoked/operated with _total automatism_; (2)
+for that, the most adequate basis is unidirectional 2-character search; (3) the
+interface should be optimized for the _common case_.
 
 #### Railways versus jetpacks
 
@@ -49,12 +49,15 @@ information after _each_ keystroke, to assist the user and offer shortcuts:
 * **jump based on partial input:** 2-character search can jump right after the
   first input, if the character is unique in the search direction
 
+To see these features in action, check the screen recordings in the [in-depth
+introduction](https://github.com/ggandor/lightspeed.nvim#-an-in-depth-introduction-of-the-key-features) below.
+
 #### Other quality-of-life features
 
 * having a choice between automatically jumping to the first match (Sneak-like -
   default) or allowing for more comfortable target labels (EasyMotion-like)
-* **X-mode** (backward exclusive, forward "extended inclusive") allows for more
-  precision and comfort especially in Visual and Operator-pending mode
+* **X-mode** (extend/exclude) allows for more precision and comfort especially
+  in Operator-pending mode
 * flawless **dot-repeat support** for operators (with
   [repeat.vim](https://github.com/tpope/vim-repeat) installed)
 * skips folds
@@ -101,7 +104,7 @@ default settings:
 
 That is, 
 - invoke in the forward (`s`) or backward (`S`) direction
-- optionally turn on "X-mode" (exclusive/extended)
+- optionally turn on X-mode (extend/exclude)
 - enter 1st character of the search pattern (might short-circuit after this, if
   the character is unique in the search direction) 
 - _the "beacons" are lit at this point; all potential matches are labeled (char1 + ?)_
@@ -117,15 +120,15 @@ That is,
 In Operator-pending mode the search is invoked with `z`/`Z`, acknowledging that
 "surround" plugins may benefit even more from being able to use `s`/`S` then.
 
-##### X mode
+##### X-mode
 
-The mnemonic for X-mode could be "backward: exclusive, forward: extended
-inclusive". In the forward direction, the cursor goes to the end of the match;
-in the backward direction, the motion is the equivalent of `T` for two-character
-search, stopping the cursor just before the end of the match. In
-Operator-pending mode, the edge of the operated area always gets an offset of
-+2. In the forward direction, this means the area too is extended to the end of
-the match, i.e., the motion will behave as an inclusive one.
+The mnemonic for X-mode could be "extend/exclude". In the forward direction,
+the cursor goes to the end of the match; in the backward direction, the cursor
+stops just before - in an absolute sense, after - the end of the match (the
+equivalent of `T` for two-character search). In Operator-pending mode, the
+edge of the operated area always gets an offset of +2 - this means that in the
+forward direction the motion becomes _inclusive_ (the cursor position will be
+included in the operation).
 
 ##### A note on the highlighting strategy
 
@@ -224,7 +227,7 @@ require'lightspeed'.setup {
 
 You can also set options individually from the command line:
 ```Lua
-lua require'lightspeed'.opts['jump_to_first_match'] = false
+lua require'lightspeed'.opts.jump_to_first_match = false
 ```
 
 For a detailed description of the available options, see the docs: `:h
@@ -241,8 +244,8 @@ obtrusive than the labels.)
 * Lightspeed will not override your - or other plugins' - custom mappings,
   unless explicitly told so. If you, for any reason, would like to revert to the
   native behaviour of certain keys, that is, would not like to use some features
-  of the plugin, check `:h lightspeed-disable-default-mappings` (spoiler alert:
-  `unmap`).
+  of the plugin at all, check `:h lightspeed-disable-default-mappings` (spoiler
+  alert: `unmap`).
 
 * While the plugin is active, the actual cursor is down on the command line, but
   its position in the window is kept highlighted, using the attributes of the
@@ -420,8 +423,8 @@ yourself the question: isn't it much better to type two on-screen characters,
 and then a "little bit surprising" label, than to type one on-screen character,
 and wait for - most probably - two surprising characters to appear?
 
-Moreover, if you start thinking about whether to use `f` or `s`, then the whole
-thing is screwed already. Minimal mental effort. That is the mantra of
+Moreover, if you need to start thinking about whether to use `f` or `s`, then
+the whole thing is screwed already. Minimal mental effort. That is the mantra of
 Lightspeed. 1-character search is for very short distances, or when you can
 clearly count the number of occurrences, and reach for `f` or `t` in a totally
 automatic way. In those cases they are invaluable shortcuts, but for everything
