@@ -233,19 +233,33 @@ Visual mode~
 
 s{char}{char}              Extend visual selection up to and including the
                            first character of {char}{char} in the forward
-                           direciton.
+                           direction.
 S{char}{char}              Extend visual selection up to and including the
                            first character of {char}{char} in the backward
-                           direciton.
+                           direction.
+
+x{char}{char}              Extend visual selection up to and including the
+                           second character of {char}{char} in the forward
+                           direction.
+X{char}{char}              Extend visual selection up to the second character
+                           of {char}{char} in the backward direction.
 
 Operator-pending mode~
 
-{operator}z{char}{char}    Perform {operator} from the cursor to the first
-                           character of {char}{char} in the forward direction
-                           (exclusive).
-{operator}Z{char}{char}    Perform {operator} from the cursor to the first
-                           character of {char}{char} in the backward direction
-                           (inclusive).
+{operator}z{char}{char}    Perform {operator} from the cursor up to the first
+                           character of {char}{char} in the forward direction.
+{operator}Z{char}{char}    Perform {operator} from the cursor up to and
+                           including the first character of {char}{char} in
+                           the backward direction. (|exclusive| motion: the
+                           cursor position is not included without |o_v|.)
+
+{operator}x{char}{char}    Perform {operator} from the cursor up to and
+                           including the second character of {char}{char} in
+                           the forward direction.
+{operator}X{char}{char}    Perform {operator} from the cursor up to the second
+                           character of {char}{char} in the backward
+                           direction. (|exclusive| motion: the cursor position
+                           is not included without |o_v|.)
 
 All modes~
 
@@ -261,8 +275,9 @@ All modes~
 
 2-character search~
 
-{key}<C-x>{pattern}        Switches to |lightspeed-x-mode| (extend/exclude).
-                           Can be configured with `x_mode_prefix_key`.
+{key}<C-x>{pattern}        Switches to |lightspeed-x-mode| (extend/exclude) in
+                           any mode. Can be configured with
+                           `x_mode_prefix_key`.
 
 <Tab> (or <Space>)         Cycle to the next group of labeled matches.
 <S-Tab> (or <Tab>)         Cycle to the previous group of labeled matches.
@@ -284,16 +299,19 @@ Available <Plug> keys for all modes:
 
 `<Plug>Lightspeed_s` - forward, 2-character
 `<Plug>Lightspeed_S` - backward, 2-character
+`<Plug>Lightspeed_x` - forward, 2-character, X-mode
+`<Plug>Lightspeed_X` - backward, 2-character, X-mode
+
 `<Plug>Lightspeed_f` - forward, 1-character, inclusive
 `<Plug>Lightspeed_F` - backward, 1-character, inclusive
 `<Plug>Lightspeed_t` - forward, 1-character, exclusive
 `<Plug>Lightspeed_T` - backward, 1-character, exclusive
 
-Note: Be sure not to use `-noremap`, as <Plug> mappings should be used
+Note: Be sure _not_ to use `-noremap`, as <Plug> mappings should be used
       recursively, by design.
 
 For 2-character search, the keys for cycling between groups of matches, and
-the prefix triggering full-inclusive mode can be set in the `opts` table, see
+the prefix triggering X-mode can be set in the `opts` table, see
 |lightspeed-config|.
 
                                            *lightspeed-disable-default-mappings*

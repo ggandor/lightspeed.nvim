@@ -120,6 +120,9 @@ That is,
 In Operator-pending mode the search is invoked with `z`/`Z`, acknowledging that
 "surround" plugins may benefit even more from being able to use `s`/`S` then.
 
+In Visual and Operator-pending mode, `x`/`X` are readily available shortcuts for
+X-mode.
+
 ##### X-mode
 
 The mnemonic for X-mode could be "extend/exclude". In the forward direction,

@@ -518,7 +518,7 @@ interrupted change-operation."
                    (and (not t-like?) reverse?) "F"
                    (and t-like? (not reverse?)) "t"
                    (and t-like? reverse?) "T")
-        cmd-for-dot-repeat (.. (replace-keycodes "<Plug>Lightspeed_repeat_") motion)]
+        cmd-for-dot-repeat (.. (replace-keycodes "<Plug>Lightspeed_dotrepeat_") motion)]
 
     (when-not (or self.instant-repeat? dot-repeat?)
       (echo "") (highlight-cursor) (vim.cmd :redraw))
@@ -762,7 +762,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 (local s {:prev-search {:in1 nil :in2 nil}
           :prev-dot-repeatable-search {:in1 nil :in2 nil :in3 nil :x-mode? nil}})
 
-(fn s.to [self reverse? dot-repeat?]
+(fn s.to [self reverse? arg-x-mode? dot-repeat?]
   "Entry point for 2-character search."
   (let [op-mode? (operator-pending-mode?)
         change-op? (change-operation?)
@@ -777,8 +777,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         ; We _never_ want to autojump in OP mode, since that would execute
         ; the operation without allowing us to select a labeled target.
         jump-to-first? (and opts.jump_to_first_match (not op-mode?))
-        cmd-for-dot-repeat (replace-keycodes (.. "<Plug>Lightspeed_repeat_"
-                                                 (if reverse? "S" "s")))]
+        cmd-for-dot-repeat (replace-keycodes (.. "<Plug>Lightspeed_dotrepeat_"
+                                                 (if arg-x-mode? (if reverse? "X" "x")
+                                                     (if reverse? "S" "s"))))]
 
     (macro with-hl-chores [...]
       `(do (when opts.grey_out_search_area (grey-out-search-area reverse?))
@@ -955,10 +956,10 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                ; if the need arises (e.g. regex search).
                in0 (do (set enter-repeat? (= in0 "\r"))  ; User hit <enter> right away: repeat previous search.
                        (set new-search? (not (or enter-repeat? dot-repeat?)))
-                       (set x-mode? (= in0 x-mode-prefix-key))
+                       (set x-mode? (or arg-x-mode? (= in0 x-mode-prefix-key)))
                        (if enter-repeat? (or self.prev-search.in1
                                              (exit-with (echo-no-prev-search)))
-                           x-mode? (get-input-and-clean-up)  ; Get the "true" first input.
+                           (and x-mode? (not arg-x-mode?)) (get-input-and-clean-up)  ; Get the "true" first input.
                            in0))))
       in1
       (match (or (get-match-map-for in1 reverse?)
@@ -1055,36 +1056,45 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 ; Mappings {{{
 
 (local plug-mappings
-   ; params of `s:to`: reverse? [dot-repeat?]
+   ; params of `s:to`: reverse? [x-mode?] [dot-repeat?]
   [[:n "<Plug>Lightspeed_s" "s:to(false)"]
    [:n "<Plug>Lightspeed_S" "s:to(true)"] 
    [:x "<Plug>Lightspeed_s" "s:to(false)"]
    [:x "<Plug>Lightspeed_S" "s:to(true)"]
    [:o "<Plug>Lightspeed_s" "s:to(false)"]
    [:o "<Plug>Lightspeed_S" "s:to(true)"] 
-   [:o "<Plug>Lightspeed_repeat_s" "s:to(false, true)"]
-   [:o "<Plug>Lightspeed_repeat_S" "s:to(true, true)"]
 
-   ; params of `ft:to`: reverse? t-like? [dot-repeat?]
-   [:n "<Plug>Lightspeed_f" "ft:to(false, false)"]
-   [:n "<Plug>Lightspeed_F" "ft:to(true, false)"]
-   [:n "<Plug>Lightspeed_t" "ft:to(false, true)"]
-   [:n "<Plug>Lightspeed_T" "ft:to(true, true)"]
+   [:n "<Plug>Lightspeed_x" "s:to(false, true)"]
+   [:n "<Plug>Lightspeed_X" "s:to(true, true)"]
+   [:x "<Plug>Lightspeed_x" "s:to(false, true)"]
+   [:x "<Plug>Lightspeed_X" "s:to(true, true)"]
+   [:o "<Plug>Lightspeed_x" "s:to(false, true)"]
+   [:o "<Plug>Lightspeed_X" "s:to(true, true)"] 
 
-   [:x "<Plug>Lightspeed_f" "ft:to(false, false)"]
-   [:x "<Plug>Lightspeed_F" "ft:to(true, false)"]
+   ; params of `ft:to`: reverse? [t-like?] [dot-repeat?]
+   [:n "<Plug>Lightspeed_f" "ft:to(false)"]
+   [:n "<Plug>Lightspeed_F" "ft:to(true)"]
+   [:x "<Plug>Lightspeed_f" "ft:to(false)"]
+   [:x "<Plug>Lightspeed_F" "ft:to(true)"]
+   [:o "<Plug>Lightspeed_f" "ft:to(false)"]
+   [:o "<Plug>Lightspeed_F" "ft:to(true)"]
+
    [:x "<Plug>Lightspeed_t" "ft:to(false, true)"]
    [:x "<Plug>Lightspeed_T" "ft:to(true, true)"]
-
-   [:o "<Plug>Lightspeed_f" "ft:to(false, false)"]
-   [:o "<Plug>Lightspeed_F" "ft:to(true, false)"]
+   [:n "<Plug>Lightspeed_t" "ft:to(false, true)"]
+   [:n "<Plug>Lightspeed_T" "ft:to(true, true)"]
    [:o "<Plug>Lightspeed_t" "ft:to(false, true)"]
    [:o "<Plug>Lightspeed_T" "ft:to(true, true)"]
 
-   [:o "<Plug>Lightspeed_repeat_f" "ft:to(false, false, true)"]
-   [:o "<Plug>Lightspeed_repeat_F" "ft:to(true, false, true)"]
-   [:o "<Plug>Lightspeed_repeat_t" "ft:to(false, true, true)"]
-   [:o "<Plug>Lightspeed_repeat_T" "ft:to(true, true, true)"]])
+   ; Just for our convenience, to be used here in the script.
+   [:o "<Plug>Lightspeed_dotrepeat_s" "s:to(false, false, true)"]
+   [:o "<Plug>Lightspeed_dotrepeat_S" "s:to(true, false, true)"]
+   [:o "<Plug>Lightspeed_dotrepeat_x" "s:to(false, true, true)"]
+   [:o "<Plug>Lightspeed_dotrepeat_X" "s:to(true, true, true)"]
+   [:o "<Plug>Lightspeed_dotrepeat_f" "ft:to(false, false, true)"]
+   [:o "<Plug>Lightspeed_dotrepeat_F" "ft:to(true, false, true)"]
+   [:o "<Plug>Lightspeed_dotrepeat_t" "ft:to(false, true, true)"]
+   [:o "<Plug>Lightspeed_dotrepeat_T" "ft:to(true, true, true)"]])
 
 (each [_ [mode lhs rhs-call] (ipairs plug-mappings)]
   (api.nvim_set_keymap mode lhs (.. "<cmd>lua require'lightspeed'." rhs-call "<cr>")
@@ -1100,18 +1110,22 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
      [:o "z" "<Plug>Lightspeed_s"]
      [:o "Z" "<Plug>Lightspeed_S"]
 
+     [:x "x" "<Plug>Lightspeed_x"]
+     [:x "X" "<Plug>Lightspeed_X"]
+     [:o "x" "<Plug>Lightspeed_x"]
+     [:o "X" "<Plug>Lightspeed_X"]
+
      [:n "f" "<Plug>Lightspeed_f"]
      [:n "F" "<Plug>Lightspeed_F"]
-     [:n "t" "<Plug>Lightspeed_t"]
-     [:n "T" "<Plug>Lightspeed_T"]
-     
      [:x "f" "<Plug>Lightspeed_f"]
      [:x "F" "<Plug>Lightspeed_F"]
-     [:x "t" "<Plug>Lightspeed_t"]
-     [:x "T" "<Plug>Lightspeed_T"]
-     
      [:o "f" "<Plug>Lightspeed_f"]
      [:o "F" "<Plug>Lightspeed_F"]
+
+     [:n "t" "<Plug>Lightspeed_t"]
+     [:n "T" "<Plug>Lightspeed_T"]
+     [:x "t" "<Plug>Lightspeed_t"]
+     [:x "T" "<Plug>Lightspeed_T"]
      [:o "t" "<Plug>Lightspeed_t"]
      [:o "T" "<Plug>Lightspeed_T"]])
 
