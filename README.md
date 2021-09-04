@@ -100,7 +100,7 @@ Plug 'ggandor/lightspeed.nvim'
 Command sequence for 2-character search in Normal and Visual mode, with the
 default settings:
 
-`s|S char1 (char2|label)? (<tab>|<s-tab>)* label?`
+`s|S char1 (char2|shortcut)? (<tab>|<s-tab>)* label?`
 
 That is, 
 - invoke in the forward (`s`) or backward (`S`) direction
@@ -128,6 +128,17 @@ equivalent of `T` for two-character search). In Operator-pending mode, the
 edge of the operated area always gets an offset of +2 - this means that in the
 forward direction the motion becomes _inclusive_ (the cursor position will be
 included in the operation).
+
+```
+ab····                 ····ab
+          ← S   s →
+█b····    movement     ····█b
+‾‾‾‾‾‾    operation    ‾‾‾‾
+
+          ← X   x → 
+ab█···    movement     ····a█
+  ‾‾‾‾    operation    ‾‾‾‾‾‾  
+```
 
 In Visual and Operator-pending mode, `x`/`X` are readily available mappings for
 X-mode. This seems a very sensible default: those keys are free in O-P mode, and
