@@ -100,11 +100,10 @@ Plug 'ggandor/lightspeed.nvim'
 Command sequence for 2-character search in Normal and Visual mode, with the
 default settings:
 
-`s|S <c-x>? char1 (char2|label)? (<tab>|<s-tab>)* label?`
+`s|S char1 (char2|label)? (<tab>|<s-tab>)* label?`
 
 That is, 
 - invoke in the forward (`s`) or backward (`S`) direction
-- optionally turn on X-mode (extend/exclude)
 - enter 1st character of the search pattern (might short-circuit after this, if
   the character is unique in the search direction) 
 - _the "beacons" are lit at this point; all potential matches are labeled (char1 + ?)_
@@ -120,9 +119,6 @@ That is,
 In Operator-pending mode the search is invoked with `z`/`Z`, acknowledging that
 "surround" plugins may benefit even more from being able to use `s`/`S` then.
 
-In Visual and Operator-pending mode, `x`/`X` are readily available shortcuts for
-X-mode.
-
 ##### X-mode
 
 The mnemonic for X-mode could be "extend/exclude". In the forward direction,
@@ -132,6 +128,15 @@ equivalent of `T` for two-character search). In Operator-pending mode, the
 edge of the operated area always gets an offset of +2 - this means that in the
 forward direction the motion becomes _inclusive_ (the cursor position will be
 included in the operation).
+
+In Visual and Operator-pending mode, `x`/`X` are readily available mappings for
+X-mode. This seems a very sensible default: those keys are free in O-P mode, and
+are redundant equivalents of `d`/`D` in Visual mode; consider also the handy
+mnemonics, and the fact that `s`, `z` and `x` are physically right next to each
+other on a QWERTY keyboard.
+
+In any Vim mode, X-mode can also be invoked by pressing `<c-x>` before the
+search pattern.
 
 ##### A note on the highlighting strategy
 
@@ -176,11 +181,9 @@ repeating, there are two different possibilities.
 First, you can specify custom keys for instant-repeat, in the `opts` table (see
 the configuration section). The keys will be temporarily hijacked by the plugin
 then, but the actual mappings will not be disturbed, so you can use them in
-multiple roles.
-
-If you would like the keys to actually restart the search and trigger repeat at
-any time, even after the plugin has finished executing (similar to the native
-behaviour), there is a workaround for that too - see `:h
+multiple roles. If you would like the keys to actually restart the search and
+trigger repeat at any time, even after the plugin has finished executing
+(similar to the native behaviour), there is a workaround for that too - see `:h
 lightspeed-custom-ft-repeat-mappings`.
 
 #### Repeating motions
@@ -340,14 +343,6 @@ character_, that should _always stay in the same position_, once appeared. (No
 rolling/flashing sequence of labels, like in case of Hop/EasyMotion.)
 
 ## 👀 Coming sooner or later
-
-- Provided that auto-jumping to the first target is turned off, we could
-  frequently use the on-screen character that follows the pair instead of a
-  label. Even if that turns out to be a bit harder to type than the assigned
-  label would have been, _zero_ surprise - when the characters are already
-  loaded into your brain even before you start typing - cannot be beaten. This
-  requires quite a bit of refactoring though, but that would be for the better
-  anyway.
 
 - There is a _huge_ feature in the making, but do not expect it to land anytime
   soon: the idea is that the target labels could be chosen, based on a given
