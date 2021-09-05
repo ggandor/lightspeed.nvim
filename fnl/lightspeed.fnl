@@ -868,68 +868,68 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
             (set-dot-repeat cmd-for-dot-repeat))
           (set first-jump? false))))
 
-    (fn jump-and-ignore-ch2-until-timeout! [[target-line target-col _ &as target] ch2]
+    (fn jump-and-ignore-ch2-until-timeout! [[target-line target-col _ &as target-pos] ch2]
       (local orig-pos (get-cursor-pos))  ; 1,1
       ; TODO: what if `jump-to!` would return the final, adjusted position?
-      (jump-with-wrap! target)
+      (jump-with-wrap! target-pos)
       ; Jumping based on partial input is nice, but it's annoying that we don't
       ; see the actual changes right away (we are waiting for another input, so
       ; that we can introduce a safety timespan to ignore the character in the
       ; next column). Therefore we highlight both the cursor's new position and
       ; the operated area for a visual feedback, to tell the user that the
       ; target has been found, and they can continue editing.
-      ; Brace yourselves, this is pure duct-tape programming below, pretty hard
-      ; to follow at the moment.
       (when new-search?
         (let [ctrl-v (replace-keycodes "<c-v>")
+              forward-x? (and x-mode? (not reverse?))
+              backward-x? (and x-mode? reverse?)
               forced-motion (string.sub (vim.fn.mode :t) -1)
-              from-pos (vim.tbl_map dec orig-pos)
-               ; `target` is a 3-tuple, with a bool at the end, so don't try
+              from-pos (vim.tbl_map dec orig-pos)  ; -> 0,0
+               ; `target-pos` is a 3-tuple, with a bool at the end, so don't try
                ; to use map here. (We should probably refactor that...)
-              to-pos [(dec target-line) (if (and x-mode? reverse?) (inc target-col)
-                                            (and x-mode? (not reverse?)) target-col
-                                            (dec target-col))]
+              to-pos (->> [target-line (if backward-x? (inc (inc target-col))
+                                           forward-x? (inc target-col)
+                                           target-col)]
+                          (vim.tbl_map dec))  ; -> 0,0
               ; (Preliminary) boundaries of the highlighted - operated - area.
               [startline startcol &as start] (if reverse? to-pos from-pos)
               [endline endcol &as end] (if reverse? from-pos to-pos)]
           (when-not change-op?  ; in that case we're entering insert mode anyway
-            (local ?pos-to-highlight-at
-              (when op-mode?
-                ; In OP-mode, the cursor always ends up at the beginning of the
-                ; area, and that is _not_ necessarily our targeted position.
-                (if (= forced-motion ctrl-v)
-                    ; For blockwise mode, we need to find the top/leftmost "corner".
-                    ; (We increment these, because `start` and `end` were calculated
-                    ; for the area highlight, that needs 0,0-indexing.)
-                    [(inc startline) (inc (math.min startcol endcol))]
-                    ; Otherwise, in the forward direction, we need to stay at the
-                    ; start position with our virtual cursor.
-                    (not reverse?) orig-pos)))
-            ; In any other case, the actual position will be highlighted.
-            (highlight-cursor ?pos-to-highlight-at))
+            (let [?pos-to-highlight-at
+                  (when op-mode?
+                    ; In OP-mode, the cursor always ends up at the beginning of the
+                    ; area, and that is _not_ necessarily our targeted position.
+                    (if (= forced-motion ctrl-v)
+                        ; For blockwise mode, we need to find the top/leftmost "corner".
+                        ; (We increment these, because `start` and `end` were calculated
+                        ; for the area highlight, that needs 0,0-indexing.)
+                        [(inc startline) (inc (math.min startcol endcol))]
+                        ; Otherwise, in the forward direction, we need to stay at the
+                        ; start position with our virtual cursor.
+                        (not reverse?) orig-pos))]
+              ; In any other case, the actual position will be highlighted.
+              (highlight-cursor ?pos-to-highlight-at)))
           (when op-mode?
-            (let [hl-group (if (or change-op? delete-op?)
-                               hl.group.pending-change-op-area
-                               hl.group.pending-op-area)
-                  ; The column in `finish` (`$2`) is exclusive by default (will
-                  ; _not_ be included in the highlight), but that's OK, since
-                  ; our motion is also exclusive by default.
-                  hl-range #(vim.highlight.range 0 hl.ns hl-group $1 $2)]
-              (match forced-motion
-                ctrl-v (for [line startline endline]
-                         (hl-range [line (math.min startcol endcol)]
-                                   ; Blockwise operations make the motion
-                                   ; inclusive on both ends, so we should
-                                   ; increment the end column. (Reminder:
-                                   ; `highlight.range` will not include it.)
-                                   [line (inc (math.max startcol endcol))]))
-                :V (hl-range [startline 0] [endline -1])
-                ; We are in OP mode, doing chairwise motion, so 'v' forces
-                ; inclusiveness (:h o_v). If we have already been inclusive, it
-                ; forces exclusive motion.
-                :v (hl-range start [endline ((if (and x-mode? (not reverse?)) dec inc)
-                                             endcol)])
-                :o (hl-range start end))))
+            (local hl-group (if (or change-op? delete-op?)
+                                hl.group.pending-change-op-area
+                                hl.group.pending-op-area))
+            ; The range is _exclusive_ (the end column will _not_ be included
+            ; in the highlight).
+            (fn hl-range [start end]
+              (vim.highlight.range 0 hl.ns hl-group start end))
+            (match forced-motion
+              ctrl-v (for [line startline endline]
+                       (hl-range [line (math.min startcol endcol)]
+                                 ; Blockwise operations make the motion
+                                 ; inclusive on both ends, so we should
+                                 ; increment the end column. (Reminder:
+                                 ; `highlight.range` will not include it.)
+                                 [line (inc (math.max startcol endcol))]))
+              :V (hl-range [startline 0] [endline -1])
+              ; We are in OP mode, doing chairwise motion, so 'v' _flips_
+              ; inclusive/exclusive (:h o_v).
+              :v (hl-range start [endline (if forward-x? endcol (inc endcol))])
+              ; No modifiers.
+              :o (hl-range start [endline (if forward-x? (inc endcol) endcol)])))
           (vim.cmd :redraw)
           (ignore-char-until-timeout ch2)
           ; Mitigate blink on the command line (see also
