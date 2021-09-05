@@ -119,9 +119,6 @@ That is,
 In Operator-pending mode the search is invoked with `z`/`Z`, acknowledging that
 "surround" plugins may benefit even more from being able to use `s`/`S` then.
 
-Note: A character before EOL can be targeted by pressing `<enter>` after it
-(indicated by an `←` in the highlighted match).
-
 ##### X-mode
 
 The mnemonic for X-mode could be "extend/exclude". In the forward direction,
@@ -170,6 +167,11 @@ where the first field (the place of `X`, showing the character masked by the
 label) might be overlapped by the label of another match, and `label` itself
 might be a [shortcut](https://github.com/ggandor/lightspeed.nvim#shortcuts),
 with a filled background (the inverse of a regular label).
+
+##### Matching before line breaks
+
+A character before EOL can be targeted by pressing `<enter>` after it (indicated
+by `¬` in the highlighted match).
 
 #### 1-character search
 

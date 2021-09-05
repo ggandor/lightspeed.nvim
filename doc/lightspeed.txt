@@ -73,7 +73,7 @@ included in the operation).
 
                                                           *lightspeed-eol-match*
 A character before <EOL> can be targeted by pressing <enter> after it
-(indicated by an `←` in the highlighted match).
+(indicated by `¬` in the highlighted match).
 
                        *lightspeed-1-character-search* *lightspeed-instant-repeat*
 Lightspeed also overrides the native `f`/`F`/`t`/`T` motions with enhanced
