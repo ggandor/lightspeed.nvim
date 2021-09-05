@@ -86,7 +86,7 @@ local function leftmost_editable_wincol()
   vim.fn.winrestview(view)
   return wincol
 end
-local opts = {cycle_group_bwd_key = nil, cycle_group_fwd_key = nil, grey_out_search_area = true, highlight_unique_chars = false, instant_repeat_bwd_key = nil, instant_repeat_fwd_key = nil, jump_on_partial_input_safety_timeout = 400, jump_to_first_match = true, labels = nil, limit_ft_matches = 5, match_only_the_start_of_same_char_seqs = true, x_mode_prefix_key = "<c-x>"}
+local opts = {cycle_group_bwd_key = nil, cycle_group_fwd_key = nil, grey_out_search_area = true, highlight_unique_chars = false, instant_repeat_bwd_key = nil, instant_repeat_fwd_key = nil, jump_on_partial_input_safety_timeout = 400, jump_to_first_match = true, labels = nil, limit_ft_matches = 5, match_only_the_start_of_same_char_seqs = true, substitute_chars = {["\13"] = "\194\172"}, x_mode_prefix_key = "<c-x>"}
 local function setup(user_opts)
   opts = setmetatable(user_opts, {__index = opts})
   return nil
@@ -755,7 +755,7 @@ local function get_match_map_for(ch1, reverse_3f)
   local match_map = {}
   local prefix = "\\V\\C"
   local input = ch1:gsub("\\", "\\\\")
-  local pattern = (prefix .. input .. "\\.")
+  local pattern = (prefix .. input .. "\\_.")
   local match_count = 0
   local prev = {}
   for _175_ in onscreen_match_positions(pattern, reverse_3f, {}) do
@@ -771,7 +771,7 @@ local function get_match_map_for(ch1, reverse_3f)
       _177_ = inc
     end
     overlap_with_prev_3f = ((line == prev.line) and (col == _177_(prev.col)))
-    local ch2 = char_at_pos(pos, {["char-offset"] = 1})
+    local ch2 = (char_at_pos(pos, {["char-offset"] = 1}) or "\13")
     local same_pair_3f = (ch2 == prev.ch2)
     local function _179_()
       if not opts.match_only_the_start_of_same_char_seqs then
@@ -805,7 +805,7 @@ local function get_match_map_for(ch1, reverse_3f)
     return match_map
   end
 end
-local function set_beacon_at(_185_, field1_ch, field2_ch, _187_)
+local function set_beacon_at(_185_, ch1, ch2, _187_)
   local _arg_186_ = _185_
   local line = _arg_186_[1]
   local col = _arg_186_[2]
@@ -814,9 +814,17 @@ local function set_beacon_at(_185_, field1_ch, field2_ch, _187_)
   local _arg_188_ = _187_
   local distant_3f = _arg_188_["distant?"]
   local init_round_3f = _arg_188_["init-round?"]
+  local labeled_3f = _arg_188_["labeled?"]
   local repeat_3f = _arg_188_["repeat?"]
   local shortcut_3f = _arg_188_["shortcut?"]
-  local unlabeled_3f = _arg_188_["unlabeled?"]
+  local ch10 = (opts.substitute_chars[ch1] or ch1)
+  local ch20
+  local function _189_()
+    if not labeled_3f then
+      return opts.substitute_chars[ch2]
+    end
+  end
+  ch20 = (_189_() or ch2)
   local partially_covered_3f0
   if not repeat_3f then
     partially_covered_3f0 = partially_covered_3f
@@ -838,39 +846,37 @@ local function set_beacon_at(_185_, field1_ch, field2_ch, _187_)
     label_hl = hl.group.label
   end
   local overlapped_label_hl
-  if distant_3f then
+  if shortcut_3f0 then
+    overlapped_label_hl = hl.group["shortcut-overlapped"]
+  elseif distant_3f then
     overlapped_label_hl = hl.group["label-distant-overlapped"]
   else
-    if shortcut_3f0 then
-      overlapped_label_hl = hl.group["shortcut-overlapped"]
-    else
-      overlapped_label_hl = hl.group["label-overlapped"]
-    end
+    overlapped_label_hl = hl.group["label-overlapped"]
   end
   local function _197_()
-    if unlabeled_3f then
+    if not labeled_3f then
       if partially_covered_3f0 then
-        return {inc(col), {field2_ch, hl.group["unlabeled-match"]}, nil}
+        return {inc(col), {ch20, hl.group["unlabeled-match"]}, nil}
       else
-        return {col, {field1_ch, hl.group["unlabeled-match"]}, {field2_ch, hl.group["unlabeled-match"]}}
+        return {col, {ch10, hl.group["unlabeled-match"]}, {ch20, hl.group["unlabeled-match"]}}
       end
     elseif partially_covered_3f0 then
       if init_round_3f then
-        return {inc(col), {field2_ch, overlapped_label_hl}, nil}
+        return {inc(col), {ch20, overlapped_label_hl}, nil}
       else
-        return {col, {field1_ch, hl.group["masked-ch"]}, {field2_ch, overlapped_label_hl}}
+        return {col, {ch10, hl.group["masked-ch"]}, {ch20, overlapped_label_hl}}
       end
     elseif repeat_3f then
-      return {inc(col), {field2_ch, label_hl}, nil}
-    elseif "else" then
-      return {col, {field1_ch, hl.group["masked-ch"]}, {field2_ch, label_hl}}
+      return {inc(col), {ch20, label_hl}, nil}
+    else
+      return {col, {ch10, hl.group["masked-ch"]}, {ch20, label_hl}}
     end
   end
   local _let_194_ = _197_()
-  local col0 = _let_194_[1]
+  local startcol = _let_194_[1]
   local chunk1 = _let_194_[2]
   local _3fchunk2 = _let_194_[3]
-  return hl["set-extmark"](hl, dec(line), dec(col0), {end_col = col0, virt_text = {chunk1, _3fchunk2}, virt_text_pos = "overlay"})
+  return hl["set-extmark"](hl, dec(line), dec(startcol), {virt_text = {chunk1, _3fchunk2}, virt_text_pos = "overlay"})
 end
 local function set_beacon_groups(ch2, positions, labels, shortcuts, _198_)
   local _arg_199_ = _198_
@@ -891,7 +897,7 @@ local function set_beacon_groups(ch2, positions, labels, shortcuts, _198_)
       else
       shortcut_3f = nil
       end
-      set_beacon_at(pos, ch2, label, {["distant?"] = distant_3f, ["init-round?"] = init_round_3f, ["repeat?"] = repeat_3f, ["shortcut?"] = shortcut_3f})
+      set_beacon_at(pos, ch2, label, {["distant?"] = distant_3f, ["init-round?"] = init_round_3f, ["labeled?"] = true, ["repeat?"] = repeat_3f, ["shortcut?"] = shortcut_3f})
     end
     return nil
   end
@@ -1369,7 +1375,7 @@ s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
               positions_to_label = positions
             end
             if (jump_to_first_3f or empty_3f(rest)) then
-              set_beacon_at(first, in1, ch2, {["init-round?"] = true, ["unlabeled?"] = true})
+              set_beacon_at(first, in1, ch2, {["init-round?"] = true})
             end
             if not empty_3f(rest) then
               set_beacon_groups(ch2, positions_to_label, labels, shortcuts, {["init-round?"] = true})

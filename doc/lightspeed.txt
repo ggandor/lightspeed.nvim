@@ -1,4 +1,4 @@
-*lightspeed.txt*      For Neovim version 0.5      Last change: 2021 September 03
+*lightspeed.txt*      For Neovim version 0.5      Last change: 2021 September 05
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -71,6 +71,10 @@ edge of the operated area always gets an offset of +2 - this means that in the
 forward direction the motion becomes |inclusive| (the cursor position will be
 included in the operation).
 
+                                                          *lightspeed-eol-match*
+A character before <EOL> can be targeted by pressing <enter> after it
+(indicated by an `←` in the highlighted match).
+
                        *lightspeed-1-character-search* *lightspeed-instant-repeat*
 Lightspeed also overrides the native `f`/`F`/`t`/`T` motions with enhanced
 versions that work over multiple lines. 
@@ -119,14 +123,14 @@ CONFIGURATION                                                *lightspeed-config*
 
 Setting an individual option via the `opts` table directly:
 
-`   require'lightspeed'.opts['jump_to_first_match'] = false`
+`   require'lightspeed'.opts.jump_to_first_match = false`
 
 Setting multiple options via the `setup` function: >
 
     require'lightspeed'.setup { 
         jump_to_first_match = false,
-        full_inclusive_prefix_key = '<tab>',
-        limit_ft_matches = 10,
+        x_mode_prefix_key = '<tab>',
+        limit_ft_matches = 3,
     }
 <
     Note: These will be merged with the current/default settings. (Settings
@@ -182,6 +186,12 @@ Available options~
     reducing visual noise. (Highlighting matches can be turned off altogether
     by setting the value to 0, but that is not recommended, since this is also
     a visual signal about whether |lightspeed-instant-repeat| is active.)
+
+`substitute_chars = { ['\r'] = '¬' }`
+
+    The keys in this table will be substituted in the highlighted matches by
+    the given characters. This way whitespace characters can be made visible,
+    and pairs containing them more easily targetable.
 
 `instant_repeat_fwd_key = nil`
 `instant_repeat_bwd_key = nil`

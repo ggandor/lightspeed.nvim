@@ -120,11 +120,16 @@ character instead."
            :match_only_the_start_of_same_char_seqs true
            :limit_ft_matches 5
            :x_mode_prefix_key "<c-x>"
+           :substitute_chars {"\r" "¬"}  ; 0x00AC
            :instant_repeat_fwd_key nil
            :instant_repeat_bwd_key nil
            :cycle_group_fwd_key nil
            :cycle_group_bwd_key nil
-           :labels nil})
+           :labels nil
+           
+           ; deprecated (still valid)
+           ; :full_incusive_prefix_key "<c-x>"
+           })
 
 (fn setup [user-opts]
   (set opts (setmetatable user-opts {:__index opts})))
@@ -603,17 +608,19 @@ interrupted change-operation."
 (fn get-match-map-for [ch1 reverse?]
   "Return a map that stores the positions of all on-screen pairs starting
 with `ch1` in separate ordered lists, keyed by the succeeding char."
-  (let [match-map {}  ; {str [[1,1,bool]]} i.e. {successor-char [[line,col,partially-covered?]]}
-        prefix "\\V\\C"                   ; force matching case (for the moment)
-        input (ch1:gsub "\\" "\\\\")      ; backslash still needs to be escaped for \V
-        pattern (.. prefix input "\\.")]  ; match anything except EOL after it
+  (let [match-map {}                       ; {str [[1, 1, bool]]} i.e.:
+                                           ; {successor-char [[line, col, partially-covered?]]}
+        prefix "\\V\\C"                    ; force matching case (for the moment)
+        input (ch1:gsub "\\" "\\\\")       ; backslash still needs to be escaped for \V
+        pattern (.. prefix input "\\_.")]  ; match anything (including EOL) after it
     (var match-count 0)
     ; Saving some of the search state locally, in order to discover overlaps.
     (var prev {})
     (each [[line col &as pos] (onscreen-match-positions pattern reverse? {})]
       (let [overlap-with-prev? (and (= line prev.line)
                                     (= col ((if reverse? dec inc) prev.col)))
-            ch2 (char-at-pos pos {:char-offset 1})
+            ch2 (or (char-at-pos pos {:char-offset 1})
+                    "\r")  ; <enter> is the expected input for line breaks
             same-pair? (= ch2 prev.ch2)]
         (if (or (when-not opts.match_only_the_start_of_same_char_seqs
                   ; If match_only_the_start... is turned off, we are skipping
@@ -644,52 +651,50 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
       _ match-map)))
 
 
-(fn set-beacon-at [[line col partially-covered? &as pos] field1-ch field2-ch
-                   {: init-round? : repeat? : distant? : unlabeled? : shortcut?}]
-  (let [; When repeating, there is no initial round, i.e., no overlaps
-        ; possible (triplets of the same character are _always_ skipped).
+(fn set-beacon-at [[line col partially-covered? &as pos]
+                   ch1 ch2
+                   {: labeled? : init-round? : repeat? : distant? : shortcut?}]
+  (let [ch1 (or (. opts.substitute_chars ch1) ch1)
+        ch2 (or (when-not labeled? (. opts.substitute_chars ch2)) ch2)
+        ; When repeating, there is no initial round, i.e., no overlaps
+        ; possible (triplets of the same character are _always_ skipped),
+        ; and neither are there shortcuts.
         partially-covered? (when-not repeat? partially-covered?)
-        ; Similar situation with shortcuts.
         shortcut? (when-not repeat? shortcut?)
         label-hl (if shortcut? hl.group.shortcut
                      distant? hl.group.label-distant 
                      hl.group.label)
-        overlapped-label-hl (if distant? hl.group.label-distant-overlapped
-                                (if shortcut? hl.group.shortcut-overlapped
-                                    hl.group.label-overlapped))
-        ; TODO: We should refactor the following so that we always start
-        ;       the extmark in the first column, and adjust the virtual
-        ;       text accordingly - this is very confusing now.
-        [col chunk1 ?chunk2]
-        (if unlabeled?  ; a first ("autojumpable") match
-            ; `unlabeled?` presupposes `init-round?` (and excludes `repeat?`,
-            ; logically), since it means we will (would) just jump there after
-            ; the next input (that is why it doesn't get a label in the first
-            ; place).
+        overlapped-label-hl (if shortcut? hl.group.shortcut-overlapped
+                                distant? hl.group.label-distant-overlapped
+                                hl.group.label-overlapped)
+        [startcol chunk1 ?chunk2]
+        (if (not labeled?)  ; = a first - i.e. "autojumpable" - match
+            ; `(not labeled?)` presupposes `init-round?` (and excludes `repeat?`,
+            ; logically), since it means we will just jump there after the next
+            ; input (that is why it doesn't get a label in the first place).
             (if partially-covered?
-              [(inc col) [field2-ch hl.group.unlabeled-match] nil]
-              [col [field1-ch hl.group.unlabeled-match] [field2-ch hl.group.unlabeled-match]])
+                [(inc col) [ch2 hl.group.unlabeled-match] nil]
+                [col [ch1 hl.group.unlabeled-match] [ch2 hl.group.unlabeled-match]])
 
             partially-covered?  ; labeled
             (if init-round?
-              [(inc col) [field2-ch overlapped-label-hl] nil]
-              ; The full beacon is shown now in the 2nd round, but the label
-              ; keeps the same special highlight. (It is important for a label
-              ; to stay unchanged once shown up, if possible, else the eye might
-              ; get confused, which kinda beats the purpose.)
-              [col [field1-ch hl.group.masked-ch] [field2-ch overlapped-label-hl]])
+                [(inc col) [ch2 overlapped-label-hl] nil]
+                ; The full beacon is shown now in the 2nd round, but the label
+                ; keeps the same special highlight. (It is important for a label
+                ; to stay unchanged once shown up, if possible, else the eye might
+                ; get confused, which kinda beats the purpose.)
+                [col [ch1 hl.group.masked-ch] [ch2 overlapped-label-hl]])
 
-            ; `repeat?` is mutually exclusive both with `unlabeled?` and
+            ; `repeat?` is mutually exclusive both with `(not labeled?)` and
             ; `partially-covered?` (since only the second round takes place).
             ; Obviously, there is no need for a ch2-reminder in the first field.
             repeat?
-            [(inc col) [field2-ch label-hl] nil]
+            [(inc col) [ch2 label-hl] nil]
 
             ; Common case: labeled, fully visible match, new invocation.
-            :else [col [field1-ch hl.group.masked-ch] [field2-ch label-hl]])]
-      (hl:set-extmark (dec line) (dec col) {:end_col col
-                                            :virt_text [chunk1 ?chunk2]
-                                            :virt_text_pos "overlay"})))
+            [col [ch1 hl.group.masked-ch] [ch2 label-hl]])]
+      (hl:set-extmark (dec line) (dec startcol) {:virt_text [chunk1 ?chunk2]
+                                                 :virt_text_pos "overlay"})))
 
 
 (fn set-beacon-groups [ch2 positions labels shortcuts
@@ -705,7 +710,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                             label (or (. labels (% i |labels|))
                                       (. labels |labels|))  ; when mod = 0
                             shortcut? (when-not distant? (. shortcuts pos))]
-                        (set-beacon-at pos ch2 label {: init-round? : distant?
+                        (set-beacon-at pos ch2 label {:labeled? true
+                                                      : init-round? : distant?
                                                       : repeat? : shortcut?}))))
         start (inc (* group-offset |labels|))
         end (dec (+ start |labels|))]
@@ -989,7 +995,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                   ; If `rest` is empty (only one match for `ch2`), we will jump anyway.
                   (when (or jump-to-first? (empty? rest))  ; Fennel gotcha: empty rest = [], _not_ nil
                     ; Highlight these pairs with a "direct route" differently.
-                    (set-beacon-at first in1 ch2 {:init-round? true :unlabeled? true}))
+                    (set-beacon-at first in1 ch2 {:init-round? true}))
                   (when-not (empty? rest)
                     (set-beacon-groups ch2 positions-to-label labels shortcuts
                                        {:init-round? true}))))))

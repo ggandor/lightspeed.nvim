@@ -119,6 +119,9 @@ That is,
 In Operator-pending mode the search is invoked with `z`/`Z`, acknowledging that
 "surround" plugins may benefit even more from being able to use `s`/`S` then.
 
+Note: A character before EOL can be targeted by pressing `<enter>` after it
+(indicated by an `←` in the highlighted match).
+
 ##### X-mode
 
 The mnemonic for X-mode could be "extend/exclude". In the forward direction,
@@ -230,6 +233,8 @@ require'lightspeed'.setup {
   match_only_the_start_of_same_char_seqs = true,
   limit_ft_matches = 5,
   x_mode_prefix_key = '<c-x>',
+  -- Characters to be substituted in the highlighted matches.
+  substitute_chars = { ['\r'] = '¬' },
   -- For instant-repeat, pressing the trigger key again (f/F/t/T)
   -- always works, but here you can specify additional keys too.
   instant_repeat_fwd_key = nil,
@@ -403,24 +408,6 @@ of display, by the way?)
 For regex patterns specifically, I have yet to find a compelling use case in
 this context. Couldn't we just type the exact characters on the screen? (See
 also _Start/end of line as a special target?_ below.)
-
-### Start/end of line as a special target?
-
-I am addressing these cases particularly, because these are the only ones among
-the on-screen jumps that cannot always be replaced by 2-character search, and
-thus might appear as legitimate requests at first sight.
-
-The question you should ask is, however: _why_ do you want to go there in the
-first place (especially if there is only whitespace there, at the beginning)?
-What operation do you want to do there that is not _linewise_, and neither about
-a word/WORD? If you want to start to insert from the beginning, use `I` instead
-of `i` after landing. If you want to append to the very end, there is `A`
-instead of `a`. If you want to delete/yank/change from the beginning/end up to
-somewhere in the middle, then target that somewhere-in-the-middle column,
-instead of the other way around.  (Protip: `map Y y$`.) If you want to comment
-out an entire line, you should definitely use some plugin that offers a
-dedicated command, or make your own mapping, instead of doing it by hand. And so
-on...
 
 ### Labeled matches for 1-character search?
 
