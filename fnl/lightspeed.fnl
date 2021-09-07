@@ -770,6 +770,51 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 
 (fn s.to [self reverse? arg-x-mode? dot-repeat?]
   "Entry point for 2-character search."
+
+  ; local vars (set after input)
+  ; ----------------------------
+  ; `enter-repeat?`
+  ; `new-search?`
+  ; `x-mode?`
+
+  ; local helper functions
+  ; ----------------------
+  ; #1 macro `with-hl-chores`
+  ; #2 fn    `switch-off-scrolloff`
+  ; #3 fn    `restore-scrolloff`
+  ; #4 fn    `cycle-through-match-groups`
+  ; #5 fn    `save-state-for`
+  ; #6 fn    `jump-with-wrap!`
+  ; #7 fn    `jump-and-ignore-ch2-until-timeout!`
+
+  ; algorithm skeleton
+  ; ------------------
+  ; get 1st input (in1) (direct input or persisted state)
+  ; build 'match map' for in1
+  ; if no match: exit
+  ; elif only match:
+  ;   save state (for repeats) & jump w/ timeout & exit (#5,#7)
+  ; else:
+  ;   calculate 'shortcutable' positions
+  ;   if new search (not persisted state):
+  ;     light up beacons (see glossary) (#1)
+  ;   get 2nd input (in2) (direct input or persisted state)
+  ;   if in2 is a shortcut-label:
+  ;     save state & jump & exit (#5,#6)
+  ;   else:
+  ;     save state (#5)
+  ;     if no match: exit
+  ;     elif only match:
+  ;       jump (#6)
+  ;     else:
+  ;       (#2)
+  ;       if not dot-repeating: light up beacons (#1)
+  ;       loop for getting 3rd input (in3) (#4)
+  ;           - potentially switching match groups here
+  ;       if in3 is a label in use:
+  ;         jump (#3,#6)
+  ;       else: exit (#3)
+
   (let [op-mode? (operator-pending-mode?)
         change-op? (change-operation?)
         delete-op? (delete-operation?)
