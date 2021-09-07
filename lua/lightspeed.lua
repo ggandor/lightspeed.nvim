@@ -1046,6 +1046,9 @@ s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
     end
   end
   cmd_for_dot_repeat = replace_keycodes(("<Plug>Lightspeed_dotrepeat_" .. _233_))
+  local enter_repeat_3f = nil
+  local new_search_3f = nil
+  local x_mode_3f = nil
   local function switch_off_scrolloff()
     if jump_to_first_3f then
       local _3floc
@@ -1064,7 +1067,7 @@ s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
       return vim.cmd((self["restore-scrolloff-cmd"] or ""))
     end
   end
-  local function cycle_through_match_groups(in2, positions_to_label, shortcuts, enter_repeat_3f)
+  local function cycle_through_match_groups(in2, positions_to_label, shortcuts, enter_repeat_3f0)
     local ret = nil
     local group_offset = 0
     local loop_3f = true
@@ -1104,7 +1107,7 @@ s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
             grey_out_search_area(reverse_3f)
           end
           do
-            set_beacon_groups(in2, positions_to_label, labels, shortcuts, {["group-offset"] = group_offset, ["repeat?"] = enter_repeat_3f})
+            set_beacon_groups(in2, positions_to_label, labels, shortcuts, {["group-offset"] = group_offset, ["repeat?"] = enter_repeat_3f0})
           end
           highlight_cursor()
           vim.cmd("redraw")
@@ -1113,9 +1116,6 @@ s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
     end
     return ret
   end
-  local enter_repeat_3f = nil
-  local new_search_3f = nil
-  local x_mode_3f = nil
   local function save_state_for(_251_)
     local _arg_252_ = _251_
     local dot_repeat = _arg_252_["dot-repeat"]
@@ -1239,6 +1239,7 @@ s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
         highlight_cursor(_3fpos_to_highlight_at)
       end
       if op_mode_3f then
+        local inclusive_motion_3f = forward_x_3f
         local hl_group
         if (change_op_3f or delete_op_3f) then
           hl_group = hl.group["pending-change-op-area"]
@@ -1257,7 +1258,7 @@ s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
           hl_range({startline, 0}, {endline, -1})
         elseif (_277_ == "v") then
           local function _278_()
-            if forward_x_3f then
+            if inclusive_motion_3f then
               return endcol
             else
               return inc(endcol)
@@ -1266,7 +1267,7 @@ s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
           hl_range(start, {endline, _278_()})
         elseif (_277_ == "o") then
           local function _279_()
-            if forward_x_3f then
+            if inclusive_motion_3f then
               return inc(endcol)
             else
               return endcol

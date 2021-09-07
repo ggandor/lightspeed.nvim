@@ -772,8 +772,12 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 
 
 ; State for 2-character search that is persisted between invocations.
-(local s {:prev-search {:in1 nil :in2 nil}
-          :prev-dot-repeatable-search {:in1 nil :in2 nil :in3 nil :x-mode? nil}})
+(local s {:prev-search {:in1 nil
+                        :in2 nil}
+          :prev-dot-repeatable-search {:in1 nil
+                                       :in2 nil
+                                       :in3 nil
+                                       :x-mode? nil}})
 
 (fn s.to [self reverse? arg-x-mode? dot-repeat?]
   "Entry point for 2-character search."
@@ -839,6 +843,10 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                                  (if arg-x-mode? (if reverse? "X" "x")
                                                      (if reverse? "S" "s"))))]
 
+    (var enter-repeat? nil)
+    (var new-search? nil)
+    (var x-mode? nil)
+
     (macro with-hl-chores [...]
       `(do (when opts.grey_out_search_area (grey-out-search-area reverse?))
            (do ,...)
@@ -884,10 +892,6 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                 (set-beacon-groups in2 positions-to-label labels shortcuts
                                    {: group-offset :repeat? enter-repeat?}))))))
       ret)
-
-    (var enter-repeat? nil)
-    (var new-search? nil)
-    (var x-mode? nil)
 
     (fn save-state-for [{: enter-repeat : dot-repeat}]
       (when new-search?
@@ -961,6 +965,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
               ; In any other case, the actual position will be highlighted.
               (highlight-cursor ?pos-to-highlight-at)))
           (when op-mode?
+            (local inclusive-motion? forward-x?)
             (local hl-group (if (or change-op? delete-op?)
                                 hl.group.pending-change-op-area
                                 hl.group.pending-op-area))
@@ -979,8 +984,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
               :V (hl-range [startline 0] [endline -1])
               ; We are in OP mode, doing chairwise motion, so 'v' _flips_ its
               ; inclusive/exclusive behaviour (:h o_v).
-              :v (hl-range start [endline (if forward-x? endcol (inc endcol))])
-              :o (hl-range start [endline (if forward-x? (inc endcol) endcol)])))
+              :v (hl-range start [endline (if inclusive-motion? endcol (inc endcol))])
+              :o (hl-range start [endline (if inclusive-motion? (inc endcol) endcol)])))
           (vim.cmd :redraw)
           (ignore-char-until-timeout ch2)
           ; Mitigate blink on the command line (see also
