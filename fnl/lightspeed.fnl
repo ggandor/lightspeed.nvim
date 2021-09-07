@@ -816,14 +816,16 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
   ;     save state (#5)
   ;     if no match: exit
   ;     elif only match:
-  ;       jump (#6)
+  ;       jump & exit (#6)
   ;     else:
+  ;       if auto-jump to first match is set: jump (#6)
   ;       (#2)
   ;       if not dot-repeating: light up beacons (#1)
   ;       loop for getting 3rd input (in3) (#4)
-  ;           - potentially switching match groups here
+  ;           - potentially switching match groups here,
+  ;             the labels' referred targets might change
   ;       if in3 is a label in use:
-  ;         jump (#3,#6)
+  ;         jump & exit (#3,#6)
   ;       else: exit (#3)
 
   (let [op-mode? (operator-pending-mode?)
