@@ -1049,6 +1049,7 @@ s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
   local enter_repeat_3f = nil
   local new_search_3f = nil
   local x_mode_3f = nil
+  local restore_scrolloff_cmd = nil
   local function switch_off_scrolloff()
     if jump_to_first_3f then
       local _3floc
@@ -1058,13 +1059,13 @@ s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
         _3floc = ""
       end
       local saved_val = api.nvim_eval(("&" .. _3floc .. "scrolloff"))
-      self["restore-scrolloff-cmd"] = ("let &" .. _3floc .. "scrolloff=" .. saved_val)
+      restore_scrolloff_cmd = ("let &" .. _3floc .. "scrolloff=" .. saved_val)
       return vim.cmd(("let &" .. _3floc .. "scrolloff=0"))
     end
   end
   local function restore_scrolloff()
     if jump_to_first_3f then
-      return vim.cmd((self["restore-scrolloff-cmd"] or ""))
+      return vim.cmd((restore_scrolloff_cmd or ""))
     end
   end
   local function cycle_through_match_groups(in2, positions_to_label, shortcuts, enter_repeat_3f0)

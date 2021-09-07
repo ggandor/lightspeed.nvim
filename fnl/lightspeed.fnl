@@ -842,10 +842,10 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         cmd-for-dot-repeat (replace-keycodes (.. "<Plug>Lightspeed_dotrepeat_"
                                                  (if arg-x-mode? (if reverse? "X" "x")
                                                      (if reverse? "S" "s"))))]
-
     (var enter-repeat? nil)
     (var new-search? nil)
     (var x-mode? nil)
+    (var restore-scrolloff-cmd nil)
 
     (macro with-hl-chores [...]
       `(do (when opts.grey_out_search_area (grey-out-search-area reverse?))
@@ -854,17 +854,16 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
            (vim.cmd :redraw)))
 
     ; For scrolloff, it's better not to use the Lua API now, because of Nvim #13964.
-    ; Note that these too use the `s` table as `self`.
     (fn switch-off-scrolloff []
       (when jump-to-first?
         (let [?loc (if (not= (api.nvim_eval "&l:scrolloff") -1) "l:" "")
               saved-val (api.nvim_eval (.. "&" ?loc "scrolloff"))]
-          (set self.restore-scrolloff-cmd (.. "let &" ?loc "scrolloff=" saved-val))
+          (set restore-scrolloff-cmd (.. "let &" ?loc "scrolloff=" saved-val))
           (vim.cmd (.. "let &" ?loc "scrolloff=0")))))
 
     (fn restore-scrolloff []
       (when jump-to-first?
-        (vim.cmd (or self.restore-scrolloff-cmd ""))))
+        (vim.cmd (or restore-scrolloff-cmd ""))))
 
     (fn cycle-through-match-groups [in2 positions-to-label shortcuts enter-repeat?]
       (var ret nil)
