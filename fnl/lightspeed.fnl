@@ -1079,13 +1079,14 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                       ; Succesful exit, option #3: jumping to the only match automatically.
                       (jump-with-wrap! first))
                     (when-not (empty? rest)
-                      ; Else lighting up beacons again, now only for pairs with `in2`
-                      ; as second character.
+                      ; We should switch it off before the next redraw.
                       (switch-off-scrolloff)
                       ; Operations that spanned multiple groups are dot-repeated as
                       ; <enter>-repeat, i.e., only the search pattern is saved then
                       ; (endnote #3).
                       (when-not (and dot-repeat? self.prev-dot-repeatable-search.in3)
+                        ; Lighting up beacons again, now only for pairs with `in2`
+                        ; as second character.
                         (with-hl-chores
                           (set-beacon-groups in2 positions-to-label labels shortcuts
                                              {:repeat? enter-repeat?})))
@@ -1095,7 +1096,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                       (match (cycle-through-match-groups in2 positions-to-label
                                                          shortcuts enter-repeat?)
                         [group-offset in3]
-                        (do (when (and dot-repeatable-op? (not dot-repeat?))
+                        (do (restore-scrolloff)
+                            (when (and dot-repeatable-op? (not dot-repeat?))
                               ; Reminder: above we have already set this to the character
                               ; of the first label, as a default. (We might had only one
                               ; match, and jumped automatically, not reaching this point.)
@@ -1109,11 +1111,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                        ; When "autojump" is on, fall through with any other key,
                                        ; so that we can continue editing right away.
                                        (exit-with (when jump-to-first? 
-                                                    (restore-scrolloff)
                                                     (vim.fn.feedkeys in3 :i))))
                               ; Succesful exit, option #4: selecting a valid label.
-                              pos (do (restore-scrolloff)
-                                      (jump-with-wrap! pos))))))))))))))))
+                              pos (jump-with-wrap! pos)))))))))))))))
 
 ; }}}
 ; Mappings {{{

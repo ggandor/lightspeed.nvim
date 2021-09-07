@@ -1459,6 +1459,7 @@ s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
               if ((type(_318_) == "table") and (nil ~= (_318_)[1]) and (nil ~= (_318_)[2])) then
                 local group_offset = (_318_)[1]
                 local in3 = (_318_)[2]
+                restore_scrolloff()
                 if (dot_repeatable_op_3f and not dot_repeat_3f) then
                   if (group_offset == 0) then
                     self["prev-dot-repeatable-search"].in3 = in3
@@ -1486,7 +1487,6 @@ s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
                   end
                   do
                     if jump_to_first_3f then
-                      restore_scrolloff()
                       vim.fn.feedkeys(in3, "i")
                     end
                   end
@@ -1495,7 +1495,6 @@ s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
                 _321_ = (_323_() or _327_())
                 if (nil ~= _321_) then
                   local pos = _321_
-                  restore_scrolloff()
                   return jump_with_wrap_21(pos)
                 end
               end
