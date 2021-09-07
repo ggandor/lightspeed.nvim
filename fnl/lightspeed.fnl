@@ -197,11 +197,13 @@ character instead."
                                          :gui "strikethrough"
                                          :cterm "strikethrough"}]
      [hl.group.greywash                 {:guifg "#777777" :ctermfg "Grey"}]])
+  ; Defining groups.
   (each [_ [group attrs] (ipairs groupdefs)]
     (let [attrs-str (-> (icollect [k v (pairs attrs)] (.. k "=" v))
                         (table.concat " "))]
       ; "default" = do not override any existing definition for the group.
       (vim.cmd (.. "highlight default " group " " attrs-str))))
+  ; Setting linked groups.
   (each [_ [from-group to-group]
          (ipairs [[hl.group.unique-ch hl.group.unlabeled-match]
                   [hl.group.shortcut-overlapped hl.group.shortcut]
@@ -255,10 +257,15 @@ character instead."
   ;       which is cleaner for us than calling :DoMatchParen directly,
   ;       since that would wrap this in a `windo`, and might visit
   ;       another buffer, breaking our visual selection (and thus also
-  ;       dot-repeat, apparently). (See discussion at #38.)
+  ;       dot-repeat, apparently). (See :h visual-start, and the
+  ;       discussion at #38.)
+  ;       Programming against the API would be more robust of course,
+  ;       but in the unlikely case that the implementation details would
+  ;       change, this still cannot do any damage on our side if called
+  ;       silent!-ly (the feature just ceases to work then).
   (vim.cmd "silent! doautocmd matchparen CursorMoved")
   ; If vim-matchup is installed, it can similarly be forced to refresh
-  ; by triggering a CursorMoved event.
+  ; by triggering a CursorMoved event. (The same caveats apply.)
   (vim.cmd "silent! doautocmd matchup_matchparen CursorMoved"))
 
 
@@ -970,10 +977,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                  ; `highlight.range` will not include it.)
                                  [line (inc (math.max startcol endcol))]))
               :V (hl-range [startline 0] [endline -1])
-              ; We are in OP mode, doing chairwise motion, so 'v' _flips_
-              ; inclusive/exclusive (:h o_v).
+              ; We are in OP mode, doing chairwise motion, so 'v' _flips_ its
+              ; inclusive/exclusive behaviour (:h o_v).
               :v (hl-range start [endline (if forward-x? endcol (inc endcol))])
-              ; No modifiers.
               :o (hl-range start [endline (if forward-x? (inc endcol) endcol)])))
           (vim.cmd :redraw)
           (ignore-char-until-timeout ch2)
@@ -1003,7 +1009,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
              (do (set x-mode? self.prev-dot-repeatable-search.x-mode?)
                  self.prev-dot-repeatable-search.in1)
              (match (get-input-and-clean-up)
-               ; Here we can handle any other modifier keys as "zeroth" input,
+               ; Here we can handle any other modifier key as "zeroth" input,
                ; if the need arises (e.g. regex search).
                in0 (do (set enter-repeat? (= in0 "\r"))  ; User hit <enter> right away: repeat previous search.
                        (set new-search? (not (or enter-repeat? dot-repeat?)))
@@ -1019,10 +1025,10 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                   dot-repeat? (.. in1 self.prev-dot-repeatable-search.in2)
                                   in1))))
         [ch2 pos]
-        ; Successful exit, option #1: jump to a unique character right after the first input.
         (if (or new-search?
                 (and enter-repeat? (= ch2 self.prev-search.in2))
                 (and dot-repeat? (= ch2 self.prev-dot-repeatable-search.in2)))
+          ; Successful exit, option #1: jump to a unique character right after the first input.
           (do (save-state-for {:enter-repeat {: in1 :in2 ch2}
                                :dot-repeat {: in1 :in2 ch2 :in3 (. labels 1)}})
               (jump-and-ignore-ch2-until-timeout! pos ch2))
