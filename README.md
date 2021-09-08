@@ -256,11 +256,14 @@ lua require'lightspeed'.opts.jump_to_first_match = false
 For a detailed description of the available options, see the docs: `:h
 lightspeed-config`.
 
+#### Highlight groups
+
 For customizing the highlight colors, see `:h lightspeed-highlight`.
 
-(Colorscheme authors: let your creativity fly, but please keep on thing in mind,
-that is, `LightspeedMaskedChar` should in any case be _much_ dimmer and less
-obtrusive than the labels.)
+☝️ Dear fellow plugin authors: let your creativity fly, but keep in mind that
+`LightspeedMaskedChar` should be unobtrusive - barely noticeable ideally -, and
+in any case _much_ dimmer than the labels and shortcuts, otherwise the UI
+becomes too chaotic. Please do follow this one advice.
 
 #### Notes
 
