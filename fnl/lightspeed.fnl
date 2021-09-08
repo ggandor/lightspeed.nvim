@@ -1173,8 +1173,6 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
      [:o "z" "<Plug>Lightspeed_s"]
      [:o "Z" "<Plug>Lightspeed_S"]
 
-     [:x "x" "<Plug>Lightspeed_x"]
-     [:x "X" "<Plug>Lightspeed_X"]
      [:o "x" "<Plug>Lightspeed_x"]
      [:o "X" "<Plug>Lightspeed_X"]
 

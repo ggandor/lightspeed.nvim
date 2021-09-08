@@ -140,10 +140,9 @@ ab█···    movement     ····a█
   ‾‾‾‾    operation    ‾‾‾‾‾‾  
 ```
 
-In Visual and Operator-pending mode, `x`/`X` are readily available mappings for
-X-mode. This seems a very sensible default: those keys are free in O-P mode, and
-are redundant equivalents of `d`/`D` in Visual mode; consider also the handy
-mnemonics, and the fact that `s`, `z` and `x` are physically right next to each
+In Operator-pending mode `x`/`X` are readily available mappings for X-mode. This
+seems a sensible default, as those keys are free in O-P mode; consider also the
+handy mnemonics, and the fact that `z` and `x` are physically right next to each
 other on a QWERTY keyboard.
 
 In any Vim mode, X-mode can also be invoked by pressing `<c-x>` before the

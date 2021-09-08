@@ -248,12 +248,6 @@ S{char}{char}              Extend visual selection up to and including the
                            first character of {char}{char} in the backward
                            direction.
 
-x{char}{char}              Extend visual selection up to and including the
-                           second character of {char}{char} in the forward
-                           direction.
-X{char}{char}              Extend visual selection up to the second character
-                           of {char}{char} in the backward direction.
-
 Operator-pending mode~
 
 {operator}z{char}{char}    Perform {operator} from the cursor up to the first
