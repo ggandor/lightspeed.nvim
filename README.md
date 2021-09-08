@@ -107,13 +107,16 @@ That is,
 - enter 1st character of the search pattern (might short-circuit after this, if
   the character is unique in the search direction) 
 - _the "beacons" are lit at this point; all potential matches are labeled (char1 + ?)_
-- enter 2nd character of the search pattern (might short-circuit after this, if
+- enter 2nd character of the search pattern (might [short-circuit after
+  this](https://github.com/ggandor/lightspeed.nvim#jump-on-partial-input), if
   there is only one match), or the label character, if the target is
   [shortcutable](https://github.com/ggandor/lightspeed.nvim#shortcuts).
 - _certain beacons are extinguished; only char1 + char2 matches remain_
 - _the cursor automatically jumps to the first match by default; pressing any
   other key than a group-switch or a target label exits the plugin now_
-- optionally cycle through the groups of matches that can be labeled at once
+- optionally [cycle through the groups of
+  matches](https://github.com/ggandor/lightspeed.nvim#grouping-matches-by-distance)
+  that can be labeled at once
 - choose a labeled target to jump to (in the current group)
 
 In Operator-pending mode the search is invoked with `z`/`Z`, acknowledging that
@@ -121,23 +124,35 @@ In Operator-pending mode the search is invoked with `z`/`Z`, acknowledging that
 
 ##### X-mode
 
-The mnemonic for X-mode could be "extend/exclude". In the forward direction,
-the cursor goes to the end of the match; in the backward direction, the cursor
-stops just before - in an absolute sense, after - the end of the match (the
-equivalent of `T` for two-character search). In Operator-pending mode, the
-edge of the operated area always gets an offset of +2 - this means that in the
-forward direction the motion becomes _inclusive_ (the cursor position will be
-included in the operation).
+`s`/`S` follow the semantics of `/` and `?` in terms of cursor placement and
+inclusive/exclusive operational behaviour, including forced motion types (`:h
+forced-motion`). 
 
 ```
-ab····                 ····ab
-          ← S   s →
-█b····    movement     ····█b
-‾‾‾‾‾‾    operation    ‾‾‾‾
+ab···|                         |···ab
+|b····  ← S    jump      s  →  ····|b
+██████  ← S    select    s  →  █████b
+█████·  ← Z    operate   z  →  ████ab
+██████  ← vZ   operate   vz →  █████b
+```
 
-          ← X   x → 
-ab█···    movement     ····a█
-  ‾‾‾‾    operation    ‾‾‾‾‾‾  
+The mnemonic for X-mode could be "extend/exclude" - it provides missing variants
+for the two directions.
+
+In the forward direction, the cursor goes to the end of the match; in the
+backward direction, the cursor stops just before - in an absolute sense, after -
+the end of the match (the equivalent of `T` for two-character search). In
+Operator-pending mode, the edge of the operated area always gets an offset of
++2. This means that in the forward direction the motion becomes _inclusive_ (the
+end position will be included in the operation). Compare the illustration with
+the above one:
+
+```
+ab···|                         |···ab
+ab|···  ← ?    jump      ?  →  ····a|
+ab████  ← ?    select    ?  →  ██████
+ab███·  ← X    operate   x  →  ██████
+ab████  ← vX   operate   vx →  █████b
 ```
 
 In Operator-pending mode `x`/`X` are readily available mappings for X-mode. This
@@ -147,6 +162,11 @@ other on a QWERTY keyboard.
 
 In any Vim mode, X-mode can also be invoked by pressing `<c-x>` before the
 search pattern.
+
+##### Matching before line breaks
+
+A character before EOL can be targeted by pressing `<enter>` after it (indicated
+by `¬` in the highlighted match).
 
 ##### A note on the highlighting strategy
 
@@ -166,11 +186,6 @@ where the first field (the place of `X`, showing the character masked by the
 label) might be overlapped by the label of another match, and `label` itself
 might be a [shortcut](https://github.com/ggandor/lightspeed.nvim#shortcuts),
 with a filled background (the inverse of a regular label).
-
-##### Matching before line breaks
-
-A character before EOL can be targeted by pressing `<enter>` after it (indicated
-by `¬` in the highlighted match).
 
 #### 1-character search
 
