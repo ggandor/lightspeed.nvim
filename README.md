@@ -271,6 +271,42 @@ lua require'lightspeed'.opts.jump_to_first_match = false
 For a detailed description of the available options, see the docs: `:h
 lightspeed-config`.
 
+#### Keymaps
+
+Lightspeed sees itself as a fundamental part of the developing Nvim ecosystem,
+similar to canonized Vim plugins like
+[surround.vim](https://github.com/tpope/vim-surround) or
+[targets.vim](https://github.com/wellle/targets.vim). Therefore it provides
+carefully thought-out defaults, mapping to the following keys: `s`, `S` (Normal
+and Visual mode), `z`, `Z`, `x`, `X` (Operator-pending mode), and `f`, `F`, `t`,
+`T` (all modes).
+
+(Note: The native `s` and `S` both have comfortable equivalents - `cl` and `cc`,
+respectively.)
+
+On the other hand, the plugin will check for conflicts with any _custom_
+mappings created by you or other plugins, and will not overwite them, unless
+explicitly told so. To set alternative keymaps, you can use the following
+`<Plug>` keys in all modes (pattern length, direction, motion/operation
+semantics):
+
+```
+<Plug>Lightspeed_s  -  2-character  forward   /-like
+<Plug>Lightspeed_S  -  2-character  backward  ?-like
+<Plug>Lightspeed_x  -  2-character  forward   X-mode
+<Plug>Lightspeed_X  -  2-character  backward  X-mode
+
+<Plug>Lightspeed_f  -  1-character  forward   f-like
+<Plug>Lightspeed_F  -  1-character  backward  F-like
+<Plug>Lightspeed_t  -  1-character  forward   t-like
+<Plug>Lightspeed_T  -  1-character  backward  T-like
+```
+
+It is considered an exceptional request if one would like to revert to the
+native behaviour of certain keys, that is, would not like to use some features
+of the plugin at all; but in that case, all they has to do is to `unmap` the
+relevant keys after the plugin has been sourced (e.g. `unmap t | unmap T`).
+
 #### Highlight groups
 
 For customizing the highlight colors, see `:h lightspeed-highlight`.
@@ -281,12 +317,6 @@ in any case _much_ dimmer than the labels and shortcuts, otherwise the UI
 becomes too chaotic. Please do follow this one advice.
 
 #### Notes
-
-* Lightspeed will not override your - or other plugins' - custom mappings,
-  unless explicitly told so. If you, for any reason, would like to revert to the
-  native behaviour of certain keys, that is, would not like to use some features
-  of the plugin at all, check `:h lightspeed-disable-default-mappings` (spoiler
-  alert: `unmap`).
 
 * While the plugin is active, the actual cursor is down on the command line, but
   its position in the window is kept highlighted, using the attributes of the
