@@ -104,11 +104,11 @@ default settings:
 
 That is, 
 - invoke in the forward (`s`) or backward (`S`) direction
-- enter 1st character of the search pattern (might short-circuit after this, if
+- enter 1st character of the search pattern (might [short-circuit after
+  this](https://github.com/ggandor/lightspeed.nvim#jump-on-partial-input), if
   the character is unique in the search direction) 
 - _the "beacons" are lit at this point; all potential matches are labeled (char1 + ?)_
-- enter 2nd character of the search pattern (might [short-circuit after
-  this](https://github.com/ggandor/lightspeed.nvim#jump-on-partial-input), if
+- enter 2nd character of the search pattern (might short-circuit after this, if
   there is only one match), or the label character, if the target is
   [shortcutable](https://github.com/ggandor/lightspeed.nvim#shortcuts).
 - _certain beacons are extinguished; only char1 + char2 matches remain_
@@ -444,7 +444,7 @@ that with the different shortcutting methods available, the lack of an "ignore
 case" option is less of a problem for us: in this plugin, capitals _can_ very
 frequently make you reach the target faster - so start using them!
 
-### Arbitrary(-length) search pattern?
+### Arbitrary-length search pattern?
 
 That is practically labeling `/?` matches, right? It is overkill for our
 purposes, IMO. Again, we are optimizing for the common case. A 2-character
@@ -453,10 +453,6 @@ enough for making an on-screen jump efficiently 99% of the time; in that
 remaining 1%, please use `H`/`M`/`L`/`{`/`}` first, or just live with having to
 press `Tab`/`Space` multiple times. (What the heck are you editing, on what size
 of display, by the way?)
-
-For regex patterns specifically, I have yet to find a compelling use case in
-this context. Couldn't we just type the exact characters on the screen? (See
-also _Start/end of line as a special target?_ below.)
 
 ### Labeled matches for 1-character search?
 
