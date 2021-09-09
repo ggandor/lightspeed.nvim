@@ -520,6 +520,11 @@ Every contribution is very welcome, be it a bug report, fix, or just a
 discussion-initiating question - please do not feel intimidated. If you have any
 problems with the documentation especially, do not hesitate to reach out.
 
+Tip: besides the [issue
+tracker](https://github.com/ggandor/lightspeed.nvim/issues), be sure to also
+check/use [Discussions](https://github.com/ggandor/lightspeed.nvim/discussions)
+for announcements, simple Q&A, and open-ended brainstorming.
+
 Regarding feature requests and enhancements, consider the "goals" section above
 first. If you have a different vision, feel free to fork the plugin and improve
 upon it in ways you think are best - I am glad to help  -, but I'd like to keep
