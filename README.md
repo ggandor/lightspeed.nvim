@@ -273,22 +273,23 @@ lightspeed-config`.
 
 #### Keymaps
 
-Lightspeed sees itself as a fundamental part of the developing Nvim ecosystem,
-similar to canonized Vim plugins like
-[surround.vim](https://github.com/tpope/vim-surround) or
-[targets.vim](https://github.com/wellle/targets.vim). Therefore it provides
-carefully thought-out defaults, mapping to the following keys: `s`, `S` (Normal
-and Visual mode), `z`, `Z`, `x`, `X` (Operator-pending mode), and `f`, `F`, `t`,
-`T` (all modes).
+Lightspeed sees itself as a fundamental part of the developing Neovim ecosystem,
+aiming to be part of an "extended core", similar to the suite of canonized Vim
+plugins including [surround.vim](https://github.com/tpope/vim-surround),
+[targets.vim](https://github.com/wellle/targets.vim), and Sneak, that maintain
+some consistency between each other. Therefore it provides carefully thought-out
+defaults, mapping to the following keys: `s`, `S` (Normal and Visual mode), `z`,
+`Z`, `x`, `X` (Operator-pending mode), and - obviously, enhancing the built-in
+motions - `f`, `F`, `t`, `T` (all modes).
 
-(Note: The native `s` and `S` both have comfortable equivalents - `cl` and `cc`,
-respectively.)
+(Note: Basic motions should have the absolute least friction among all commands,
+since they are the most frequent. The native `s` and `S` both have comfortable
+equivalents - `cl` and `cc`, respectively.)
 
-On the other hand, the plugin will check for conflicts with any _custom_
-mappings created by you or other plugins, and will not overwite them, unless
-explicitly told so. To set alternative keymaps, you can use the following
-`<Plug>` keys in all modes (pattern length, direction, motion/operation
-semantics):
+That said, Lightspeed will check for conflicts with any custom mappings created
+by you or other plugins, and will not overwite them, unless explicitly told so.
+To set alternative keymaps, you can use the following `<Plug>` keys in all modes
+(pattern length, direction, motion/operation semantics):
 
 ```
 <Plug>Lightspeed_s  -  2-character  forward   /-like
@@ -301,6 +302,9 @@ semantics):
 <Plug>Lightspeed_t  -  1-character  forward   t-like
 <Plug>Lightspeed_T  -  1-character  backward  T-like
 ```
+
+(Note: `<Plug>` keys need to be mapped to recursively by design, do not use
+`-noremap` for them.)
 
 It is considered an exceptional request if one would like to revert to the
 native behaviour of certain keys, that is, would not like to use some features
@@ -456,23 +460,27 @@ of display, by the way?)
 
 ### Labeled matches for 1-character search?
 
-That would be pretty pointless, for two reasons. First, the "break" is
+That would be pretty pointless, for two reasons. First, the "pause" is
 inevitable then, since it is physically impossible to show labels ahead of time.
 Second, usually there are too many matches, so we should use multi-character
-labels. (The closer ones you could probably reach with `s` directly.) Now, ask
-yourself the question: isn't it much better to type two on-screen characters,
-and then a "little bit surprising" label, than to type one on-screen character,
-and wait for - most probably - two surprising characters to appear?
+labels. (The closer ones you could probably reach with `sab` directly, instead
+of `fa` + `l`.) Now, ask yourself the question: isn't it much better to type two
+on-screen characters and then a "little bit surprising" label in one go - or
+almost in one go - (`sabl`), than to type one on-screen character, and wait for
+(most probably) two surprising characters to appear (`fa` + `lm`)?
 
-Moreover, if you need to start thinking about whether to use `f` or `s`, then
-the whole thing is screwed already. Minimal mental effort. That is the mantra of
-Lightspeed. 1-character search is for very short distances, or when you can
-clearly count the number of occurrences, and reach for `f` or `t` in a totally
-automatic way. In those cases they are invaluable shortcuts, but for everything
-else, `s` should be the default choice. The multiline enhancement has only been
-implemented because of that annoying situation when there is a unique character
-just a couple of lines above of below the current line, but we could not target
-it with the native `f`/`t`.
+In the not-too-frequent case it might end up being `fa` + `l` versus `sabl`,
+where the former could technically be faster by a narrow margin (annoying pause
+notwithstanding). But in general, if you need to start thinking about whether to
+use `f` or `s`, scanning the context, then the whole thing is screwed already.
+Minimal mental effort. That is the mantra of Lightspeed. 1-character search is
+for very short distances, or when you can clearly count the number of
+occurrences, and reach for `f` or `t` in a totally automatic way. In those cases
+they are invaluable shortcuts, but for everything else, `s` should be the
+default choice. The multiline enhancement has only been implemented because of
+that annoying situation when there is a unique character just a couple of lines
+above of below the current line, but we could not target it with the native
+`f`/`t`.
 
 ### Bi-directional search?
 
@@ -538,7 +546,8 @@ features are simply too much of a convenience. (Learning a Lisp can be an
 eye-opening experience anyway, even though Fennel is something of a half-blood.)
 
 As for "building", the plugin is really just one `.fnl` file at the moment, that
-you can compile into the `lua` folder with the Fennel executable.
+you can compile into the `lua` folder with the Fennel executable manually, or
+using the provided Makefile.
 
 ## 💡 Inspired by
 
