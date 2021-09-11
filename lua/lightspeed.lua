@@ -714,14 +714,17 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f, revert_3f)
         hl:cleanup()
         self["instant-repeat?"] = (ok_3f and (repeat_3f or revert_3f0))
         if not self["instant-repeat?"] then
-          self.stack = {}
-          local _164_
-          if ok_3f then
-            _164_ = in2
-          else
-            _164_ = replace_keycodes("<esc>")
+          do
+            self.stack = {}
+            local _164_
+            if ok_3f then
+              _164_ = in2
+            else
+              _164_ = replace_keycodes("<esc>")
+            end
+            vim.fn.feedkeys(_164_, "i")
           end
-          return vim.fn.feedkeys(_164_, "i")
+          return nil
         else
           if revert_3f0 then
             local _166_ = table.remove(self.stack)

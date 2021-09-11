@@ -609,8 +609,9 @@ interrupted change-operation."
                   (hl:cleanup)
                   (set self.instant-repeat? (and ok? (or repeat? revert?)))
                   (if (not self.instant-repeat?)
-                      (do (set self.stack [])
-                          (vim.fn.feedkeys (if ok? in2 (replace-keycodes "<esc>")) :i))
+                      (exit
+                        (set self.stack [])
+                        (vim.fn.feedkeys (if ok? in2 (replace-keycodes "<esc>")) :i))
                       (do (if revert? (match (table.remove self.stack)
                                         prev-pos (vim.fn.cursor prev-pos))
                               (table.insert self.stack new-pos))
