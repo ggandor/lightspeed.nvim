@@ -425,28 +425,46 @@ interrupted change-operation."
         (api.nvim_feedkeys :n true))))
 
 
-; The primary purpose is not the wrapping of the interrupted-change
-; handler, (it's just a bonus that we can hide that here to), but to
-; enforce and encapsulate the requirement that the tail-positioned
-; "exit" forms in the match blocks should always return nil. (Interop
-; with side-effecting VimL functions can be dangerous, they might return
-; 0 for example, like `feedkey`, and with that they can screw up Fennel
-; match forms in a breeze, resulting in misterious bugs, so it's better
-; to be paranoid.)
-; Caveat: be sure _not_ to call this twice accidentally,
-; `handle-interrupted-change-op!` might move the cursor twice then!
-(macro exit-with [...]
-  `(do (when (change-operation?) (handle-interrupted-change-op!))
+; Note: One of the main purpose of these macros, besides wrapping cleanup stuff,
+; is to enforce and encapsulate the requirement that tail-positioned "exit"
+; forms in `match` blocks should always return nil. (Interop with side-effecting
+; VimL functions can be dangerous, they might return 0 for example, like
+; `feedkey`, and with that they can screw up Fennel match forms in a breeze,
+; resulting in misterious bugs, so it's better to be paranoid.) 
+
+; TODO: LightspeedLeave event, etc.
+(macro exit [...]
+  `(do
+     ; I don't understand why this double wrap is needed, but it is
+     ; (else only sees the first item).
+     (do ,...)
+     nil))
+
+
+; Be sure _not_ to call this twice accidentally, `handle-interrupted-change-op!`
+; might move the cursor twice then!
+(macro exit-early [...]
+  `(do (when (change-operation?)
+         (handle-interrupted-change-op!))
+       ; Putting the form here, _after_ the change-op handler,
+       ; because it might feed keys too.
        (do ,...)
-       nil))
+       (exit)))
+
+
+(macro exit-early-unless [condition ...]
+  `(let [ret# (do ,condition)]
+     (or ret# (exit-early ,...))))
 
 
 (fn get-input-and-clean-up []
   (let [(ok? res) (getchar-as-str)]
-    (hl:cleanup)  ; Cleaning up after every input religiously 
-                  ; (trying to work in a more or less stateless manner).
-    (if (and ok? (not= res (replace-keycodes "<esc>"))) res  ; <esc> cleanly exits anytime.
-        (exit-with nil))))
+    ; Cleaning up after every input religiously
+    ; (trying to work in a more or less stateless manner).
+    (hl:cleanup)
+    ; <esc> should cleanly exit anytime.
+    (when (and ok? (not= res (replace-keycodes "<esc>")))
+      res)))
 
 
 ; repeat.vim support 
@@ -532,16 +550,17 @@ interrupted change-operation."
                    (and t-like? reverse?) "T")
         cmd-for-dot-repeat (.. (replace-keycodes "<Plug>Lightspeed_dotrepeat_") motion)]
 
-    (when-not (or self.instant-repeat? dot-repeat?)
+    (when-not (or dot-repeat? self.instant-repeat?)
       (echo "") (highlight-cursor) (vim.cmd :redraw))
 
     (var enter-repeat? nil)
     (match (if self.instant-repeat? self.prev-search
                dot-repeat? self.prev-dot-repeatable-search
-               (match (get-input-and-clean-up)
+               (match (exit-early-unless (get-input-and-clean-up))
                  "\r" (do (set enter-repeat? true)
                           (or self.prev-search
-                              (exit-with (echo-no-prev-search))))
+                              (exit-early
+                                (echo-no-prev-search))))
                  in in))
       in1
       (let [new-search? (not (or enter-repeat? self.instant-repeat? dot-repeat?))]
@@ -564,7 +583,8 @@ interrupted change-operation."
               (when-not op-mode?
                 (hl:add-hl hl.group.one-char-match (dec line) (dec col) col))))
 
-        (if (= i 0) (exit-with (echo-not-found in1))  ; note: no highlight to clean up if no match found
+        (if (= i 0) (exit-early
+                      (echo-not-found in1))  ; note: no highlight to clean up if no match found
             (do
               (when-not revert?
                 (jump-to! match-pos
@@ -873,13 +893,10 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
       (var loop? true)
       (while loop? 
         (match (or (when dot-repeat? self.prev-dot-repeatable-search.in3)
-                   ; Beware of calling `exit-with` again, after
-                   ; `get-input-and-clean-up`. (As of now, it calls
-                   ; `handle-interrupted-change-op!` automatically.)
                    (get-input-and-clean-up)
-                   (do (set loop? false)  ; <esc> should exit the loop
-                       (restore-scrolloff)
-                       (set ret nil)))
+                   (do (set loop? false)  ; <esc> or <c-c> should exit the loop
+                       (set ret nil)
+                       nil))
           input
           (if (not (one-of? input cycle-fwd-key cycle-bwd-key))
             ; Note: dot-repeat arrives here, and short-circuits.
@@ -994,14 +1011,6 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
           (when change-op? (echo ""))
           (hl:cleanup))))
 
-    ; After all the stage-setting, here comes the main action you've all been
-    ; waiting for:
-
-    (when-not dot-repeat?
-      (echo "")  ; Clean up the command line.
-      (with-hl-chores
-        (when opts.highlight_unique_chars (highlight-unique-chars reverse?))))
-
     ; A note on a design decision: when a function encapsulates an inherently
     ; complex flow of logic, it is most important to get a good overview of the
     ; happy path as quickly as possible. Matched forms seem a good place to hide
@@ -1011,34 +1020,47 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
     ; valid input and a clean state that we can continue to work with, simple as
     ; that.
 
+    ; After all the stage-setting, here comes the main action you've all been
+    ; waiting for:
+
+    (when-not dot-repeat?
+      (echo "")  ; Clean up the command line.
+      (with-hl-chores
+        (when opts.highlight_unique_chars (highlight-unique-chars reverse?))))
+
     (match (if dot-repeat?
              (do (set x-mode? self.prev-dot-repeatable-search.x-mode?)
                  self.prev-dot-repeatable-search.in1)
-             (match (get-input-and-clean-up)
+             (match (exit-early-unless (get-input-and-clean-up))
                ; Here we can handle any other modifier key as "zeroth" input,
                ; if the need arises (e.g. regex search).
                in0 (do (set enter-repeat? (= in0 "\r"))  ; User hit <enter> right away: repeat previous search.
                        (set new-search? (not (or enter-repeat? dot-repeat?)))
                        (set x-mode? (or arg-x-mode? (= in0 x-mode-prefix-key)))
-                       (if enter-repeat? (or self.prev-search.in1
-                                             (exit-with (echo-no-prev-search)))
-                           (and x-mode? (not arg-x-mode?)) (get-input-and-clean-up)  ; Get the "true" first input.
+                       (if enter-repeat?
+                           (exit-early-unless self.prev-search.in1
+                             (echo-no-prev-search))
+
+                           (and x-mode? (not arg-x-mode?))
+                           (exit-early-unless (get-input-and-clean-up))  ; Get the "true" first input.
+
                            in0))))
       in1
-      (match (or (get-match-map-for in1 reverse?)
-                 (exit-with (echo-not-found 
-                              (if enter-repeat? (.. in1 self.prev-search.in2)
-                                  dot-repeat? (.. in1 self.prev-dot-repeatable-search.in2)
-                                  in1))))
+      (match (exit-early-unless (get-match-map-for in1 reverse?)
+               (echo-not-found
+                 (if enter-repeat? (.. in1 self.prev-search.in2)
+                     dot-repeat? (.. in1 self.prev-dot-repeatable-search.in2)
+                     in1)))
         [ch2 pos]
-        (if (or new-search?
-                (and enter-repeat? (= ch2 self.prev-search.in2))
-                (and dot-repeat? (= ch2 self.prev-dot-repeatable-search.in2)))
+        (when (exit-early-unless (or new-search?
+                                     (and enter-repeat? (= ch2 self.prev-search.in2))
+                                     (and dot-repeat? (= ch2 self.prev-dot-repeatable-search.in2)))
+                (echo-not-found (.. in1 ch2)))
           ; Successful exit, option #1: jump to a unique character right after the first input.
-          (do (save-state-for {:enter-repeat {: in1 :in2 ch2}
-                               :dot-repeat {: in1 :in2 ch2 :in3 (. labels 1)}})
-              (jump-and-ignore-ch2-until-timeout! pos ch2))
-          (exit-with (echo-not-found (.. in1 ch2))))
+          (exit
+            (save-state-for {:enter-repeat {: in1 :in2 ch2}
+                             :dot-repeat {: in1 :in2 ch2 :in3 (. labels 1)}})
+            (jump-and-ignore-ch2-until-timeout! pos ch2)))
 
         match-map
         (let [shortcuts (get-shortcuts match-map labels reverse? jump-to-first?)]
@@ -1058,62 +1080,69 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                        {:init-round? true}))))))
           (match (if enter-repeat? self.prev-search.in2
                      dot-repeat? self.prev-dot-repeatable-search.in2
-                     (get-input-and-clean-up))
+                     (exit-early-unless (get-input-and-clean-up)))
             in2
             (match (when new-search? (. shortcuts in2))
               ; Successful exit, option #2: selecting a shortcut-label.
-              [pos ch2] (do (save-state-for {:enter-repeat {: in1 :in2 ch2}
-                                             :dot-repeat {: in1 :in2 ch2 :in3 in2}})
-                            (jump-with-wrap! pos))
+              [pos ch2] (exit
+                          (save-state-for {:enter-repeat {: in1 :in2 ch2}
+                                           :dot-repeat {: in1 :in2 ch2 :in3 in2}})
+                          (jump-with-wrap! pos))
               nil  ; no shortcut found
               (do
                 (save-state-for {:enter-repeat {: in1 : in2}  ; endnote #1
                                  ; For the moment, set the first match as the target.
                                  :dot-repeat {: in1 : in2 :in3 (. labels 1)}})
-                (match (or (. match-map in2)
-                           (exit-with (echo-not-found (.. in1 in2))))
+                (match (exit-early-unless (. match-map in2)
+                         (echo-not-found (.. in1 in2)))
                   positions
                   (let [[first & rest] positions
                         positions-to-label (if jump-to-first? rest positions)]
                     (when (or jump-to-first? (empty? rest))
-                      ; Succesful exit, option #3: jumping to the only match automatically.
                       (jump-with-wrap! first))
-                    (when-not (empty? rest)
-                      ; We should switch it off before the next redraw.
-                      (switch-off-scrolloff)
-                      ; Operations that spanned multiple groups are dot-repeated as
-                      ; <enter>-repeat, i.e., only the search pattern is saved then
-                      ; (endnote #3).
-                      (when-not (and dot-repeat? self.prev-dot-repeatable-search.in3)
-                        ; Lighting up beacons again, now only for pairs with `in2`
-                        ; as second character.
-                        (with-hl-chores
-                          (set-beacon-groups in2 positions-to-label labels shortcuts
-                                             {:repeat? enter-repeat?})))
-                      ; Note: cycle-through... cleans up everything after itself (highlight,
-                      ; interrupted change op, scrolloff), nothing more to do if there's
-                      ; no match.
-                      (match (cycle-through-match-groups in2 positions-to-label
-                                                         shortcuts enter-repeat?)
-                        [group-offset in3]
-                        (do (restore-scrolloff)
-                            (when (and dot-repeatable-op? (not dot-repeat?))
-                              ; Reminder: above we have already set this to the character
-                              ; of the first label, as a default. (We might had only one
-                              ; match, and jumped automatically, not reaching this point.)
-                              (set self.prev-dot-repeatable-search.in3
-                                   ; If the operation spanned multiple groups, we are
-                                   ; switching dot-repeat to <enter>-repeat (endnote #3).
-                                   (if (= group-offset 0) in3 nil)))
-                            (match (or (-?>> (. label-indexes in3)  ; Valid label...
-                                             (+ (* group-offset (length labels)))
-                                             (. positions-to-label))  ; ...currently in use?
-                                       ; When "autojump" is on, fall through with any other key,
-                                       ; so that we can continue editing right away.
-                                       (exit-with (when jump-to-first? 
-                                                    (vim.fn.feedkeys in3 :i))))
-                              ; Succesful exit, option #4: selecting a valid label.
-                              pos (jump-with-wrap! pos)))))))))))))))
+                    (if (empty? rest)
+                      ; Succesful exit, option #3: jumping to the only match automatically.
+                      (exit)
+                      (do
+                        ; We should switch it off before the next redraw.
+                        (switch-off-scrolloff)
+                        ; Operations that spanned multiple groups are dot-repeated as
+                        ; <enter>-repeat, i.e., only the search pattern is saved then
+                        ; (endnote #3).
+                        (when-not (and dot-repeat? self.prev-dot-repeatable-search.in3)
+                          ; Lighting up beacons again, now only for pairs with `in2`
+                          ; as second character.
+                          (with-hl-chores
+                            (set-beacon-groups in2 positions-to-label labels shortcuts
+                                               {:repeat? enter-repeat?})))
+                        (match (exit-early-unless (cycle-through-match-groups
+                                                    in2 positions-to-label
+                                                    shortcuts enter-repeat?)
+                                 ; Note: highlight is cleaned up by `cycle-through...`.
+                                 (restore-scrolloff))
+                          [group-offset in3]
+                          (do (restore-scrolloff)
+                              (when (and dot-repeatable-op? (not dot-repeat?))
+                                ; Reminder: above we have already set this to the character
+                                ; of the first label, as a default. (We might had only one
+                                ; match, and jumped automatically, not reaching this point.)
+                                (set self.prev-dot-repeatable-search.in3
+                                     ; If the operation spanned multiple groups, we are
+                                     ; switching dot-repeat to <enter>-repeat (endnote #3).
+                                     (if (= group-offset 0) in3 nil)))
+                              ; TODO: extract 'valid label' logic into a helper fn
+                              (match (-?>> (. label-indexes in3)  ; Valid label...
+                                           (+ (* group-offset (length labels)))
+                                           (. positions-to-label))  ; ...currently in use?
+                                pos (exit
+                                      ; Succesful exit, option #4: selecting a valid label.
+                                      (jump-with-wrap! pos))
+                                _ (if (not jump-to-first?) (exit-early)
+                                      ; Succesful exit, option #5: falling through with any
+                                      ; non-label key in "autojump" mode (so that we can
+                                      ; continue editing right away).
+                                      (exit
+                                        (vim.fn.feedkeys in3 :i))))))))))))))))))
 
 ; }}}
 ; Mappings {{{
