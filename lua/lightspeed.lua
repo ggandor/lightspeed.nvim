@@ -1044,7 +1044,7 @@ local function ignore_char_until_timeout(char_to_ignore)
   end
 end
 local s = {["prev-dot-repeatable-search"] = {["x-mode?"] = nil, in1 = nil, in2 = nil, in3 = nil}, ["prev-search"] = {in1 = nil, in2 = nil}}
-s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
+s.to = function(self, reverse_3f, invoked_in_x_mode_3f, dot_repeat_3f)
   local op_mode_3f = operator_pending_mode_3f()
   local change_op_3f = change_operation_3f()
   local delete_op_3f = delete_operation_3f()
@@ -1057,7 +1057,7 @@ s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
   local jump_to_first_3f = (opts.jump_to_first_match and not op_mode_3f)
   local cmd_for_dot_repeat
   local _239_
-  if arg_x_mode_3f then
+  if invoked_in_x_mode_3f then
     if reverse_3f then
       _239_ = "X"
     else
@@ -1349,7 +1349,7 @@ s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
       local in0 = _295_
       enter_repeat_3f = (in0 == "\13")
       new_search_3f = not (enter_repeat_3f or dot_repeat_3f)
-      x_mode_3f = (arg_x_mode_3f or (in0 == x_mode_prefix_key))
+      x_mode_3f = (invoked_in_x_mode_3f or (in0 == x_mode_prefix_key))
       if enter_repeat_3f then
         local function _299_()
           if change_operation_3f() then
@@ -1366,7 +1366,7 @@ s.to = function(self, reverse_3f, arg_x_mode_3f, dot_repeat_3f)
           return nil
         end
         _294_ = (self["prev-search"].in1 or _299_())
-      elseif (x_mode_3f and not arg_x_mode_3f) then
+      elseif (x_mode_3f and not invoked_in_x_mode_3f) then
         local function _302_()
           if change_operation_3f() then
             handle_interrupted_change_op_21()

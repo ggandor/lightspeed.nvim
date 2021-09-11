@@ -801,7 +801,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                        :in3 nil
                                        :x-mode? nil}})
 
-(fn s.to [self reverse? arg-x-mode? dot-repeat?]
+(fn s.to [self reverse? invoked-in-x-mode? dot-repeat?]
   "Entry point for 2-character search."
 
   ; local vars (set after input)
@@ -863,7 +863,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         ; the operation without allowing us to select a labeled target.
         jump-to-first? (and opts.jump_to_first_match (not op-mode?))
         cmd-for-dot-repeat (replace-keycodes (.. "<Plug>Lightspeed_dotrepeat_"
-                                                 (if arg-x-mode? (if reverse? "X" "x")
+                                                 (if invoked-in-x-mode?
+                                                     (if reverse? "X" "x")
                                                      (if reverse? "S" "s"))))]
     (var enter-repeat? nil)
     (var new-search? nil)
@@ -1041,15 +1042,16 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                ; if the need arises (e.g. regex search).
                in0 (do (set enter-repeat? (= in0 "\r"))  ; User hit <enter> right away: repeat previous search.
                        (set new-search? (not (or enter-repeat? dot-repeat?)))
-                       (set x-mode? (or arg-x-mode? (= in0 x-mode-prefix-key)))
+                       (set x-mode? (or invoked-in-x-mode?
+                                        (= in0 x-mode-prefix-key)))
                        (if enter-repeat?
                            (or self.prev-search.in1
                                (exit-early
                                  (echo-no-prev-search)))
 
-                           (and x-mode? (not arg-x-mode?))
-                           (or (get-input-and-clean-up)
-                               (exit-early))  ; Get the "true" first input.
+                           (and x-mode? (not invoked-in-x-mode?))
+                           (or (get-input-and-clean-up)  ; Get the "true" first input.
+                               (exit-early))
 
                            in0))))
       in1
