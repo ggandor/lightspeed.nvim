@@ -432,12 +432,13 @@ interrupted change-operation."
 ; `feedkey`, and with that they can screw up Fennel match forms in a breeze,
 ; resulting in misterious bugs, so it's better to be paranoid.) 
 
-; TODO: LightspeedLeave event, etc.
 (macro exit [...]
   `(do
      ; I don't understand why this double wrap is needed, but it is
      ; (else only sees the first item).
      (do ,...)
+     (when (vim.fn.exists :#User#LightspeedLeave)
+       (vim.cmd "doautocmd <nomodeline> User LightspeedLeave"))
      nil))
 
 
@@ -551,7 +552,11 @@ interrupted change-operation."
         cmd-for-dot-repeat (.. (replace-keycodes "<Plug>Lightspeed_dotrepeat_") motion)]
 
     (when-not (or dot-repeat? self.instant-repeat?)
-      (echo "") (highlight-cursor) (vim.cmd :redraw))
+      (when (vim.fn.exists :#User#LightspeedEnter)
+        (vim.cmd "doautocmd <nomodeline> User LightspeedEnter"))
+      (echo "")
+      (highlight-cursor)
+      (vim.cmd :redraw))
 
     (var enter-repeat? nil)
     (match (if self.instant-repeat? self.prev-search
@@ -1024,9 +1029,12 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
     ; waiting for:
 
     (when-not dot-repeat?
+      (when (vim.fn.exists :#User#LightspeedEnter)
+        (vim.cmd "doautocmd <nomodeline> User LightspeedEnter"))
       (echo "")  ; Clean up the command line.
       (with-hl-chores
-        (when opts.highlight_unique_chars (highlight-unique-chars reverse?))))
+        (when opts.highlight_unique_chars
+          (highlight-unique-chars reverse?))))
 
     (match (if dot-repeat?
              (do (set x-mode? self.prev-dot-repeatable-search.x-mode?)
