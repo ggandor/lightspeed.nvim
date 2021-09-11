@@ -117,6 +117,7 @@ character instead."
            :jump_on_partial_input_safety_timeout 400
            :highlight_unique_chars false
            :grey_out_search_area true
+           :disable_hlsearch true
            :match_only_the_start_of_same_char_seqs true
            :limit_ft_matches 5
            :x_mode_prefix_key "<c-x>"
@@ -157,7 +158,9 @@ character instead."
              (api.nvim_buf_add_highlight 0 self.ns hl-group line startcol endcol))
    :set-extmark (fn [self line col opts]
                   (api.nvim_buf_set_extmark 0 self.ns line col opts))
-   :cleanup (fn [self] (api.nvim_buf_clear_namespace 0 self.ns 0 -1))})
+   :cleanup (fn [self]
+   (api.nvim_buf_clear_namespace 0 self.ns 0 -1)
+   (when opts.disable_hlsearch (vim.cmd "let &hlsearch=&hlsearch")))})
 
 
 (fn init-highlight []
@@ -852,6 +855,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
     (macro with-hl-chores [...]
       `(do (when opts.grey_out_search_area (grey-out-search-area reverse?))
            (do ,...)
+           (when opts.disable_hlsearch (vim.cmd :nohlsearch))
            (highlight-cursor)
            (vim.cmd :redraw)))
 
