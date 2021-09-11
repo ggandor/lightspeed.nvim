@@ -857,7 +857,6 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                 opts.full_inclusive_prefix_key))  ; deprecated
         [cycle-fwd-key cycle-bwd-key] (get-cycle-keys)
         labels (get-labels)
-        label-indexes (reverse-lookup labels)
         ; We _never_ want to autojump in OP mode, since that would execute
         ; the operation without allowing us to select a labeled target.
         jump-to-first? (and opts.jump_to_first_match (not op-mode?))
@@ -1051,7 +1050,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                  (if enter-repeat? (.. in1 self.prev-search.in2)
                      dot-repeat? (.. in1 self.prev-dot-repeatable-search.in2)
                      in1)))
-        [ch2 pos]
+        [ch2 pos &as unique-match]
         (when (exit-early-unless (or new-search?
                                      (and enter-repeat? (= ch2 self.prev-search.in2))
                                      (and dot-repeat? (= ch2 self.prev-dot-repeatable-search.in2)))
@@ -1083,12 +1082,14 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                      (exit-early-unless (get-input-and-clean-up)))
             in2
             (match (when new-search? (. shortcuts in2))
+              [pos ch2 &as shortcut]
               ; Successful exit, option #2: selecting a shortcut-label.
-              [pos ch2] (exit
-                          (save-state-for {:enter-repeat {: in1 :in2 ch2}
-                                           :dot-repeat {: in1 :in2 ch2 :in3 in2}})
-                          (jump-with-wrap! pos))
-              nil  ; no shortcut found
+              (exit
+                (save-state-for {:enter-repeat {: in1 :in2 ch2}
+                                 :dot-repeat {: in1 :in2 ch2 :in3 in2}})
+                (jump-with-wrap! pos))
+
+              _
               (do
                 (save-state-for {:enter-repeat {: in1 : in2}  ; endnote #1
                                  ; For the moment, set the first match as the target.
@@ -1101,7 +1102,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                     (when (or jump-to-first? (empty? rest))
                       (jump-with-wrap! first))
                     (if (empty? rest)
-                      ; Succesful exit, option #3: jumping to the only match automatically.
+                      ; Successful exit, option #3: jumped to the only match automatically.
                       (exit)
                       (do
                         ; We should switch it off before the next redraw.
@@ -1121,28 +1122,30 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                  ; Note: highlight is cleaned up by `cycle-through...`.
                                  (restore-scrolloff))
                           [group-offset in3]
-                          (do (restore-scrolloff)
-                              (when (and dot-repeatable-op? (not dot-repeat?))
-                                ; Reminder: above we have already set this to the character
-                                ; of the first label, as a default. (We might had only one
-                                ; match, and jumped automatically, not reaching this point.)
-                                (set self.prev-dot-repeatable-search.in3
-                                     ; If the operation spanned multiple groups, we are
-                                     ; switching dot-repeat to <enter>-repeat (endnote #3).
-                                     (if (= group-offset 0) in3 nil)))
-                              ; TODO: extract 'valid label' logic into a helper fn
-                              (match (-?>> (. label-indexes in3)  ; Valid label...
-                                           (+ (* group-offset (length labels)))
-                                           (. positions-to-label))  ; ...currently in use?
-                                pos (exit
-                                      ; Succesful exit, option #4: selecting a valid label.
-                                      (jump-with-wrap! pos))
-                                _ (if (not jump-to-first?) (exit-early)
-                                      ; Succesful exit, option #5: falling through with any
-                                      ; non-label key in "autojump" mode (so that we can
-                                      ; continue editing right away).
-                                      (exit
-                                        (vim.fn.feedkeys in3 :i))))))))))))))))))
+                          (do
+                            (restore-scrolloff)
+                            (when (and dot-repeatable-op? (not dot-repeat?))
+                              ; Reminder: above we have already set this to the character
+                              ; of the first label, as a default. (We might had only one
+                              ; match, and jumped automatically, not reaching this point.)
+                              (set self.prev-dot-repeatable-search.in3
+                                   ; If the operation spanned multiple groups, we are
+                                   ; switching dot-repeat to <enter>-repeat (endnote #3).
+                                   (if (= group-offset 0) in3 nil)))
+                            (match (-?>> in3
+                                         (. (reverse-lookup labels))  ; valid label (indexed on the list)?
+                                         (+ (* group-offset (length labels)))
+                                         (. positions-to-label))  ; currently active?
+                              ; Successful exit, option #4: selecting an active label.
+                              pos-of-active-label (exit
+                                                    (jump-with-wrap! pos-of-active-label))
+                              _ (if jump-to-first?
+                                    ; Successful exit, option #5: falling through with any
+                                    ; non-label key in "autojump" mode (so that we can
+                                    ; continue editing right away).
+                                    (exit
+                                      (vim.fn.feedkeys in3 :i))
+                                    (exit-early)))))))))))))))))
 
 ; }}}
 ; Mappings {{{
