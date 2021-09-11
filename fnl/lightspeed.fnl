@@ -453,11 +453,6 @@ interrupted change-operation."
        (exit)))
 
 
-(macro exit-early-unless [condition ...]
-  `(let [ret# (do ,condition)]
-     (or ret# (exit-early ,...))))
-
-
 (fn get-input-and-clean-up []
   (let [(ok? res) (getchar-as-str)]
     ; Cleaning up after every input religiously
@@ -561,7 +556,8 @@ interrupted change-operation."
     (var enter-repeat? nil)
     (match (if self.instant-repeat? self.prev-search
                dot-repeat? self.prev-dot-repeatable-search
-               (match (exit-early-unless (get-input-and-clean-up))
+               (match (or (get-input-and-clean-up)
+                          (exit-early))
                  "\r" (do (set enter-repeat? true)
                           (or self.prev-search
                               (exit-early
@@ -1039,36 +1035,41 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
     (match (if dot-repeat?
              (do (set x-mode? self.prev-dot-repeatable-search.x-mode?)
                  self.prev-dot-repeatable-search.in1)
-             (match (exit-early-unless (get-input-and-clean-up))
+             (match (or (get-input-and-clean-up)
+                        (exit-early))
                ; Here we can handle any other modifier key as "zeroth" input,
                ; if the need arises (e.g. regex search).
                in0 (do (set enter-repeat? (= in0 "\r"))  ; User hit <enter> right away: repeat previous search.
                        (set new-search? (not (or enter-repeat? dot-repeat?)))
                        (set x-mode? (or arg-x-mode? (= in0 x-mode-prefix-key)))
                        (if enter-repeat?
-                           (exit-early-unless self.prev-search.in1
-                             (echo-no-prev-search))
+                           (or self.prev-search.in1
+                               (exit-early
+                                 (echo-no-prev-search)))
 
                            (and x-mode? (not arg-x-mode?))
-                           (exit-early-unless (get-input-and-clean-up))  ; Get the "true" first input.
+                           (or (get-input-and-clean-up)
+                               (exit-early))  ; Get the "true" first input.
 
                            in0))))
       in1
-      (match (exit-early-unless (get-match-map-for in1 reverse?)
-               (echo-not-found
-                 (if enter-repeat? (.. in1 self.prev-search.in2)
-                     dot-repeat? (.. in1 self.prev-dot-repeatable-search.in2)
-                     in1)))
+      (match (or (get-match-map-for in1 reverse?)
+                 (exit-early
+                   (echo-not-found
+                     (if enter-repeat? (.. in1 self.prev-search.in2)
+                         dot-repeat? (.. in1 self.prev-dot-repeatable-search.in2)
+                         in1))))
         [ch2 pos &as unique-match]
-        (when (exit-early-unless (or new-search?
-                                     (and enter-repeat? (= ch2 self.prev-search.in2))
-                                     (and dot-repeat? (= ch2 self.prev-dot-repeatable-search.in2)))
-                (echo-not-found (.. in1 ch2)))
-          ; Successful exit, option #1: jump to a unique character right after the first input.
-          (exit
-            (save-state-for {:enter-repeat {: in1 :in2 ch2}
-                             :dot-repeat {: in1 :in2 ch2 :in3 (. labels 1)}})
-            (jump-and-ignore-ch2-until-timeout! pos ch2)))
+        (if (or new-search?
+                (and enter-repeat? (= ch2 self.prev-search.in2))
+                (and dot-repeat? (= ch2 self.prev-dot-repeatable-search.in2)))
+            ; Successful exit, option #1: jump to a unique character right after the first input.
+            (exit
+              (save-state-for {:enter-repeat {: in1 :in2 ch2}
+                               :dot-repeat {: in1 :in2 ch2 :in3 (. labels 1)}})
+              (jump-and-ignore-ch2-until-timeout! pos ch2))
+            (exit-early
+              (echo-not-found (.. in1 ch2))))
 
         match-map
         (let [shortcuts (get-shortcuts match-map labels reverse? jump-to-first?)]
@@ -1088,7 +1089,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                        {:init-round? true}))))))
           (match (if enter-repeat? self.prev-search.in2
                      dot-repeat? self.prev-dot-repeatable-search.in2
-                     (exit-early-unless (get-input-and-clean-up)))
+                     (or (get-input-and-clean-up)
+                         (exit-early)))
             in2
             (match (when new-search? (. shortcuts in2))
               [pos ch2 &as shortcut]
@@ -1103,8 +1105,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                 (save-state-for {:enter-repeat {: in1 : in2}  ; endnote #1
                                  ; For the moment, set the first match as the target.
                                  :dot-repeat {: in1 : in2 :in3 (. labels 1)}})
-                (match (exit-early-unless (. match-map in2)
-                         (echo-not-found (.. in1 in2)))
+                (match (or (. match-map in2)
+                           (exit-early
+                             (echo-not-found (.. in1 in2))))
                   positions
                   (let [[first & rest] positions
                         positions-to-label (if jump-to-first? rest positions)]
@@ -1125,11 +1128,11 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                           (with-hl-chores
                             (set-beacon-groups in2 positions-to-label labels shortcuts
                                                {:repeat? enter-repeat?})))
-                        (match (exit-early-unless (cycle-through-match-groups
-                                                    in2 positions-to-label
-                                                    shortcuts enter-repeat?)
-                                 ; Note: highlight is cleaned up by `cycle-through...`.
-                                 (restore-scrolloff))
+                        (match (or (cycle-through-match-groups in2 positions-to-label
+                                                               shortcuts enter-repeat?)
+                                   ; Note: highlight is cleaned up by `cycle-through...`.
+                                   (exit-early
+                                     (restore-scrolloff)))
                           [group-offset in3]
                           (do
                             (restore-scrolloff)
