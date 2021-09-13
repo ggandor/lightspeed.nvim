@@ -39,15 +39,18 @@ features, that blur the boundary between one- and two-character search. It is
 all about processing the input incrementally - analyzing the available
 information after _each_ keystroke, to assist the user and offer shortcuts:
 
-* **target labels are displayed right after the first input:**
-  the key idea behind Lightspeed, that eliminates the major problem of all of
-  the current, general-purpose motion plugins, including Sneak itself - the
-  inevitable pause between entering the search pattern and selecting the target.
-  Once you try it, you will never look back.
-* **shortcut-labels:** often you can type the target label right after the first
-  input, as if doing 1-character search
-* **jump based on partial input:** 2-character search can jump right after the
-  first input, if the character is unique in the search direction
+* **ahead-of-time displayed target labels:** in any case, you will _see_ the
+  label right after the first input, so once you need to type it, your brain
+  will already have processed it
+* **shortcut-labels:** for some matches, it is possible to _use_ the target
+  label right after the first input, as if doing 1-character search
+* **jump based on partial input:** if the character is unique in the search
+  direction, you will _automatically jump_ after the first input
+
+The first one is probably the biggest game-changer, eliminating the major
+problem of all other general-purpose motion plugins - the frustrating momentary
+pause between entering your search pattern and selecting the target. Once you
+try it, you will never look back.
 
 To see these features in action, check the screen recordings in the [in-depth
 introduction](https://github.com/ggandor/lightspeed.nvim#-an-in-depth-introduction-of-the-key-features) below.
