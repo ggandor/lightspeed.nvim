@@ -160,19 +160,22 @@ character instead."
    :cleanup (fn [self] (api.nvim_buf_clear_namespace 0 self.ns 0 -1))})
 
 
-(fn init-highlight []
+(fn init-highlight [force?]
   (local bg vim.o.background)
   (local groupdefs
     [[hl.group.label                    {:guifg (match bg :light "#f02077" _ "#ff2f87")
                                          :ctermfg "Red"
+                                         :guibg :NONE :ctermbg :NONE
                                          :gui "bold,underline"
                                          :cterm "bold,underline"}]
      [hl.group.label-overlapped         {:guifg (match bg :light "#ff4090" _ "#e01067")
                                          :ctermfg "Magenta"
+                                         :guibg :NONE :ctermbg :NONE
                                          :gui "underline"
                                          :cterm "underline"}]
      [hl.group.label-distant            {:guifg (match bg :light "#399d9f" _ "#99ddff")
                                          :ctermfg (match bg :light "Blue" _ "Cyan")
+                                         :guibg :NONE :ctermbg :NONE
                                          :gui "bold,underline"
                                          :cterm "bold,underline"}]
      [hl.group.label-distant-overlapped {:guifg (match bg :light "#59bdbf" _ "#79bddf")
@@ -185,30 +188,38 @@ character instead."
                                          :guifg "#ffffff" :ctermfg "White"
                                          :gui "bold" :cterm "bold"}]  ; shortcut without underline 
      [hl.group.masked-ch                {:guifg (match bg :light "#cc9999" _ "#b38080")
-                                         :ctermfg "DarkGrey"}]
+                                         :ctermfg "DarkGrey"
+                                         :guibg :NONE :ctermbg :NONE
+                                         :gui :NONE :cterm :NONE}]
      [hl.group.unlabeled-match          {:guifg (match bg :light "#272020" _ "#f3ecec")
                                          :ctermfg (match bg :light "Black" _ "White")
+                                         :guibg :NONE :ctermbg :NONE
                                          :gui "bold"
                                          :cterm "bold"}]
      [hl.group.pending-op-area          {:guibg "#f00077" :ctermbg "Red"
                                          :guifg "#ffffff" :ctermfg "White"}]  ; ~shortcut without bold/underline
      [hl.group.pending-change-op-area   {:guifg (match bg :light "#f02077" _ "#ff2f87")
                                          :ctermfg "Red"
+                                         :guibg :NONE :ctermbg :NONE
                                          :gui "strikethrough"
                                          :cterm "strikethrough"}]
-     [hl.group.greywash                 {:guifg "#777777" :ctermfg "Grey"}]])
+     [hl.group.greywash                 {:guifg "#777777" :ctermfg "Grey"
+                                         :guibg :NONE :ctermbg :NONE
+                                         :gui :NONE :cterm :NONE}]])
   ; Defining groups.
   (each [_ [group attrs] (ipairs groupdefs)]
     (let [attrs-str (-> (icollect [k v (pairs attrs)] (.. k "=" v))
                         (table.concat " "))]
       ; "default" = do not override any existing definition for the group.
-      (vim.cmd (.. "highlight default " group " " attrs-str))))
+      (vim.cmd (.. "highlight " (if force? "" "default ")
+                   group " " attrs-str))))
   ; Setting linked groups.
   (each [_ [from-group to-group]
          (ipairs [[hl.group.unique-ch hl.group.unlabeled-match]
                   [hl.group.shortcut-overlapped hl.group.shortcut]
                   [hl.group.cursor "Cursor"]])]
-    (vim.cmd (.. "highlight default link " from-group " " to-group))))
+    (vim.cmd (.. "highlight " (if force? "" "default ")
+                 "link " from-group " " to-group))))
 
 (init-highlight)
 
