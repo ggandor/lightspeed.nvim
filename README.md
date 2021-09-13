@@ -39,7 +39,7 @@ features, that blur the boundary between one- and two-character search. It is
 all about processing the input incrementally - analyzing the available
 information after _each_ keystroke, to assist the user and offer shortcuts:
 
-* **target labels are displayed ahead of time, right after the first input:**
+* **target labels are displayed right after the first input:**
   the key idea behind Lightspeed, that eliminates the major problem of all of
   the current, general-purpose motion plugins, including Sneak itself - the
   inevitable pause between entering the search pattern and selecting the target.
@@ -249,13 +249,10 @@ require'lightspeed'.setup {
   match_only_the_start_of_same_char_seqs = true,
   limit_ft_matches = 5,
   x_mode_prefix_key = '<c-x>',
-  -- Characters to be substituted in the highlighted matches.
   substitute_chars = { ['\r'] = '¬' },
-  -- For instant-repeat, pressing the trigger key again (f/F/t/T)
-  -- always works, but here you can specify additional keys too.
   instant_repeat_fwd_key = nil,
   instant_repeat_bwd_key = nil,
-  -- By default, the values of these will be decided at runtime,
+  -- If no values are given, these will be set at runtime,
   -- based on `jump_to_first_match`.
   labels = nil,
   cycle_group_fwd_key = nil,
@@ -273,9 +270,9 @@ lightspeed-config`.
 
 #### Keymaps
 
-Lightspeed sees itself as a fundamental part of the developing Neovim ecosystem,
-aiming to be part of an "extended core", similar to the suite of canonized Vim
-plugins including [surround.vim](https://github.com/tpope/vim-surround),
+Lightspeed aims to be part of an "extended native" layer, similar to the suite
+of canonized Vim plugins including
+[surround.vim](https://github.com/tpope/vim-surround),
 [targets.vim](https://github.com/wellle/targets.vim), and Sneak, that maintain
 some consistency between each other. Therefore it provides carefully thought-out
 defaults, mapping to the following keys: `s`, `S` (Normal and Visual mode), `z`,
@@ -321,18 +318,15 @@ Dear fellow plugin authors, while letting your creativity fly, keep the
 following points in mind:
 
 * Tweak the colors, but aim to keep all the _attributes_ intact (bold,
-  underline, filled/empty background, etc.) even if you do not necessarily agree
-  with the defaults. It is important to guarantee at least this level of
-  consistency across themes, in order to not confuse users that switch between
-  multiple ones regularly.
+  underline, filled/empty background, etc.), and also invariants like "shortcuts
+  = inverse labels", even if you do not necessarily agree with the defaults.
+  Lightspeed's highlighting scheme is very complex, and it is important to
+  guarantee at least this level of consistency across themes, in order to not
+  confuse users that switch between multiple ones regularly.
 
 * `LightspeedMaskedChar` should be unobtrusive - barely noticeable ideally -,
   and in any case _much_ dimmer than the labels and shortcuts, otherwise the UI
   becomes too chaotic.
-
-* `LightspeedShortcut`, on the other hand, should have a very high visibility,
-  but if you comply with the first point, then the filled bakcground is probably
-  enough to provide that.
 
 #### Notes
 
