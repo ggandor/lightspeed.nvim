@@ -315,10 +315,24 @@ relevant keys after the plugin has been sourced (e.g. `unmap t | unmap T`).
 
 For customizing the highlight colors, see `:h lightspeed-highlight`.
 
-☝️ Dear fellow plugin authors: let your creativity fly, but keep in mind that
-`LightspeedMaskedChar` should be unobtrusive - barely noticeable ideally -, and
-in any case _much_ dimmer than the labels and shortcuts, otherwise the UI
-becomes too chaotic. Please do follow this one advice.
+##### Guidelines for colorscheme integrations
+
+Dear fellow plugin authors, while letting your creativity fly, keep the
+following points in mind:
+
+* Tweak the colors, but aim to keep all the _attributes_ intact (bold,
+  underline, filled/empty background, etc.) even if you do not necessarily agree
+  with the defaults. It is important to guarantee at least this level of
+  consistency across themes, in order to not confuse users that switch between
+  multiple ones regularly.
+
+* `LightspeedMaskedChar` should be unobtrusive - barely noticeable ideally -,
+  and in any case _much_ dimmer than the labels and shortcuts, otherwise the UI
+  becomes too chaotic.
+
+* `LightspeedShortcut`, on the other hand, should have a very high visibility,
+  but if you comply with the first point, then the filled bakcground is probably
+  enough to provide that.
 
 #### Notes
 
