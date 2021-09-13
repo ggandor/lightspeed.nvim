@@ -524,7 +524,7 @@ you have not done that already.)
 
 ## ❕ Goals and non-goals
 
-Lightspeed aims to do one thing in a close to prefect manner, that is, helping
+Lightspeed aims to do one thing in a close to perfect manner, that is, helping
 to reach visible targets, while requiring minimal mental effort to operate:
 every design decision has been made with this goal in mind. That means, it is
 not intended to be a general search tool, and neither an EasyMotion-like plugin
