@@ -525,22 +525,22 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f, revert_3f)
   end
   local switched_directions_3f = ((reverse_3f0 and not self["prev-reverse?"]) or (not reverse_3f0 and self["prev-reverse?"]))
   local count
-  if self["instant-repeat?"] then
-    if revert_3f then
-      if t_like_3f then
-        count = 1
-      else
-        count = 0
-      end
-    else
+  if not self["instant-repeat?"] then
+    count = vim.v.count1
+  else
+    if not revert_3f then
       if (t_like_3f and not switched_directions_3f) then
         count = inc(vim.v.count1)
       else
         count = vim.v.count1
       end
+    else
+      if t_like_3f then
+        count = 1
+      else
+        count = 0
+      end
     end
-  else
-    count = vim.v.count1
   end
   local _let_134_ = vim.tbl_map(replace_keycodes, {opts.instant_repeat_fwd_key, opts.instant_repeat_bwd_key})
   local repeat_key = _let_134_[1]
@@ -627,8 +627,8 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f, revert_3f)
     end
     self["prev-reverse?"] = reverse_3f0
     self["prev-t-like?"] = t_like_3f
-    local i = 0
     local match_pos = nil
+    local i = 0
     local function _152_()
       local pattern = ("\\V" .. in1:gsub("\\", "\\\\"))
       local limit
@@ -653,7 +653,7 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f, revert_3f)
         end
       end
     end
-    if (i == 0) then
+    if ((count > 0) and not match_pos) then
       if change_operation_3f() then
         handle_interrupted_change_op_21()
       end

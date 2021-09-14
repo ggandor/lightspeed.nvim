@@ -532,20 +532,24 @@ interrupted change-operation."
         ; lightspeed-custom-ft-repeat-mappings`. (#19)
         switched-directions? (or (and reverse? (not self.prev-reverse?))
                                  (and (not reverse?) self.prev-reverse?))
-        count (if self.instant-repeat?
-                  (if revert?
-                      ; When reverting the repeat, we highlight all matches, but
-                      ; will not move the cursor. In case of `T`, we still skip
-                      ; the first match, i.e., the immediate next character (we
-                      ; don't want to highlight that).
-                      (if t-like? 1 0)
+        ; TODO: `count` is a very obscure name, could we find sg better?
+        count (if (not self.instant-repeat?) vim.v.count1
+                  (if (not revert?)
                       ; When instant-repeating t/T, we increment the count by
                       ; one, else we would find the same target in front of us
                       ; again and again, and be stuck.
-                      (if (and t-like? (not switched-directions?))
+                      (if (and t-like? 
+                               (not switched-directions?))  ; only for the ;/, workaround
                           (inc vim.v.count1)
-                          vim.v.count1))
-                  vim.v.count1)
+                          vim.v.count1)
+                      ; After a reverted repeat, we highlight the next n matches
+                      ; as usual, as per `limit_ft_matches`, but will _not_
+                      ; move the cursor. In case of `T`, we still don't want to
+                      ; highlight the first match, i.e., the immediate next
+                      ; character, so we're setting `count` to 1, to make the
+                      ; highlighting loop skip that. (But otherwise we'll ignore
+                      ; this, the cursor will stay in place.)
+                      (if t-like? 1 0)))
         [repeat-key revert-key] (->> [opts.instant_repeat_fwd_key
                                       opts.instant_repeat_bwd_key]
                                      (vim.tbl_map replace-keycodes))
@@ -584,9 +588,9 @@ interrupted change-operation."
         (set self.prev-reverse? reverse?)
         (set self.prev-t-like? t-like?)
 
-        (var i 0)
         (var match-pos nil)
-        (each [[line col &as pos] 
+        (var i 0)
+        (each [[line col &as pos]
                (let [pattern (.. "\\V" (in1:gsub "\\" "\\\\"))
                      limit (when opts.limit_ft_matches (+ count opts.limit_ft_matches))]
                  (onscreen-match-positions pattern reverse? {:ft-search? true : limit}))]
@@ -595,8 +599,9 @@ interrupted change-operation."
               (when-not op-mode?
                 (hl:add-hl hl.group.one-char-match (dec line) (dec col) col))))
 
-        (if (= i 0) (exit-early
-                      (echo-not-found in1))  ; note: no highlight to clean up if no match found
+        (if (and (> count 0) (not match-pos))
+            (exit-early
+              (echo-not-found in1))  ; note: no highlight to clean up if no match found
             (do
               (when-not revert?
                 (jump-to! match-pos
