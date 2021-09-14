@@ -96,9 +96,9 @@ use 'ggandor/lightspeed.nvim'
 Plug 'ggandor/lightspeed.nvim'
 ```
 
-### Usage
+## ⌨️U sage
 
-#### 2-character search
+### 2-character search
 
 Command sequence for 2-character search in Normal and Visual mode, with the
 default settings:
@@ -125,7 +125,7 @@ That is,
 In Operator-pending mode the search is invoked with `z`/`Z`, acknowledging that
 "surround" plugins may benefit even more from being able to use `s`/`S` then.
 
-##### X-mode
+#### X-mode
 
 `s`/`S` follow the semantics of `/` and `?` in terms of cursor placement and
 inclusive/exclusive operational behaviour, including forced motion types (`:h
@@ -166,12 +166,12 @@ other on a QWERTY keyboard.
 In any Vim mode, X-mode can also be invoked by pressing `<c-x>` before the
 search pattern.
 
-##### Matching before line breaks
+#### Matching before line breaks
 
 A character before EOL can be targeted by pressing `<enter>` after it (indicated
 by `¬` in the highlighted match).
 
-##### A note on the highlighting strategy
+#### A note on the highlighting strategy
 
 Let's say you would like to jump to an `AB` pair, and you have already entered
 `A`, the first character of the search pattern.
@@ -190,7 +190,7 @@ label) might be overlapped by the label of another match, and `label` itself
 might be a [shortcut](https://github.com/ggandor/lightspeed.nvim#shortcuts),
 with a filled background (the inverse of a regular label).
 
-#### 1-character search
+### 1-character search
 
 Lightspeed also overrides the native `f`/`F`/`t`/`T` motions with enhanced
 versions that work over multiple lines. 
@@ -219,7 +219,7 @@ trigger repeat at any time, even after the plugin has finished executing
 (similar to the native behaviour), there is a workaround for that too - see `:h
 lightspeed-custom-ft-repeat-mappings`.
 
-#### Repeating motions
+### Repeating motions
 
 Pressing `<enter>` after invoking any of Lightspeed's commands searches with the
 previous input (1- and 2-character searches are saved separately).
@@ -227,7 +227,7 @@ previous input (1- and 2-character searches are saved separately).
 Dot-repeat aims to behave in the most intuitive way in different situations - on
 special cases, see `:h lightspeed-dot-repeat`.
 
-#### See also
+### See also
 
 For more details, see the docs (`:h lightspeed-usage`, `:h
 lightspeed-default-mappings`), and the [in-depth
