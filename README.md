@@ -234,7 +234,7 @@ lightspeed-default-mappings`), and the [in-depth
 introduction](https://github.com/ggandor/lightspeed.nvim#-an-in-depth-introduction-of-the-key-features)
 below.
 
-### Configuration
+## 🔧 Configuration
 
 Lightspeed exposes a configuration table (`opts`), that can be set directly, or
 via a `setup` function that updates the current settings with the values given
@@ -271,7 +271,7 @@ lua require'lightspeed'.opts.jump_to_first_match = false
 For a detailed description of the available options, see the docs: `:h
 lightspeed-config`.
 
-#### Keymaps
+### Keymaps
 
 Lightspeed aims to be part of an "extended native" layer, similar to the suite
 of canonized Vim plugins including
@@ -311,11 +311,11 @@ native behaviour of certain keys, that is, would not like to use some features
 of the plugin at all; but in that case, all they has to do is to `unmap` the
 relevant keys after the plugin has been sourced (e.g. `unmap t | unmap T`).
 
-#### Highlight groups
+### Highlight groups
 
 For customizing the highlight colors, see `:h lightspeed-highlight`.
 
-##### Guidelines for colorscheme integrations
+#### Guidelines for colorscheme integrations
 
 Dear fellow plugin authors, while letting your creativity fly, keep the
 following points in mind:
@@ -335,7 +335,7 @@ Note that even if a colorscheme does not aim to make any further modifications,
 it might still make sense to link `LightspeedGreyWash` to `Comment`, provided
 that the latter is some kind of neutral grey, without an own background color.
 
-##### Enforce the default highlighting
+#### Enforce the default highlighting
 
 If you - as a user - are not happy with a certain colorscheme's integration, you
 could force reloading the default settings by calling
@@ -346,7 +346,7 @@ autocommand to automatically re-init on every colorscheme change:
 autocmd ColorScheme * lua require'lightspeed'.init_highlight(true)
 ```
 
-#### Notes
+### Notes
 
 * While the plugin is active, the actual cursor is down on the command line, but
   its position in the window is kept highlighted, using the attributes of the
