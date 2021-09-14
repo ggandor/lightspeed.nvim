@@ -96,7 +96,7 @@ use 'ggandor/lightspeed.nvim'
 Plug 'ggandor/lightspeed.nvim'
 ```
 
-## ⌨️U sage
+## 🏹 Usage
 
 ### 2-character search
 
