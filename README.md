@@ -331,6 +331,21 @@ following points in mind:
   and in any case _much_ dimmer than the labels and shortcuts, otherwise the UI
   becomes too chaotic.
 
+Note that even if a colorscheme does not aim to make any further modifications,
+it might still make sense to link `LightspeedGreyWash` to `Comment`, provided
+that the latter is some kind of neutral grey, without an own background color.
+
+##### Enforce the default highlighting
+
+If you - as a user - are not happy with a certain colorscheme's integration, you
+could force reloading the default settings by calling
+`lightspeed.init_highlight(true)`. The call can even be wrapped in an
+autocommand to automatically re-init on every colorscheme change:
+
+```Vim
+autocmd ColorScheme * lua require'lightspeed'.init_highlight(true)
+```
+
 #### Notes
 
 * While the plugin is active, the actual cursor is down on the command line, but
