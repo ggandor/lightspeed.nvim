@@ -9,7 +9,7 @@
 (fn dec [x] (- x 1))
 
 (fn clamp [val min max]
-  (if (< val min) min 
+  (if (< val min) min
       (> val max) max
       :else val))
 
@@ -24,7 +24,7 @@
 
 (macro one-of? [x ...]
   "Expands to an `or` form, like (or (= x y1) (= x y2) ...)"
-  `(or ,(unpack 
+  `(or ,(unpack
           (icollect [_ y (ipairs [...])]
             `(= ,x ,y)))))
 
@@ -126,7 +126,7 @@ character instead."
            :cycle_group_fwd_key nil
            :cycle_group_bwd_key nil
            :labels nil
-           
+
            ; deprecated (still valid)
            ; :full_incusive_prefix_key "<c-x>"
            })
@@ -137,7 +137,7 @@ character instead."
 ; }}}
 ; Highlight {{{
 
-(local hl 
+(local hl
   {:group {:label                    "LightspeedLabel"
            :label-distant            "LightspeedLabelDistant"
            :label-overlapped         "LightspeedLabelOverlapped"
@@ -186,7 +186,7 @@ character instead."
                                          :gui "bold,underline" :cterm "bold,underline"}]  ; ~inverse of label
      [hl.group.one-char-match           {:guibg "#f00077" :ctermbg "Red"
                                          :guifg "#ffffff" :ctermfg "White"
-                                         :gui "bold" :cterm "bold"}]  ; shortcut without underline 
+                                         :gui "bold" :cterm "bold"}]  ; shortcut without underline
      [hl.group.masked-ch                {:guifg (match bg :light "#cc9999" _ "#b38080")
                                          :ctermfg "DarkGrey"
                                          :guibg :NONE :ctermbg :NONE
@@ -220,19 +220,6 @@ character instead."
                   [hl.group.cursor "Cursor"]])]
     (vim.cmd (.. "highlight " (if force? "" "default ")
                  "link " from-group " " to-group))))
-
-(init-highlight)
-
-
-; Colorscheme plugins might clear out our highlight definitions, without
-; defining their own. See: https://github.com/phaazon/hop.nvim/issues/35
-(fn add-highlight-autocmds []
-  (vim.cmd "augroup LightspeedInitHighlight")
-  (vim.cmd "autocmd!")
-  (vim.cmd "autocmd ColorScheme * lua require'lightspeed'.init_highlight()")
-  (vim.cmd "augroup end"))
-
-(add-highlight-autocmds)
 
 
 (fn grey-out-search-area [reverse?]
@@ -441,7 +428,7 @@ interrupted change-operation."
 ; forms in `match` blocks should always return nil. (Interop with side-effecting
 ; VimL functions can be dangerous, they might return 0 for example, like
 ; `feedkey`, and with that they can screw up Fennel match forms in a breeze,
-; resulting in misterious bugs, so it's better to be paranoid.) 
+; resulting in misterious bugs, so it's better to be paranoid.)
 
 (macro exit [...]
   `(do
@@ -474,7 +461,7 @@ interrupted change-operation."
       res)))
 
 
-; repeat.vim support 
+; repeat.vim support
 ; (see the docs in the script:
 ; https://github.com/tpope/vim-repeat/blob/master/autoload/repeat.vim)
 (fn set-dot-repeat [cmd ?count]
@@ -538,7 +525,7 @@ interrupted change-operation."
                       ; When instant-repeating t/T, we increment the count by
                       ; one, else we would find the same target in front of us
                       ; again and again, and be stuck.
-                      (if (and t-like? 
+                      (if (and t-like?
                                (not switched-directions?))  ; only for the ;/, workaround
                           (inc vim.v.count1)
                           vim.v.count1)
@@ -707,7 +694,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         partially-covered? (when-not repeat? partially-covered?)
         shortcut? (when-not repeat? shortcut?)
         label-hl (if shortcut? hl.group.shortcut
-                     distant? hl.group.label-distant 
+                     distant? hl.group.label-distant
                      hl.group.label)
         overlapped-label-hl (if shortcut? hl.group.shortcut-overlapped
                                 distant? hl.group.label-distant-overlapped
@@ -885,7 +872,6 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
     (var enter-repeat? nil)
     (var new-search? nil)
     (var x-mode? nil)
-    (var restore-scrolloff-cmd nil)
 
     (macro with-hl-chores [...]
       `(do (when opts.grey_out_search_area (grey-out-search-area reverse?))
@@ -893,23 +879,11 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
            (highlight-cursor)
            (vim.cmd :redraw)))
 
-    ; For scrolloff, it's better not to use the Lua API now, because of Nvim #13964.
-    (fn switch-off-scrolloff []
-      (when jump-to-first?
-        (let [?loc (if (not= (api.nvim_eval "&l:scrolloff") -1) "l:" "")
-              saved-val (api.nvim_eval (.. "&" ?loc "scrolloff"))]
-          (set restore-scrolloff-cmd (.. "let &" ?loc "scrolloff=" saved-val))
-          (vim.cmd (.. "let &" ?loc "scrolloff=0")))))
-
-    (fn restore-scrolloff []
-      (when jump-to-first?
-        (vim.cmd (or restore-scrolloff-cmd ""))))
-
     (fn cycle-through-match-groups [in2 positions-to-label shortcuts enter-repeat?]
       (var ret nil)
       (var group-offset 0)
       (var loop? true)
-      (while loop? 
+      (while loop?
         (match (or (when dot-repeat? self.prev-dot-repeatable-search.in3)
                    (get-input-and-clean-up)
                    (do (set loop? false)  ; <esc> or <c-c> should exit the loop
@@ -942,14 +916,14 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
             enter-repeat (set self.prev-search enter-repeat))))
 
     (local jump-with-wrap!
-      (do 
+      (do
         ; `first-jump?` should only be persisted inside `to` (i.e. the lifetime
         ; is one invocation) and should be managed by the function itself (it is
         ; error-prone if we have to set a flag manually), so setting up a
         ; closure here.
         (var first-jump? true)
         (fn [target]
-          (jump-to! target 
+          (jump-to! target
                     {:add-to-jumplist? first-jump?
                      :after (when x-mode?
                               (push-cursor! :fwd)
@@ -1131,8 +1105,6 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                         ; Successful exit, option #3: jumped to the only match automatically.
                         (exit)
                         (do
-                          ; We should switch it off before the next redraw.
-                          (switch-off-scrolloff)
                           ; Operations that spanned multiple groups are dot-repeated as
                           ; <enter>-repeat, i.e., only the search pattern is saved then
                           ; (endnote #3).
@@ -1145,11 +1117,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                           (match (or (cycle-through-match-groups in2 positions-to-label
                                                                  shortcuts enter-repeat?)
                                      ; Note: highlight is cleaned up by `cycle-through...`.
-                                     (exit-early
-                                       (restore-scrolloff)))
+                                     (exit-early))  ; <C-c> case
                             [group-offset in3]
                             (do
-                              (restore-scrolloff)
                               (when (and dot-repeatable-op? (not dot-repeat?))
                                 ; Reminder: above we have already set this to the character
                                 ; of the first label, as a default. (We might had only one
@@ -1174,56 +1144,95 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                       (exit-early))))))))))))))))))
 
 ; }}}
+; Handling editor options {{{
+
+; Quick-and-dirty code, we'll tidy up/expand/rethink this section later.
+
+; We will probably expose this table in the future, as an `opts` field.
+(local temporary-editor-opts {:vim.wo.conceallevel 0
+                              :vim.wo.scrolloff 0})
+
+(local saved-editor-opts {})
+
+
+(fn save-editor-opts []
+  (each [opt _ (pairs temporary-editor-opts)]
+    (let [[_ scope name] (vim.split opt "." true)]
+      (tset saved-editor-opts
+            opt
+            ; Workaround for Nvim #13964.
+            (if (= opt :vim.wo.scrolloff) (api.nvim_eval "&l:scrolloff")
+                ; (= opt :vim.o.scrolloff) (api.nvim_eval "&scrolloff")
+                ; (= opt :vim.wo.sidescrolloff) (api.nvim_eval "&l:sidescrolloff")
+                ; (= opt :vim.o.sidescrolloff) (api.nvim_eval "&sidescrolloff")
+                (. _G.vim scope name))))))
+
+
+(fn set-editor-opts [opts]
+  (each [opt val (pairs opts)]
+    (let [[_ scope name] (vim.split opt "." true)]
+      (tset _G.vim scope name val))))
+
+
+(fn set-temporary-editor-opts []
+  (set-editor-opts temporary-editor-opts))
+
+
+(fn restore-editor-opts []
+  (set-editor-opts saved-editor-opts))
+
+; }}}
 ; Mappings {{{
 
-(local plug-mappings
-   ; params of `s:to`: reverse? [x-mode?] [dot-repeat?]
-  [[:n "<Plug>Lightspeed_s" "s:to(false)"]
-   [:n "<Plug>Lightspeed_S" "s:to(true)"] 
-   [:x "<Plug>Lightspeed_s" "s:to(false)"]
-   [:x "<Plug>Lightspeed_S" "s:to(true)"]
-   [:o "<Plug>Lightspeed_s" "s:to(false)"]
-   [:o "<Plug>Lightspeed_S" "s:to(true)"] 
+(fn set-plug-keys []
+  (local plug-keys
+     ; params of `s:to`: reverse? [x-mode?] [dot-repeat?]
+    [[:n "<Plug>Lightspeed_s" "s:to(false)"]
+     [:n "<Plug>Lightspeed_S" "s:to(true)"]
+     [:x "<Plug>Lightspeed_s" "s:to(false)"]
+     [:x "<Plug>Lightspeed_S" "s:to(true)"]
+     [:o "<Plug>Lightspeed_s" "s:to(false)"]
+     [:o "<Plug>Lightspeed_S" "s:to(true)"]
 
-   [:n "<Plug>Lightspeed_x" "s:to(false, true)"]
-   [:n "<Plug>Lightspeed_X" "s:to(true, true)"]
-   [:x "<Plug>Lightspeed_x" "s:to(false, true)"]
-   [:x "<Plug>Lightspeed_X" "s:to(true, true)"]
-   [:o "<Plug>Lightspeed_x" "s:to(false, true)"]
-   [:o "<Plug>Lightspeed_X" "s:to(true, true)"] 
+     [:n "<Plug>Lightspeed_x" "s:to(false, true)"]
+     [:n "<Plug>Lightspeed_X" "s:to(true, true)"]
+     [:x "<Plug>Lightspeed_x" "s:to(false, true)"]
+     [:x "<Plug>Lightspeed_X" "s:to(true, true)"]
+     [:o "<Plug>Lightspeed_x" "s:to(false, true)"]
+     [:o "<Plug>Lightspeed_X" "s:to(true, true)"]
 
-   ; params of `ft:to`: reverse? [t-like?] [dot-repeat?]
-   [:n "<Plug>Lightspeed_f" "ft:to(false)"]
-   [:n "<Plug>Lightspeed_F" "ft:to(true)"]
-   [:x "<Plug>Lightspeed_f" "ft:to(false)"]
-   [:x "<Plug>Lightspeed_F" "ft:to(true)"]
-   [:o "<Plug>Lightspeed_f" "ft:to(false)"]
-   [:o "<Plug>Lightspeed_F" "ft:to(true)"]
+     ; params of `ft:to`: reverse? [t-like?] [dot-repeat?]
+     [:n "<Plug>Lightspeed_f" "ft:to(false)"]
+     [:n "<Plug>Lightspeed_F" "ft:to(true)"]
+     [:x "<Plug>Lightspeed_f" "ft:to(false)"]
+     [:x "<Plug>Lightspeed_F" "ft:to(true)"]
+     [:o "<Plug>Lightspeed_f" "ft:to(false)"]
+     [:o "<Plug>Lightspeed_F" "ft:to(true)"]
 
-   [:x "<Plug>Lightspeed_t" "ft:to(false, true)"]
-   [:x "<Plug>Lightspeed_T" "ft:to(true, true)"]
-   [:n "<Plug>Lightspeed_t" "ft:to(false, true)"]
-   [:n "<Plug>Lightspeed_T" "ft:to(true, true)"]
-   [:o "<Plug>Lightspeed_t" "ft:to(false, true)"]
-   [:o "<Plug>Lightspeed_T" "ft:to(true, true)"]
+     [:x "<Plug>Lightspeed_t" "ft:to(false, true)"]
+     [:x "<Plug>Lightspeed_T" "ft:to(true, true)"]
+     [:n "<Plug>Lightspeed_t" "ft:to(false, true)"]
+     [:n "<Plug>Lightspeed_T" "ft:to(true, true)"]
+     [:o "<Plug>Lightspeed_t" "ft:to(false, true)"]
+     [:o "<Plug>Lightspeed_T" "ft:to(true, true)"]
 
-   ; Just for our convenience, to be used here in the script.
-   [:o "<Plug>Lightspeed_dotrepeat_s" "s:to(false, false, true)"]
-   [:o "<Plug>Lightspeed_dotrepeat_S" "s:to(true, false, true)"]
-   [:o "<Plug>Lightspeed_dotrepeat_x" "s:to(false, true, true)"]
-   [:o "<Plug>Lightspeed_dotrepeat_X" "s:to(true, true, true)"]
-   [:o "<Plug>Lightspeed_dotrepeat_f" "ft:to(false, false, true)"]
-   [:o "<Plug>Lightspeed_dotrepeat_F" "ft:to(true, false, true)"]
-   [:o "<Plug>Lightspeed_dotrepeat_t" "ft:to(false, true, true)"]
-   [:o "<Plug>Lightspeed_dotrepeat_T" "ft:to(true, true, true)"]])
+     ; Just for our convenience, to be used here in the script.
+     [:o "<Plug>Lightspeed_dotrepeat_s" "s:to(false, false, true)"]
+     [:o "<Plug>Lightspeed_dotrepeat_S" "s:to(true, false, true)"]
+     [:o "<Plug>Lightspeed_dotrepeat_x" "s:to(false, true, true)"]
+     [:o "<Plug>Lightspeed_dotrepeat_X" "s:to(true, true, true)"]
+     [:o "<Plug>Lightspeed_dotrepeat_f" "ft:to(false, false, true)"]
+     [:o "<Plug>Lightspeed_dotrepeat_F" "ft:to(true, false, true)"]
+     [:o "<Plug>Lightspeed_dotrepeat_t" "ft:to(false, true, true)"]
+     [:o "<Plug>Lightspeed_dotrepeat_T" "ft:to(true, true, true)"]])
 
-(each [_ [mode lhs rhs-call] (ipairs plug-mappings)]
-  (api.nvim_set_keymap mode lhs (.. "<cmd>lua require'lightspeed'." rhs-call "<cr>")
-                       {:noremap true :silent true}))
+  (each [_ [mode lhs rhs-call] (ipairs plug-keys)]
+    (api.nvim_set_keymap mode lhs (.. "<cmd>lua require'lightspeed'." rhs-call "<cr>")
+                         {:noremap true :silent true})))
 
 
-(fn add-default-mappings []
-  (local default-mappings
+(fn set-default-keymaps []
+  (local default-keymaps
     [[:n "s" "<Plug>Lightspeed_s"]
      [:n "S" "<Plug>Lightspeed_S"]
      [:x "s" "<Plug>Lightspeed_s"]
@@ -1248,21 +1257,41 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
      [:o "t" "<Plug>Lightspeed_t"]
      [:o "T" "<Plug>Lightspeed_T"]])
 
-  (each [_ [mode lhs rhs] (ipairs default-mappings)]
-    (when (and 
+  (each [_ [mode lhs rhs] (ipairs default-keymaps)]
+    (when (and
             ; User has not mapped (a keyseq starting with) `lhs` to something else.
             (= (vim.fn.mapcheck lhs mode) "")
             ; User has not already mapped something to the <Plug> key.
             (= (vim.fn.hasmapto rhs mode) 0))
       (api.nvim_set_keymap mode lhs rhs {:silent true}))))
 
-(add-default-mappings)
+; }}}
+; Init {{{
+
+(init-highlight)
+(set-plug-keys)
+(set-default-keymaps)
+
+; Colorscheme plugins might clear out our highlight definitions, without
+; defining their own.
+(vim.cmd
+  "augroup lightspeed_reinit_highlight
+   autocmd!
+   autocmd ColorScheme * lua require'lightspeed'.init_highlight()
+   augroup end")
+
+(vim.cmd
+  "augroup lightspeed_editor_opts
+   autocmd!
+   autocmd User LightspeedEnter lua require'lightspeed'.save_editor_opts(); require'lightspeed'.set_temporary_editor_opts()
+   autocmd User LightspeedLeave lua require'lightspeed'.restore_editor_opts()
+   augroup end")
 
 ; }}}
 ; Endnotes {{{
 
 ; (1) These should be saved right here, because the repeated search
-;     might have a match anyway. 
+;     might have a match anyway.
 
 ; (2) <C-o> will unfortunately ignore this if the line has not changed.
 ;     https://github.com/neovim/neovim/issues/9874
@@ -1276,9 +1305,14 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 
 {: opts
  : setup
- :init_highlight init-highlight
  : ft
  : s
- :add_default_mappings add-default-mappings}
+
+ :save_editor_opts save-editor-opts
+ :set_temporary_editor_opts set-temporary-editor-opts
+ :restore_editor_opts restore-editor-opts
+
+ :init_highlight init-highlight
+ :set_default_keymaps set-default-keymaps}
 
 ; vim:foldmethod=marker
