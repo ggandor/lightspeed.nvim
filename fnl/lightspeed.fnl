@@ -504,7 +504,7 @@ interrupted change-operation."
            ; instant-repeat is active).
            :stack []})
 
-(fn ft.to [self reverse? t-like? dot-repeat? revert?]
+(fn ft.to [self reverse? t-like? dot-repeat? reverted-repeat?]
   "Entry point for 1-character search."
   (let [_ (when-not self.instant-repeat?
             (set self.started-reverse? reverse?))
@@ -521,7 +521,7 @@ interrupted change-operation."
                                  (and (not reverse?) self.prev-reverse?))
         ; TODO: `count` is a very obscure name, could we find sg better?
         count (if (not self.instant-repeat?) vim.v.count1
-                  (if (not revert?)
+                  (if (not reverted-repeat?)
                       ; When instant-repeating t/T, we increment the count by
                       ; one, else we would find the same target in front of us
                       ; again and again, and be stuck.
@@ -590,7 +590,7 @@ interrupted change-operation."
             (exit-early
               (echo-not-found in1))  ; note: no highlight to clean up if no match found
             (do
-              (when-not revert?
+              (when-not reverted-repeat?
                 (jump-to! match-pos
                           {:add-to-jumplist? (not self.instant-repeat?)
                            :after (when t-like? (push-cursor! (if reverse? :fwd :bwd)))

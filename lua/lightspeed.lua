@@ -501,7 +501,7 @@ local function set_dot_repeat(cmd, _3fcount)
   end
 end
 local ft = {["instant-repeat?"] = nil, ["prev-dot-repeatable-search"] = nil, ["prev-reverse?"] = nil, ["prev-search"] = nil, ["prev-t-like?"] = nil, ["started-reverse?"] = nil, stack = {}}
-ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f, revert_3f)
+ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f, reverted_repeat_3f)
   local _
   if not self["instant-repeat?"] then
     self["started-reverse?"] = reverse_3f
@@ -520,7 +520,7 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f, revert_3f)
   if not self["instant-repeat?"] then
     count = vim.v.count1
   else
-    if not revert_3f then
+    if not reverted_repeat_3f then
       if (t_like_3f and not switched_directions_3f) then
         count = inc(vim.v.count1)
       else
@@ -659,7 +659,7 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f, revert_3f)
       end
       return nil
     else
-      if not revert_3f then
+      if not reverted_repeat_3f then
         local op_mode_3f_4_auto = operator_pending_mode_3f()
         local restore_virtualedit_autocmd_5_auto = ("autocmd CursorMoved,WinLeave,BufLeave" .. ",InsertEnter,CmdlineEnter,CmdwinEnter" .. " * ++once set virtualedit=" .. vim.o.virtualedit)
         if not self["instant-repeat?"] then
@@ -713,16 +713,16 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f, revert_3f)
           _168_ = "f"
         end
         repeat_3f = ((in2 == repeat_key) or string.match(vim.fn.maparg(in2, mode), ("<Plug>Lightspeed_" .. _168_)))
-        local revert_3f0
+        local revert_3f
         local _170_
         if t_like_3f then
           _170_ = "T"
         else
           _170_ = "F"
         end
-        revert_3f0 = ((in2 == revert_key) or string.match(vim.fn.maparg(in2, mode), ("<Plug>Lightspeed_" .. _170_)))
+        revert_3f = ((in2 == revert_key) or string.match(vim.fn.maparg(in2, mode), ("<Plug>Lightspeed_" .. _170_)))
         hl:cleanup()
-        self["instant-repeat?"] = (ok_3f and (repeat_3f or revert_3f0))
+        self["instant-repeat?"] = (ok_3f and (repeat_3f or revert_3f))
         if not self["instant-repeat?"] then
           do
             self.stack = {}
@@ -739,7 +739,7 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f, revert_3f)
           end
           return nil
         else
-          if revert_3f0 then
+          if revert_3f then
             local _175_ = table.remove(self.stack)
             if (nil ~= _175_) then
               local prev_pos = _175_
@@ -748,7 +748,7 @@ ft.to = function(self, reverse_3f, t_like_3f, dot_repeat_3f, revert_3f)
           else
             table.insert(self.stack, new_pos)
           end
-          return ft:to(false, t_like_3f, false, revert_3f0)
+          return ft:to(false, t_like_3f, false, revert_3f)
         end
       end
     end
