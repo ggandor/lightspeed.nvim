@@ -12,10 +12,11 @@ possible.
 The plugin's closest ancestor is Justin M. Keyes' beloved
 [vim-sneak](https://github.com/justinmk/vim-sneak), in that they share the same
 basic assumptions, namely: (1) to reach all kinds of distant targets, ideally we
-need a small number of _context-independent_ motions, that are flexible enough
-to do the job all the time, and can be invoked/operated with _total automatism_;
-(2) for that, the most adequate basis is unidirectional one and two character
-search; (3) the interface should be optimized for the _common case_.
+need a few _context-independent_ motions, that are flexible enough to do the job
+all the time, and can be invoked/operated with _total automatism_, without being
+aware of the type or the surroundings of the target; (2) for that, the most
+adequate basis is unidirectional 1- and 2-character search; (3) the interface
+should be optimized for the _common case_.
 
 #### Railways versus jetpacks
 
@@ -31,7 +32,7 @@ need to think about motions anymore - label-mode "sneaking" gets you everywhere
 you need to be, with maximal precision. It is like having a _jetpack_ on you all
 the time.
 
-#### Always one step ahead of you
+#### A clairvoyant traveler
 
 Lightspeed, in particular, is like having a jetpack _with a GPS_. While
 preserving the minimalist approach of Sneak, it has a bunch of brand-new
@@ -45,26 +46,27 @@ information after _each_ keystroke, to assist the user and offer shortcuts:
 * **shortcut-labels:** for some matches, it is possible to _use_ the target
   label right after the first input, as if doing 1-character search
 * **jump based on partial input:** if the character is unique in the search
-  direction, you will _automatically jump_ after the first input
+  direction, you will automatically jump after the first input
 
 The first one is probably the biggest game-changer, eliminating the major
 problem of all other general-purpose motion plugins - the frustrating momentary
 pause between entering your search pattern and selecting the target. Once you
 try it, you will never look back.
 
-To see these features in action, check the screen recordings in the [in-depth
-introduction](https://github.com/ggandor/lightspeed.nvim#-an-in-depth-introduction-of-the-key-features) below.
+To see these features in action, check the [screen
+recordings](https://github.com/ggandor/lightspeed.nvim#-an-in-depth-introduction-of-the-key-features)
+in the in-depth introduction below.
 
 #### Universal motions
 
-To make the suite complete, Lightspeed also implements **multiline 1-character
-(f/t-like) search modes**, with same-key repeat available (similar to
-[clever-f](https://github.com/rhysd/clever-f.vim) or Sneak's "clever" modes),
-and a so-called **x-mode** (extend/exclude), providing exclusive/inclusive pairs
-for 2-character search too, allowing for more precision and comfort especially
-in Operator-pending mode. Together they make it possible to reach the whole
-on-screen area with very high efficiency in all situations when there is no
-obvious _atomic_ alternative - like `w`, `{`, or `%` - available.
+To make the suite complete, Lightspeed also implements **enhanced f/t-like
+motions working over multiple lines**, with same-key repeat available (similar
+to [clever-f](https://github.com/rhysd/clever-f.vim) or Sneak's "clever" modes),
+and a so-called "X-mode" providing **exclusive/inclusive variations for
+2-character search**. Together the four (bi-directional) motions make it
+possible to reach the whole window area with high efficiency in all situations
+when there is no obvious _atomic_ alternative - like `w`, `{`, or `%` -
+available.
 
 #### Other quality-of-life features
 
@@ -101,7 +103,7 @@ Plug 'ggandor/lightspeed.nvim'
 
 ## 🏹 Usage
 
-### 2-character search
+### 2-character search (s/x)
 
 Command sequence for 2-character search in Normal and Visual mode, with the
 default settings:
@@ -193,7 +195,7 @@ label) might be overlapped by the label of another match, and `label` itself
 might be a [shortcut](https://github.com/ggandor/lightspeed.nvim#shortcuts),
 with a filled background (the inverse of a regular label).
 
-### 1-character search
+### 1-character search (f/t)
 
 Lightspeed also overrides the native `f`/`F`/`t`/`T` motions with enhanced
 versions that work over multiple lines. 
@@ -276,14 +278,12 @@ lightspeed-config`.
 
 ### Keymaps
 
-Lightspeed aims to be part of an "extended native" layer, similar to the suite
-of canonized Vim plugins including
-[surround.vim](https://github.com/tpope/vim-surround),
-[targets.vim](https://github.com/wellle/targets.vim), and Sneak, that maintain
-some consistency between each other. Therefore it provides carefully thought-out
-defaults, mapping to the following keys: `s`, `S` (Normal and Visual mode), `z`,
-`Z`, `x`, `X` (Operator-pending mode), and - obviously, enhancing the built-in
-motions - `f`, `F`, `t`, `T` (all modes).
+Lightspeed aims to be part of an "extended native" layer, similar to such
+canonized Vim plugins like [surround.vim](https://github.com/tpope/vim-surround)
+or [targets.vim](https://github.com/wellle/targets.vim). Therefore it provides
+carefully thought-out defaults, mapping to the following keys: `s`, `S` (Normal
+and Visual mode), `z`, `Z`, `x`, `X` (Operator-pending mode), and - obviously,
+enhancing the built-in motions - `f`, `F`, `t`, `T` (all modes).
 
 (Note: Basic motions should have the absolute least friction among all commands,
 since they are the most frequent. The native `s` and `S` both have comfortable
@@ -348,6 +348,9 @@ autocommand to automatically re-init on every colorscheme change:
 ```Vim
 autocmd ColorScheme * lua require'lightspeed'.init_highlight(true)
 ```
+
+This can be tweaked further, you could e.g. check the actual colorscheme, and
+only execute for certain ones, etc.
 
 ### User events
 
