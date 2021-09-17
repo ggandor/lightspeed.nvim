@@ -12,10 +12,10 @@ possible.
 The plugin's closest ancestor is Justin M. Keyes' beloved
 [vim-sneak](https://github.com/justinmk/vim-sneak), in that they share the same
 basic assumptions, namely: (1) to reach all kinds of distant targets, ideally we
-need one _universal_ motion, with its variations, that are flexible enough to do
-the job all the time, and can be invoked/operated with _total automatism_; (2)
-for that, the most adequate basis is unidirectional 2-character search; (3) the
-interface should be optimized for the _common case_.
+need a small number of _context-independent_ motions, that are flexible enough
+to do the job all the time, and can be invoked/operated with _total automatism_;
+(2) for that, the most adequate basis is unidirectional one and two character
+search; (3) the interface should be optimized for the _common case_.
 
 #### Railways versus jetpacks
 
@@ -55,12 +55,21 @@ try it, you will never look back.
 To see these features in action, check the screen recordings in the [in-depth
 introduction](https://github.com/ggandor/lightspeed.nvim#-an-in-depth-introduction-of-the-key-features) below.
 
+#### Universal motions
+
+To make the suite complete, Lightspeed also implements **multiline 1-character
+(f/t-like) search modes**, with same-key repeat available (similar to
+[clever-f](https://github.com/rhysd/clever-f.vim) or Sneak's "clever" modes),
+and a so-called **x-mode** (extend/exclude), providing exclusive/inclusive pairs
+for 2-character search too, allowing for more precision and comfort especially
+in Operator-pending mode. Together they make it possible to reach the whole
+on-screen area with very high efficiency in all situations when there is no
+obvious _atomic_ alternative - like `w`, `{`, or `%` - available.
+
 #### Other quality-of-life features
 
 * having a choice between automatically jumping to the first match (Sneak-like -
   default) or allowing for more comfortable target labels (EasyMotion-like)
-* **X-mode** (extend/exclude) allows for more precision and comfort especially
-  in Operator-pending mode
 * flawless **dot-repeat support** for operators (with
   [repeat.vim](https://github.com/tpope/vim-repeat) installed)
 * skips folds
@@ -71,12 +80,6 @@ introduction](https://github.com/ggandor/lightspeed.nvim#-an-in-depth-introducti
   any input (opt-in)
 * the cursor stays visible all the time
 * uses extmarks, and does not mess with the Conceal group
-
-#### Last but not least (bonus)
-
-* **multiline 1-character (f/t-like) search modes**, with same-key repeat
-  available (similar to [clever-f](https://github.com/rhysd/clever-f.vim) or
-  Sneak's "clever" modes)
 
 ## 🚀 Getting started
 
