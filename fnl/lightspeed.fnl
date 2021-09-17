@@ -807,21 +807,13 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 (fn s.to [self reverse? invoked-in-x-mode? dot-repeat?]
   "Entry point for 2-character search."
 
-  ; local vars (set after input)
-  ; ----------------------------
-  ; `enter-repeat?`
-  ; `new-search?`
-  ; `x-mode?`
-
   ; local helper functions
   ; ----------------------
   ; #1 macro `with-hl-chores`
-  ; #2 fn    `switch-off-scrolloff`
-  ; #3 fn    `restore-scrolloff`
-  ; #4 fn    `cycle-through-match-groups`
-  ; #5 fn    `save-state-for`
-  ; #6 fn    `jump-with-wrap!`
-  ; #7 fn    `jump-and-ignore-ch2-until-timeout!`
+  ; #2 fn    `cycle-through-match-groups`
+  ; #3 fn    `save-state-for`
+  ; #4 fn    `jump-with-wrap!`
+  ; #5 fn    `jump-and-ignore-ch2-until-timeout!`
 
   ; algorithm skeleton
   ; ------------------
@@ -829,29 +821,28 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
   ; build 'match map' for in1
   ; if no match: exit
   ; elif only match:
-  ;   save state (for repeats) & jump w/ timeout & exit (#5,#7)
+  ;   save state for repeats & jump w/ timeout & exit (#3,#5)
   ; else:
   ;   calculate 'shortcutable' positions
   ;   if new search (not persisted state):
   ;     light up beacons (see glossary) (#1)
   ;   get 2nd input (in2) (direct input or persisted state)
   ;   if in2 is a shortcut-label:
-  ;     save state & jump & exit (#5,#6)
+  ;     save state for repeats & jump & exit (#3,#4)
   ;   else:
-  ;     save state (#5)
+  ;     save state for repeats (#3)
   ;     if no match: exit
   ;     elif only match:
-  ;       jump & exit (#6)
+  ;       jump & exit (#4)
   ;     else:
-  ;       if auto-jump to first match is set: jump (#6)
-  ;       (#2)
+  ;       if auto-jump to first match is set: jump (#4)
   ;       if not dot-repeating: light up beacons (#1)
-  ;       loop for getting 3rd input (in3) (#4)
+  ;       loop for getting 3rd input (in3) (#2)
   ;           - potentially switching match groups here,
   ;             the labels' referred targets might change
   ;       if in3 is a label in use:
-  ;         jump & exit (#3,#6)
-  ;       else: exit (#3)
+  ;         jump & exit (#4)
+  ;       else: exit
 
   (let [op-mode? (operator-pending-mode?)
         change-op? (change-operation?)
