@@ -423,32 +423,41 @@ interrupted change-operation."
         (api.nvim_feedkeys :n true))))
 
 
+(fn doau-when-exists [event]
+  (when (vim.fn.exists (.. :#User# event))
+    (vim.cmd (.. "doautocmd <nomodeline> User " event))))
+
+
+(fn enter [mode]
+  (doau-when-exists :LightspeedEnter)
+  (match mode
+    :sx (doau-when-exists :LightspeedSxEnter)
+    :ft (doau-when-exists :LightspeedFtEnter)))
+
+
 ; Note: One of the main purpose of these macros, besides wrapping cleanup stuff,
 ; is to enforce and encapsulate the requirement that tail-positioned "exit"
 ; forms in `match` blocks should always return nil. (Interop with side-effecting
 ; VimL functions can be dangerous, they might return 0 for example, like
 ; `feedkey`, and with that they can screw up Fennel match forms in a breeze,
 ; resulting in misterious bugs, so it's better to be paranoid.)
-
-(macro exit [...]
+(macro exit-template [mode early-exit? ...]
   `(do
-     ; I don't understand why this double wrap is needed, but it is
-     ; (else only sees the first item).
+     ; Be sure _not_ to call the macro twice accidentally,
+     ; `handle-interrupted-change-op!` might move the cursor twice then!
+     ,(when early-exit?
+        `(when (change-operation?) (handle-interrupted-change-op!)))
+     ; Putting the form here, after the change-op handler, because it might feed
+     ; keys too. (Is that a valid problem? Change operation can only be
+     ; interrupted by <c-c> or <esc> I guess...)
+     ; (Note: I'd like to understand why it's necessary to wrap the varargs in
+     ; an additional `do` - else only sees the first item.)
      (do ,...)
-     (when (vim.fn.exists :#User#LightspeedLeave)
-       (vim.cmd "doautocmd <nomodeline> User LightspeedLeave"))
+     ,(match mode
+        :sx `(doau-when-exists :LightspeedSxLeave)
+        :ft `(doau-when-exists :LightspeedFtLeave))
+     (doau-when-exists :LightspeedLeave)
      nil))
-
-
-; Be sure _not_ to call this twice accidentally, `handle-interrupted-change-op!`
-; might move the cursor twice then!
-(macro exit-early [...]
-  `(do (when (change-operation?)
-         (handle-interrupted-change-op!))
-       ; Putting the form here, _after_ the change-op handler,
-       ; because it might feed keys too.
-       (do ,...)
-       (exit)))
 
 
 (fn get-input-and-clean-up []
@@ -548,9 +557,13 @@ interrupted change-operation."
                    (and t-like? reverse?) "T")
         cmd-for-dot-repeat (.. (replace-keycodes "<Plug>Lightspeed_dotrepeat_") motion)]
 
+    (macro exit [...] `(exit-template :ft false ,...))
+    (macro exit-early [...] `(exit-template :ft true ,...))
+
+    (when-not self.instant-repeat?
+      (enter :ft))
+
     (when-not (or dot-repeat? self.instant-repeat?)
-      (when (vim.fn.exists :#User#LightspeedEnter)
-        (vim.cmd "doautocmd <nomodeline> User LightspeedEnter"))
       (echo "")
       (highlight-cursor)
       (vim.cmd :redraw))
@@ -864,6 +877,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
     (var new-search? nil)
     (var x-mode? nil)
 
+    (macro exit [...] `(exit-template :sx false ,...))
+    (macro exit-early [...] `(exit-template :sx true ,...))
+
     (macro with-hl-chores [...]
       `(do (when opts.grey_out_search_area (grey-out-search-area reverse?))
            (do ,...)
@@ -1006,9 +1022,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
     ; After all the stage-setting, here comes the main action you've all been
     ; waiting for:
 
+    (enter :sx)
+
     (when-not dot-repeat?
-      (when (vim.fn.exists :#User#LightspeedEnter)
-        (vim.cmd "doautocmd <nomodeline> User LightspeedEnter"))
       (echo "")  ; Clean up the command line.
       (with-hl-chores
         (when opts.highlight_unique_chars
