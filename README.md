@@ -346,6 +346,12 @@ autocommand to automatically re-init on every colorscheme change:
 autocmd ColorScheme * lua require'lightspeed'.init_highlight(true)
 ```
 
+### User events
+
+Lightspeed triggers `User` events on entering/exiting, so that you can set
+up autocommands, e.g. to change the values of some editor options while the
+plugin is active. For details, check `:h lightspeed-events`.
+
 ### Notes
 
 * While the plugin is active, the actual cursor is down on the command line, but

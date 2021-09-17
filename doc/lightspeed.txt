@@ -299,17 +299,18 @@ CUSTOM MAPPINGS                                     *lightspeed-custom-mappings*
 method calls. If you are not familiar with the concept, see |<Plug>| and
 |using-<Plug>|.
 
-Available <Plug> keys for all modes:
+Available <Plug> keys for all modes (pattern length, direction,
+motion/operation semantics):
 
-`<Plug>Lightspeed_s` - forward, 2-character
-`<Plug>Lightspeed_S` - backward, 2-character
-`<Plug>Lightspeed_x` - forward, 2-character, X-mode
-`<Plug>Lightspeed_X` - backward, 2-character, X-mode
+`<Plug>Lightspeed_s`  2-character  forward   /-like
+`<Plug>Lightspeed_S`  2-character  backward  ?-like
+`<Plug>Lightspeed_x`  2-character  forward   X-mode
+`<Plug>Lightspeed_X`  2-character  backward  X-mode
 
-`<Plug>Lightspeed_f` - forward, 1-character, inclusive
-`<Plug>Lightspeed_F` - backward, 1-character, inclusive
-`<Plug>Lightspeed_t` - forward, 1-character, exclusive
-`<Plug>Lightspeed_T` - backward, 1-character, exclusive
+`<Plug>Lightspeed_f`  1-character  forward   f-like
+`<Plug>Lightspeed_F`  1-character  backward  F-like
+`<Plug>Lightspeed_t`  1-character  forward   t-like
+`<Plug>Lightspeed_T`  1-character  backward  T-like
 
 Note: Be sure _not_ to use `-noremap`, as <Plug> mappings should be used
       recursively, by design.
@@ -374,31 +375,31 @@ HIGHLIGHTING                                              *lightspeed-highlight*
 Lightspeed uses the following highlight groups that you can configure to your
 own liking:
 
-    LightspeedLabel~
+    *LightspeedLabel*
         The character needed to be pressed to jump to the match position,
         after the whole search pattern has been given. It appears top of the
         second character of the pair, after the first input has been given.
 
-    LightspeedLabelOverlapped~
+    *LightspeedLabelOverlapped*
         When matches overlap, labels get next to each other - in that case
         they get different highlights, to be more easily distinguishable
         (slightly lighter or darker, depending on the global background).
 
-    LightspeedLabelDistant~
-    LightspeedLabelDistantOverlapped~
+    *LightspeedLabelDistant*
+    *LightspeedLabelDistantOverlapped*
         If the number of matches exceeds the available target labels, the next
         group of labeled targets are shown with a different color. Those can
         be reached by pressing `cycle_group_fwd_key` before the label
         character.
          
-    LightspeedShortcut~
-    LightspeedShortcutOverlapped~
+    *LightspeedShortcut*
+    *LightspeedShortcutOverlapped*
         Labels for positions that can be jumped to right after the first
         input (see |lightspeed-shortcuts|).
         These are highlighted as "inverted" labels by default
         (background/foreground switched).
 
-    LightspeedMaskedChar~
+    *LightspeedMaskedChar*
         The second character of the match, that is shown on top of the first
         one, as a reminder.
 
@@ -406,28 +407,28 @@ own liking:
         _much_ dimmer than the labels and shortcuts, otherwise the UI becomes
         too chaotic. Colorscheme authors, please do follow this advice.
 
-    LightspeedGreyWash~
+    *LightspeedGreyWash*
         Foreground color of the "washed out" area for 2-character search.
         Depending on the colorscheme, it might be appropriate to link this to
         the Comment highlight group.
 
-    LightspeedUnlabeledMatch~
+    *LightspeedUnlabeledMatch*
         Matches that can be jumped to automatically, i.e. do not get a label
         - the only ones, and the first ones if `jump_to_first_match` is on.
         (Bold black or white by default, depending on the global background.)
 
-    LightspeedOneCharMatch~
-        Matching characters of f/t search. (Default: LightspeedShortcut
+    *LightspeedOneCharMatch*
+        Matching characters of f/t search. (Default: |LightspeedShortcut|
         without underline. Setting some background color is recommended, as
         there is no "grey wash" for one-character search mode.)
 
-    LightspeedUniqueChar~
+    *LightspeedUniqueChar*
         Unique characters in the search direction, shown if
         `highlight_unique_chars` is on. Uses the same settings as
-        LightspeedUnlabeledMatch by default.
+        |LightspeedUnlabeledMatch| by default.
 
-    LightspeedPendingOpArea~
-    LightspeedPendingChangeOpArea~
+    *LightspeedPendingOpArea*
+    *LightspeedPendingChangeOpArea*
         When jumping based on partial input in operator-pending mode, we do
         not see the operation executed right away, because of the "safety"
         timeout (see |lightspeed-jump-on-partial-input|), therefore we set a
@@ -435,7 +436,7 @@ own liking:
         change and delete - get a different highlight, with strikethrough, by
         default.)
 
-    LightspeedCursor~
+    *LightspeedCursor*
         Linked to |hl-Cursor| by default.
 
 In order to preserve your custom settings after changing the colorscheme, you
@@ -447,6 +448,29 @@ yours.) >
     vim.cmd("autocmd!")
     vim.cmd("autocmd ColorScheme * lua my_lightspeed_highlight_settings()")
     vim.cmd("augroup end")
+
+==============================================================================
+EVENTS                                                       *lightspeed-events*
+
+The following |User| events are triggered on entering/exiting Lightspeed
+(except for instant-repeat):
+
+*LightspeedEnter* 
+*LightspeedLeave* 
+
+The below ones are triggered only for the corresponding motion types:
+
+*LightspeedSxEnter* 
+*LightspeedSxLeave* 
+*LightspeedFtEnter* 
+*LightspeedFtLeave* 
+
+Note: The general ones above are triggered first/last when entering/exiting,
+      respectively.
+
+Example: >
+    autocmd User LightspeedEnter nohlsearch
+    autocmd User LightspeedLeave let &hlsearch=&hlsearch
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:
