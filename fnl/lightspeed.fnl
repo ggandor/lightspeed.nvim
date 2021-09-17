@@ -78,7 +78,7 @@ character instead."
 ; Glossary {{{
 
 ; Instant-repeat (1-char search)
-; While Lightspeed is active, repeatedly pressing f/F/t/T goes to (or
+; While Lightspeed is active, repeatedly pressing f/F/t/T goes  (or
 ; right before/after) the next/previous match (effectively repeats the
 ; last 1-character search with a count of 1). Pressing any other key
 ; exits from this "standby" mode; subsequent calls will behave as new
@@ -88,23 +88,23 @@ character instead."
 ; An extmark positioned over an on-screen matching pair, giving
 ; information about how it can be reached. It can take on many forms; in
 ; the common case, the first field shows the 2nd character of the
-; original pair, as a reminder (that is, it is shown on top of the
+; original pair, as a reminder (that is, it is shown on p of the
 ; _first_ character), while the second field shows a "target label"
 ; (that is possibly a "shortcut"). If there is only one match, the
 ; extmark shows the pair as it is, with a different highlighting (we
-; will jump there automatically then).
-; Beacons can also overlap each other - in that case, the invariant to
+; will jump there aumatically then).
+; Beacons can also overlap each other - in that case, the invariant 
 ; be maintained is that the target label (i.e., the second/right field)
 ; should remain visible in all circumstances.
 
 ; Label (2-char search)
-; The character needed to be pressed to jump to the match position,
+; The character needed  be pressed to jump to the match position,
 ; after the whole search pattern has been given. It is always shown on
-; top of the second character of the pair.
+; p of the second character of the pair.
 
 ; Shortcut (2-char search)
-; A position where the assigned label itself is enough to determine the
-; target you want to jump to (for example when a character is always
+; A position where the assigned label itself is enough  determine the
+; target you want  jump to (for example when a character is always
 ; followed by a certain other character in the search area). Those you
 ; can reach via typing the label character right after the first input,
 ; bypassing the second one. The label gets a different highlight in
@@ -810,14 +810,14 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 
 
 ; State for 2-character search that is persisted between invocations.
-(local s {:prev-search {:in1 nil
-                        :in2 nil}
-          :prev-dot-repeatable-search {:in1 nil
-                                       :in2 nil
-                                       :in3 nil
-                                       :x-mode? nil}})
+(local sx {:prev-search {:in1 nil
+                         :in2 nil}
+           :prev-dot-repeatable-search {:in1 nil
+                                        :in2 nil
+                                        :in3 nil
+                                        :x-mode? nil}})
 
-(fn s.to [self reverse? invoked-in-x-mode? dot-repeat?]
+(fn sx.to [self reverse? invoked-in-x-mode? dot-repeat?]
   "Entry point for 2-character search."
 
   ; local helper functions
@@ -1193,20 +1193,20 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 
 (fn set-plug-keys []
   (local plug-keys
-     ; params of `s:to`: reverse? [x-mode?] [dot-repeat?]
-    [[:n "<Plug>Lightspeed_s" "s:to(false)"]
-     [:n "<Plug>Lightspeed_S" "s:to(true)"]
-     [:x "<Plug>Lightspeed_s" "s:to(false)"]
-     [:x "<Plug>Lightspeed_S" "s:to(true)"]
-     [:o "<Plug>Lightspeed_s" "s:to(false)"]
-     [:o "<Plug>Lightspeed_S" "s:to(true)"]
+     ; params of `sx:to`: reverse? [x-mode?] [dot-repeat?]
+    [[:n "<Plug>Lightspeed_s" "sx:to(false)"]
+     [:n "<Plug>Lightspeed_S" "sx:to(true)"]
+     [:x "<Plug>Lightspeed_s" "sx:to(false)"]
+     [:x "<Plug>Lightspeed_S" "sx:to(true)"]
+     [:o "<Plug>Lightspeed_s" "sx:to(false)"]
+     [:o "<Plug>Lightspeed_S" "sx:to(true)"]
 
-     [:n "<Plug>Lightspeed_x" "s:to(false, true)"]
-     [:n "<Plug>Lightspeed_X" "s:to(true, true)"]
-     [:x "<Plug>Lightspeed_x" "s:to(false, true)"]
-     [:x "<Plug>Lightspeed_X" "s:to(true, true)"]
-     [:o "<Plug>Lightspeed_x" "s:to(false, true)"]
-     [:o "<Plug>Lightspeed_X" "s:to(true, true)"]
+     [:n "<Plug>Lightspeed_x" "sx:to(false, true)"]
+     [:n "<Plug>Lightspeed_X" "sx:to(true, true)"]
+     [:x "<Plug>Lightspeed_x" "sx:to(false, true)"]
+     [:x "<Plug>Lightspeed_X" "sx:to(true, true)"]
+     [:o "<Plug>Lightspeed_x" "sx:to(false, true)"]
+     [:o "<Plug>Lightspeed_X" "sx:to(true, true)"]
 
      ; params of `ft:to`: reverse? [t-like?] [dot-repeat?]
      [:n "<Plug>Lightspeed_f" "ft:to(false)"]
@@ -1224,10 +1224,10 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
      [:o "<Plug>Lightspeed_T" "ft:to(true, true)"]
 
      ; Just for our convenience, to be used here in the script.
-     [:o "<Plug>Lightspeed_dotrepeat_s" "s:to(false, false, true)"]
-     [:o "<Plug>Lightspeed_dotrepeat_S" "s:to(true, false, true)"]
-     [:o "<Plug>Lightspeed_dotrepeat_x" "s:to(false, true, true)"]
-     [:o "<Plug>Lightspeed_dotrepeat_X" "s:to(true, true, true)"]
+     [:o "<Plug>Lightspeed_dotrepeat_s" "sx:to(false, false, true)"]
+     [:o "<Plug>Lightspeed_dotrepeat_S" "sx:to(true, false, true)"]
+     [:o "<Plug>Lightspeed_dotrepeat_x" "sx:to(false, true, true)"]
+     [:o "<Plug>Lightspeed_dotrepeat_X" "sx:to(true, true, true)"]
      [:o "<Plug>Lightspeed_dotrepeat_f" "ft:to(false, false, true)"]
      [:o "<Plug>Lightspeed_dotrepeat_F" "ft:to(true, false, true)"]
      [:o "<Plug>Lightspeed_dotrepeat_t" "ft:to(false, true, true)"]
@@ -1313,7 +1313,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 {: opts
  : setup
  : ft
- : s
+ : sx
 
  :save_editor_opts save-editor-opts
  :set_temporary_editor_opts set-temporary-editor-opts
