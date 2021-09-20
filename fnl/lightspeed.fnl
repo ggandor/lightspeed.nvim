@@ -276,9 +276,10 @@ character instead."
              ",InsertEnter,CmdlineEnter,CmdwinEnter"
              " * ++once set virtualedit="
              vim.o.virtualedit)]
+     ; <C-o> will unfortunately ignore this if the line has not changed.
+     ; See https://github.com/neovim/neovim/issues/9874
      (when ,add-to-jumplist? (vim.cmd "norm! m`"))
      (vim.fn.cursor ,target)
-
      ; Adjust position after the jump (for t-motion or x-mode).
      ,after
 
@@ -502,114 +503,95 @@ interrupted change-operation."
 ; issues than it absorbs, I guess. Time might prove me wrong.
 
 ; State for 1-character search that is persisted between invocations.
-(local ft {:instant-repeat? nil
-           :started-reverse? nil
-           :prev-reverse? nil
-           ; For the workaround for native-like `;`/`,`-behaviour.
-           :prev-t-like? nil
-           :prev-search nil
-           :prev-dot-repeatable-search nil
-           ; Stack of previous positions (maintained only while
-           ; instant-repeat is active).
-           :stack []})
 
-(fn ft.to [self reverse? t-like? dot-repeat? reverted-repeat?]
+; TODO: refactor `sx` accordingly (maybe allow for cold-repeat too...)
+(local ft {:state {:instant {:in nil :stack []}
+                   :dot {:in nil}
+                   :cold {:in nil :reverse? nil :t-mode? nil}
+                  }})
+
+(fn ft.to [self reverse? t-mode? repeat-invoc]
   "Entry point for 1-character search."
-  (let [_ (when-not self.instant-repeat?
-            (set self.started-reverse? reverse?))
-        reverse? (if self.instant-repeat?
-                   ; f/t always continue in the original direction,
-                   ; and F/T in the reverse of the original (so they mean
-                   ; _relative_ reverse in case of instant-repeat).
-                   (or (and (not reverse?) self.started-reverse?)
-                       (and reverse? (not self.started-reverse?)))
-                   reverse?)
-        ; This is only relevant for the workaround described at `:h
-        ; lightspeed-custom-ft-repeat-mappings`. (#19)
-        switched-directions? (or (and reverse? (not self.prev-reverse?))
-                                 (and (not reverse?) self.prev-reverse?))
-        ; TODO: `count` is a very obscure name, could we find sg better?
-        count (if (not self.instant-repeat?) vim.v.count1
-                  (if (not reverted-repeat?)
-                      ; When instant-repeating t/T, we increment the count by
-                      ; one, else we would find the same target in front of us
-                      ; again and again, and be stuck.
-                      (if (and t-like?
-                               (not switched-directions?))  ; only for the ;/, workaround
-                          (inc vim.v.count1)
-                          vim.v.count1)
-                      ; After a reverted repeat, we highlight the next n matches
-                      ; as usual, as per `limit_ft_matches`, but will _not_
-                      ; move the cursor. In case of `T`, we still don't want to
-                      ; highlight the first match, i.e., the immediate next
-                      ; character, so we're setting `count` to 1, to make the
-                      ; highlighting loop skip that. (But otherwise we'll ignore
-                      ; this, the cursor will stay in place.)
-                      (if t-like? 1 0)))
+  (let [instant-repeat? (or (= repeat-invoc :instant)
+                            (= repeat-invoc :reverted-instant))
+        reverted-instant-repeat? (= repeat-invoc :reverted-instant)
+        cold-repeat? (= repeat-invoc :cold)
+        dot-repeat? (= repeat-invoc :dot)
+        ; After a reverted repeat, we highlight the next n matches as always, as
+        ; per `limit_ft_matches`, but will _not_ move the cursor. In case of
+        ; `T`, we still don't want to highlight the first match, i.e., the
+        ; immediate next character, so the highlighting loop will skip that as
+        ; usual (see the details there).
+        count (if reverted-instant-repeat? 0 vim.v.count1)
         [repeat-key revert-key] (->> [opts.instant_repeat_fwd_key
                                       opts.instant_repeat_bwd_key]
                                      (vim.tbl_map replace-keycodes))
         op-mode? (operator-pending-mode?)
         dot-repeatable-op? (dot-repeatable-operation?)
-        motion (if (and (not t-like?) (not reverse?)) "f"
-                   (and (not t-like?) reverse?) "F"
-                   (and t-like? (not reverse?)) "t"
-                   (and t-like? reverse?) "T")
+        motion (if (and (not t-mode?) (not reverse?)) "f"
+                   (and (not t-mode?) reverse?) "F"
+                   (and t-mode? (not reverse?)) "t"
+                   (and t-mode? reverse?) "T")
         cmd-for-dot-repeat (.. (replace-keycodes "<Plug>Lightspeed_dotrepeat_") motion)]
 
     (macro exit [...] `(exit-template :ft false ,...))
     (macro exit-early [...] `(exit-template :ft true ,...))
 
-    (when-not self.instant-repeat?
-      (enter :ft))
+    (when-not instant-repeat? (enter :ft))
 
-    (when-not (or dot-repeat? self.instant-repeat?)
-      (echo "")
-      (highlight-cursor)
-      (vim.cmd :redraw))
+    (when-not repeat-invoc
+      (echo "") (highlight-cursor) (vim.cmd :redraw))
 
-    (var enter-repeat? nil)
-    (match (if self.instant-repeat? self.prev-search
-               dot-repeat? self.prev-dot-repeatable-search
+    (match (if instant-repeat? self.state.instant.in
+               dot-repeat? self.state.dot.in
+               cold-repeat? self.state.cold.in
                (match (or (get-input-and-clean-up)
                           (exit-early))
-                 "\r" (do (set enter-repeat? true)
-                          (or self.prev-search
-                              (exit-early
-                                (echo-no-prev-search))))
-                 in in))
+                 "\r" (or self.state.cold.in
+                          (exit-early
+                            (echo-no-prev-search)))
+                 in0 in0))
       in1
-      (let [new-search? (not (or enter-repeat? self.instant-repeat? dot-repeat?))]
-        (when new-search?  ; endnote #1
-          (if dot-repeatable-op?
-            (do (set self.prev-dot-repeatable-search in1)
-                (set-dot-repeat cmd-for-dot-repeat count))
-            (set self.prev-search in1)))
-        (set self.prev-reverse? reverse?)
-        (set self.prev-t-like? t-like?)
+      (do
+        (when-not repeat-invoc
+          (set self.state.cold {:in in1 : reverse? : t-mode?}))  ; endnote #1
 
+        ; We should get this before the loop, because `onscreen-match-positions`
+        ; moves the cursor while executing.
+        (local [next-line next-col] (vim.fn.searchpos "\\_." (.. :nW (if reverse?  :b ""))))
         (var match-pos nil)
         (var i 0)
         (each [[line col &as pos]
                (let [pattern (.. "\\V" (in1:gsub "\\" "\\\\"))
                      limit (when opts.limit_ft_matches (+ count opts.limit_ft_matches))]
                  (onscreen-match-positions pattern reverse? {:ft-search? true : limit}))]
-          (++ i)
-          (if (<= i count) (set match-pos pos)
-              (when-not op-mode?
-                (hl:add-hl hl.group.one-char-match (dec line) (dec col) col))))
+          ; If we started repeating t/T from _right before_ a match, then skip
+          ; that match (endnote #2).
+          (when-not (and repeat-invoc t-mode?
+                         ; The first match is found at the saved neighbouring position.
+                         (= i 0) (= line next-line) (= col next-col))
+            (++ i)
+            (if (<= i count) (set match-pos pos)
+                (when-not op-mode?
+                  (hl:add-hl hl.group.one-char-match (dec line) (dec col) col)))))
 
         (if (and (> count 0) (not match-pos))
             (exit-early
               (echo-not-found in1))  ; note: no highlight to clean up if no match found
             (do
-              (when-not reverted-repeat?
+              (when-not reverted-instant-repeat?
                 (jump-to! match-pos
-                          {:add-to-jumplist? (not self.instant-repeat?)
-                           :after (when t-like? (push-cursor! (if reverse? :fwd :bwd)))
+                          {:add-to-jumplist? (not instant-repeat?)
+                           :after (when t-mode?
+                                    (push-cursor! (if reverse? :fwd :bwd)))
                            : reverse?
                            :inclusive-motion? true}))  ; like the native f/t
-              (local new-pos (get-cursor-pos))
+              (when-not repeat-invoc
+                ; TODO: `save-state-for` helper fn?
+                (if dot-repeatable-op?
+                    (do (set self.state.dot.in in1)
+                        (set-dot-repeat cmd-for-dot-repeat count))
+                    (set self.state.instant.in in1)))
               (when-not op-mode?  ; note: no highlight to clean up in op-mode
                 (highlight-cursor)
                 (vim.cmd :redraw)
@@ -618,21 +600,36 @@ interrupted change-operation."
                       repeat? (or (= in2 repeat-key)
                                   (string.match (vim.fn.maparg in2 mode)
                                                 (.. "<Plug>Lightspeed_"
-                                                    (if t-like? "t" "f"))))
+                                                    (if t-mode? "t" "f"))))
                       revert? (or (= in2 revert-key)
                                   (string.match (vim.fn.maparg in2 mode)
                                                 (.. "<Plug>Lightspeed_"
-                                                    (if t-like? "T" "F"))))]
+                                                    (if t-mode? "T" "F"))))]
                   (hl:cleanup)
-                  (set self.instant-repeat? (and ok? (or repeat? revert?)))
-                  (if (not self.instant-repeat?)
+                  (if (and ok? (or repeat? revert?))  ; instant-repeat
+                      (do (if revert? (match (table.remove self.state.instant.stack)
+                                        old-pos (vim.fn.cursor old-pos))
+                              repeat? (table.insert self.state.instant.stack
+                                                    (get-cursor-pos)))
+                          (ft:to reverse? t-mode?
+                                 (if revert? :reverted-instant :instant)))
                       (exit
-                        (set self.stack [])
-                        (vim.fn.feedkeys (if ok? in2 (replace-keycodes "<esc>")) :i))
-                      (do (if revert? (match (table.remove self.stack)
-                                        prev-pos (vim.fn.cursor prev-pos))
-                              (table.insert self.stack new-pos))
-                          (ft:to false t-like? false revert?)))))))))))
+                        (set self.state.instant.stack [])
+                        (vim.fn.feedkeys (if ok? in2 (replace-keycodes "<esc>"))
+                                         :i)))))))))))
+
+
+; The workaround described in :h lightspeed-custom-ft-repeat-mappings used these fields.
+(let [deprec-msg [["ligthspeed.nvim" :Question]
+                  [": You're trying to access deprecated fields in the lightspeed.ft table.\n" :Normal]
+                  ["There are dedicated <Plug> keys available for native-like "]
+                  [";" :Visual] [" and " :Normal] ["," :Visual] [" functionality now.\n" :Normal]
+                  ["See " :Normal] [":h lightspeed-custom-mappings" :Visual] ["." :Normal]]]
+  (setmetatable ft {:__index (fn [t k]
+                               (when (one-of? k
+                                       :instant-repeat?
+                                       :prev-t-like?)
+                                 (api.nvim_echo deprec-msg true {})))}))
 
 ; }}}
 ; 2-character search {{{
@@ -912,7 +909,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 
     (fn save-state-for [{: enter-repeat : dot-repeat}]
       (when new-search?
-        ; Arbitrary choice: let dot-repeat _not_ update the previous
+        ; Arbitrary choice: let dot-repeatable ops _not_ update the previous
         ; normal/visual/yank search - this seems more useful.
         (if dot-repeatable-op? (when dot-repeat
                                  (tset dot-repeat :x-mode? x-mode?)
@@ -1193,48 +1190,44 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 
 (fn set-plug-keys []
   (local plug-keys
-     ; params of `sx:to`: reverse? [x-mode?] [dot-repeat?]
-    [[:n "<Plug>Lightspeed_s" "sx:to(false)"]
-     [:n "<Plug>Lightspeed_S" "sx:to(true)"]
-     [:x "<Plug>Lightspeed_s" "sx:to(false)"]
-     [:x "<Plug>Lightspeed_S" "sx:to(true)"]
-     [:o "<Plug>Lightspeed_s" "sx:to(false)"]
-     [:o "<Plug>Lightspeed_S" "sx:to(true)"]
+    [
+     ; params: reverse? [x-mode?] [repeat-invoc]
+     ["<Plug>Lightspeed_s" "sx:to(false)"]
+     ["<Plug>Lightspeed_S" "sx:to(true)"]
+     ["<Plug>Lightspeed_x" "sx:to(false, true)"]
+     ["<Plug>Lightspeed_X" "sx:to(true, true)"]
 
-     [:n "<Plug>Lightspeed_x" "sx:to(false, true)"]
-     [:n "<Plug>Lightspeed_X" "sx:to(true, true)"]
-     [:x "<Plug>Lightspeed_x" "sx:to(false, true)"]
-     [:x "<Plug>Lightspeed_X" "sx:to(true, true)"]
-     [:o "<Plug>Lightspeed_x" "sx:to(false, true)"]
-     [:o "<Plug>Lightspeed_X" "sx:to(true, true)"]
+     ; params: reverse? [t-mode?] [repeat-invoc]
+     ["<Plug>Lightspeed_f" "ft:to(false)"]
+     ["<Plug>Lightspeed_F" "ft:to(true)"]
+     ["<Plug>Lightspeed_t" "ft:to(false, true)"]
+     ["<Plug>Lightspeed_T" "ft:to(true, true)"]
 
-     ; params of `ft:to`: reverse? [t-like?] [dot-repeat?]
-     [:n "<Plug>Lightspeed_f" "ft:to(false)"]
-     [:n "<Plug>Lightspeed_F" "ft:to(true)"]
-     [:x "<Plug>Lightspeed_f" "ft:to(false)"]
-     [:x "<Plug>Lightspeed_F" "ft:to(true)"]
-     [:o "<Plug>Lightspeed_f" "ft:to(false)"]
-     [:o "<Plug>Lightspeed_F" "ft:to(true)"]
+     ; "cold" repeat (;/,-like) (note: we should not start the name with ft_ if using `hasmapto`)
+     ["<Plug>Lightspeed_repeat_ft"
+      "ft:to(require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
+     ["<Plug>Lightspeed_reverse_repeat_ft"
+      "ft:to(not require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
+     ])
 
-     [:x "<Plug>Lightspeed_t" "ft:to(false, true)"]
-     [:x "<Plug>Lightspeed_T" "ft:to(true, true)"]
-     [:n "<Plug>Lightspeed_t" "ft:to(false, true)"]
-     [:n "<Plug>Lightspeed_T" "ft:to(true, true)"]
-     [:o "<Plug>Lightspeed_t" "ft:to(false, true)"]
-     [:o "<Plug>Lightspeed_T" "ft:to(true, true)"]
+  (each [_ [lhs rhs-call] (ipairs plug-keys)]
+    (each [_ mode (ipairs [:n :x :o])]
+      (api.nvim_set_keymap mode lhs (.. "<cmd>lua require'lightspeed'." rhs-call "<cr>")
+                           {:noremap true :silent true})))
+  
+  ; Just for our convenience, to be used here in the script.
+  (each [_ [lhs rhs-call]
+         (ipairs
+           [["<Plug>Lightspeed_dotrepeat_s" "sx:to(false, false, true)"]
+            ["<Plug>Lightspeed_dotrepeat_S" "sx:to(true, false, true)"]
+            ["<Plug>Lightspeed_dotrepeat_x" "sx:to(false, true, true)"]
+            ["<Plug>Lightspeed_dotrepeat_X" "sx:to(true, true, true)"]
 
-     ; Just for our convenience, to be used here in the script.
-     [:o "<Plug>Lightspeed_dotrepeat_s" "sx:to(false, false, true)"]
-     [:o "<Plug>Lightspeed_dotrepeat_S" "sx:to(true, false, true)"]
-     [:o "<Plug>Lightspeed_dotrepeat_x" "sx:to(false, true, true)"]
-     [:o "<Plug>Lightspeed_dotrepeat_X" "sx:to(true, true, true)"]
-     [:o "<Plug>Lightspeed_dotrepeat_f" "ft:to(false, false, true)"]
-     [:o "<Plug>Lightspeed_dotrepeat_F" "ft:to(true, false, true)"]
-     [:o "<Plug>Lightspeed_dotrepeat_t" "ft:to(false, true, true)"]
-     [:o "<Plug>Lightspeed_dotrepeat_T" "ft:to(true, true, true)"]])
-
-  (each [_ [mode lhs rhs-call] (ipairs plug-keys)]
-    (api.nvim_set_keymap mode lhs (.. "<cmd>lua require'lightspeed'." rhs-call "<cr>")
+            ["<Plug>Lightspeed_dotrepeat_f" "ft:to(false, false, 'dot')"]
+            ["<Plug>Lightspeed_dotrepeat_F" "ft:to(true, false, 'dot')"]
+            ["<Plug>Lightspeed_dotrepeat_t" "ft:to(false, true, 'dot')"]
+            ["<Plug>Lightspeed_dotrepeat_T" "ft:to(true, true, 'dot')"]])]
+    (api.nvim_set_keymap :o lhs (.. "<cmd>lua require'lightspeed'." rhs-call "<cr>")
                          {:noremap true :silent true})))
 
 
@@ -1300,8 +1293,18 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 ; (1) These should be saved right here, because the repeated search
 ;     might have a match anyway.
 
-; (2) <C-o> will unfortunately ignore this if the line has not changed.
-;     https://github.com/neovim/neovim/issues/9874
+; (2) This is in fact coupled with `onscreen-match-positions`, so it's
+;     _much_ cleaner to implement the logic here than in `count`. In
+;     that case, we would have to duplicate the whole logic of
+;     transforming the input to the actual pattern (that might get
+;     arbitrarily complex with future enhancements).
+;     In the case of instant-repeating t/T, we _have to_ skip the first
+;     match, else we would find the same target in front of us again and
+;     again, and be stuck. Note that we could have solved that with a
+;     simple increment of `count`, without any complex checks, because
+;     when instant-repeating, we know that we should be right before a
+;     match - but as we have already implemented this hack for
+;     cold-repeat, it makes sense to let this handle instant-repeat too.
 
 ; (3) It makes no practical sense to dot-repeat an operation spanning
 ;     multiple groups exactly as it went ("delete again till the 27th

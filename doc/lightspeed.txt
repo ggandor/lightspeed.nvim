@@ -1,4 +1,4 @@
-*lightspeed.txt*      For Neovim version 0.5      Last change: 2021 September 05
+*lightspeed.txt*      For Neovim version 0.5      Last change: 2021 September 20
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -91,10 +91,11 @@ correction when you accidentally overshoot your target.
 
 This "instant-repeat" mode is active until you type any other character.
 
-To specify custom keys for triggering repeat, see |lightspeed-config|.
+To specify custom keys for triggering instant-repeat, see |lightspeed-config|.
 
-Note: If you would like to keep using `;` and `,` to trigger repeat in the
-      native way, see |lightspeed-custom-ft-repeat-mappings| for a workaround.
+If you would like to keep using `;` and `,` (or some other pair of keys) to be
+able to trigger repeat in the native way ("cold" repeat after finishing
+execution), see |lightspeed-custom-mappings|.
 
                                                        *lightspeed-enter-repeat*
 Pressing <enter> after invoking any of Lightspeed's commands searches with the
@@ -312,6 +313,11 @@ motion/operation semantics):
 `<Plug>Lightspeed_t`  1-character  forward   t-like
 `<Plug>Lightspeed_T`  1-character  backward  T-like
 
+The following correspond to the native `;` and `,` ("cold" repeat):
+
+`<Plug>Lightspeed_repeat_ft`
+`<Plug>Lightspeed_reverse_repeat_ft`
+
 Note: Be sure _not_ to use `-noremap`, as <Plug> mappings should be used
       recursively, by design.
 
@@ -323,52 +329,9 @@ the prefix triggering X-mode can be set in the `opts` table, see
 Lightspeed does not remap any keys for which there is a custom mapping already
 defined. If you wish to preserve the _native_ behaviour of some of the keys,
 for example f/t, simply |unmap| the given keys after the plugin has been
-loaded, or equivalently, map anything unused to the corresponding <Plug> keys,
-before the plugin has been loaded.
+loaded, or equivalently, map |<Nop>| or anything unused to the corresponding
+<Plug> keys, before the plugin has been loaded.
 
-                                          *lightspeed-custom-ft-repeat-mappings*
-You can trigger instant-repeat manually by tweaking the publicly exposed `ft`
-table, that stores the state for 1-character search. This way you can fool
-Lightspeed into restarting instant-repeat even after exiting.
-
-Note: The state tables are not considered as part of the official API yet;
-      changes might happen.
-
-To keep using `;` and `,` in the native way, add the following to your config: >
-
-    function repeat_ft(reverse)
-      local ls = require'lightspeed'
-      ls.ft['instant-repeat?'] = true
-      ls.ft:to(reverse, ls.ft['prev-t-like?'])
-    end
-    vim.api.nvim_set_keymap('n', ';', '<cmd>lua repeat_ft(false)<cr>',
-                            {noremap = true, silent = true})
-    vim.api.nvim_set_keymap('x', ';', '<cmd>lua repeat_ft(false)<cr>',
-                            {noremap = true, silent = true})
-    vim.api.nvim_set_keymap('n', ',', '<cmd>lua repeat_ft(true)<cr>',
-                            {noremap = true, silent = true})
-    vim.api.nvim_set_keymap('x', ',', '<cmd>lua repeat_ft(true)<cr>',
-                            {noremap = true, silent = true})
-<
-This gives you 99% of the native behaviour - for the sake of completeness, it
-should be noted that a count cannot be given in the middle of a sequence of
-repeats, only at the beginning (since, in the end, the keys will enter into
-instant-repeat mode, just like `f`/`F`/`t`/`T`).
-
-Note: Make sure to use `<cmd>`, and not `:`, at the beginning of the right
-      hand side, as Visual mode will be broken otherwise.
-
-The same in Vimscript: >
-    fun! s:RepeatFt(reverse)
-      lua require'lightspeed'.ft['instant-repeat?'] = true
-      lua require'lightspeed'.ft:to(vim.api.nvim_eval('a:reverse'),
-                                  \ require'lightspeed'.ft['prev-t-like?'])
-    endfun
-    nnoremap <silent> ; <cmd>call <SID>RepeatFt(v:false)<cr>
-    xnoremap <silent> ; <cmd>call <SID>RepeatFt(v:false)<cr>
-    nnoremap <silent> , <cmd>call <SID>RepeatFt(v:true)<cr>
-    xnoremap <silent> , <cmd>call <SID>RepeatFt(v:true)<cr>
-<
 ==============================================================================
 HIGHLIGHTING                                              *lightspeed-highlight*
 

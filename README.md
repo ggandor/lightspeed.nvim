@@ -214,15 +214,14 @@ This "instant-repeat" mode is active until you type any other character.
 By default, `;` and `,` are not utilized by the plugin anymore - you are free to
 remap them to more useful things (`:` and `localleader` are great contenders).
 If you are too used to the native Vim way, and want to keep using them for
-repeating, there are two different possibilities.
-
-First, you can specify custom keys for instant-repeat, in the `opts` table (see
-the configuration section). The keys will be temporarily hijacked by the plugin
-then, but the actual mappings will not be disturbed, so you can use them in
-multiple roles. If you would like the keys to actually restart the search and
-trigger repeat at any time, even after the plugin has finished executing
-(similar to the native behaviour), there is a workaround for that too - see `:h
-lightspeed-custom-ft-repeat-mappings`.
+repeating, there are two different possibilities. First, you can specify custom
+keys for instant-repeat in the `opts` table. The keys will be temporarily
+hijacked by the plugin then, but their actual mappings will not be disturbed, so
+you can use them in multiple roles. If you would like the keys to actually
+restart the search and trigger repeat at any time, even after the plugin has
+finished executing (similar to the native behaviour), there are dedicated
+`<Plug>` keys available for that. See the configuration section for both
+options.
 
 ### Repeating motions
 
@@ -306,12 +305,20 @@ To set alternative keymaps, you can use the following `<Plug>` keys in all modes
 <Plug>Lightspeed_T  -  1-character  backward  T-like
 ```
 
+The following keys are also available to emulate the native `;` and `,`
+functionality ("cold" repeat):
+
+```
+<Plug>Lightspeed_repeat_ft
+<Plug>Lightspeed_reverse_repeat_ft
+```
+
 (Note: `<Plug>` keys need to be mapped to recursively by design, do not use
 `-noremap` for them.)
 
 It is considered an exceptional request if one would like to revert to the
 native behaviour of certain keys, that is, would not like to use some features
-of the plugin at all; but in that case, all they has to do is to `unmap` the
+of the plugin at all; but in that case, all they have to do is to `unmap` the
 relevant keys after the plugin has been sourced (e.g. `unmap t | unmap T`).
 
 ### Highlight groups
