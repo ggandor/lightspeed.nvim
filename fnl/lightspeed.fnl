@@ -490,6 +490,25 @@ interrupted change-operation."
         ; Note: we're feeding count inside the seq itself.
         (pcall vim.fn.repeat#set seq -1)))))
 
+
+
+(fn get-plug-key [kind reverse? x-or-t? repeat-invoc]
+  (local ->bool #(-> $ not not))
+  (.. "<Plug>Lightspeed_"
+      (match repeat-invoc
+        :dot "dotrepeat_"
+        _ "")
+        ; Forcing to bools, as those values can be nils, and nil != false.
+      (match [kind (->bool reverse?) (->bool x-or-t?)]
+        [:ft false false] "f" 
+        [:ft true  false] "F"
+        [:ft false true ] "t"
+        [:ft true  true ] "T"
+        [:sx false false] "s"
+        [:sx false true ] "S"
+        [:sx true  false] "x"
+        [:sx true  true ] "X")))
+
 ; }}}
 ; 1-character search {{{
 
@@ -503,7 +522,6 @@ interrupted change-operation."
 ; issues than it absorbs, I guess. Time might prove me wrong.
 
 ; State for 1-character search that is persisted between invocations.
-
 ; TODO: refactor `sx` accordingly (maybe allow for cold-repeat too...)
 (local ft {:state {:instant {:in nil :stack []}
                    :dot {:in nil}
@@ -528,11 +546,8 @@ interrupted change-operation."
                                      (vim.tbl_map replace-keycodes))
         op-mode? (operator-pending-mode?)
         dot-repeatable-op? (dot-repeatable-operation?)
-        motion (if (and (not t-mode?) (not reverse?)) "f"
-                   (and (not t-mode?) reverse?) "F"
-                   (and t-mode? (not reverse?)) "t"
-                   (and t-mode? reverse?) "T")
-        cmd-for-dot-repeat (.. (replace-keycodes "<Plug>Lightspeed_dotrepeat_") motion)]
+        cmd-for-dot-repeat (replace-keycodes
+                             (get-plug-key :ft reverse? t-mode? :dot))]
 
     (macro exit [...] `(exit-template :ft false ,...))
     (macro exit-early [...] `(exit-template :ft true ,...))
@@ -599,23 +614,22 @@ interrupted change-operation."
                       mode (if (= (vim.fn.mode) :n) :n :x)  ; vim-cutlass compat (#28)
                       repeat? (or (= in2 repeat-key)
                                   (string.match (vim.fn.maparg in2 mode)
-                                                (.. "<Plug>Lightspeed_"
-                                                    (if t-mode? "t" "f"))))
+                                                (get-plug-key :ft false t-mode?)))
                       revert? (or (= in2 revert-key)
                                   (string.match (vim.fn.maparg in2 mode)
-                                                (.. "<Plug>Lightspeed_"
-                                                    (if t-mode? "T" "F"))))]
+                                                (get-plug-key :ft true t-mode?)))
+                      do-instant-repeat? (and ok? (or repeat? revert?))]
                   (hl:cleanup)
-                  (if (and ok? (or repeat? revert?))  ; instant-repeat
-                      (do (if revert? (match (table.remove self.state.instant.stack)
-                                        old-pos (vim.fn.cursor old-pos))
-                              repeat? (table.insert self.state.instant.stack
-                                                    (get-cursor-pos)))
-                          (ft:to reverse? t-mode?
-                                 (if revert? :reverted-instant :instant)))
+                  (if do-instant-repeat?
+                      (do
+                        (if revert? (match (table.remove self.state.instant.stack)
+                                      old-pos (vim.fn.cursor old-pos))
+                            repeat? (table.insert self.state.instant.stack (get-cursor-pos)))
+                        (ft:to reverse? t-mode? (if revert? :reverted-instant :instant)))
                       (exit
                         (set self.state.instant.stack [])
-                        (vim.fn.feedkeys (if ok? in2 (replace-keycodes "<esc>"))
+                        (vim.fn.feedkeys (if ok? in2
+                                             (replace-keycodes "<esc>"))
                                          :i)))))))))))
 
 
@@ -866,10 +880,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         ; We _never_ want to autojump in OP mode, since that would execute
         ; the operation without allowing us to select a labeled target.
         jump-to-first? (and opts.jump_to_first_match (not op-mode?))
-        cmd-for-dot-repeat (replace-keycodes (.. "<Plug>Lightspeed_dotrepeat_"
-                                                 (if invoked-in-x-mode?
-                                                     (if reverse? "X" "x")
-                                                     (if reverse? "S" "s"))))]
+        cmd-for-dot-repeat (replace-keycodes
+                             (get-plug-key :sx reverse? invoked-in-x-mode? :dot))]
+
     (var enter-repeat? nil)
     (var new-search? nil)
     (var x-mode? nil)
