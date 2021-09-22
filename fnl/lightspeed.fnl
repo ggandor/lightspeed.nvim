@@ -731,13 +731,11 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                 [col [ch1 hl.group.unlabeled-match] [ch2 hl.group.unlabeled-match]])
 
             partially-covered?  ; labeled
-            (if init-round?
-                [(inc col) [ch2 overlapped-label-hl] nil]
-                ; The full beacon is shown now in the 2nd round, but the label
-                ; keeps the same special highlight. (It is important for a label
-                ; to stay unchanged once shown up, if possible, else the eye might
-                ; get confused, which kinda beats the purpose.)
-                [col [ch1 hl.group.masked-ch] [ch2 overlapped-label-hl]])
+            ; Note: The label keeps the same special highlight in the 2nd round.
+            ; (It is important for a label to stay unchanged once shown up, if
+            ; possible, else the eye might get confused, which kinda beats the
+            ; purpose.)
+            [(inc col) [ch2 overlapped-label-hl] nil]
 
             ; `repeat?` is mutually exclusive both with `(not labeled?)` and
             ; `partially-covered?` (since only the second round takes place).
