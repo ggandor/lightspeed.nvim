@@ -1215,10 +1215,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
      ["<Plug>Lightspeed_T" "ft:to(true, true)"]
 
      ; "cold" repeat (;/,-like) (note: we should not start the name with ft_ if using `hasmapto`)
-     ["<Plug>Lightspeed_repeat_ft"
-      "ft:to(require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
-     ["<Plug>Lightspeed_reverse_repeat_ft"
-      "ft:to(not require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
+     ["<Plug>Lightspeed_;" "ft:to(require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
+     ["<Plug>Lightspeed_," "ft:to(not require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
      ])
 
   (each [_ [lhs rhs-call] (ipairs plug-keys)]

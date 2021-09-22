@@ -315,8 +315,8 @@ motion/operation semantics):
 
 The following correspond to the native `;` and `,` ("cold" repeat):
 
-`<Plug>Lightspeed_repeat_ft`
-`<Plug>Lightspeed_reverse_repeat_ft`
+`<Plug>Lightspeed_;`
+`<Plug>Lightspeed_,`
 
 Note: Be sure _not_ to use `-noremap`, as <Plug> mappings should be used
       recursively, by design.

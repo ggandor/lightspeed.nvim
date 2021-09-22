@@ -309,8 +309,8 @@ The following keys are also available to emulate the native `;` and `,`
 functionality ("cold" repeat):
 
 ```
-<Plug>Lightspeed_repeat_ft
-<Plug>Lightspeed_reverse_repeat_ft
+<Plug>Lightspeed_;
+<Plug>Lightspeed_,
 ```
 
 (Note: `<Plug>` keys need to be mapped to recursively by design, do not use
