@@ -649,7 +649,7 @@ interrupted change-operation."
 (fn get-labels []
   (or opts.labels
       (if opts.jump_to_first_match
-        ["s" "f" "n" "/" "u" "t" "q" "S" "F" "G" "H" "L" "M" "N" "?" "U" "R" "Z" "T" "Q"]
+        ["f" "s" "n" "u" "t" "/" "q" "F" "S" "G" "H" "L" "M" "N" "U" "R" "T" "Z" "?" "Q"]
         ["f" "j" "d" "k" "s" "l" "a" ";" "e" "i" "w" "o" "g" "h" "v" "n" "c" "m" "z" "."])))
 
 
