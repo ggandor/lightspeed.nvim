@@ -313,13 +313,18 @@ motion/operation semantics):
 `<Plug>Lightspeed_t`  1-character  forward   t-like
 `<Plug>Lightspeed_T`  1-character  backward  T-like
 
-The following correspond to the native `;` and `,` ("cold" repeat):
-
-`<Plug>Lightspeed_;`
-`<Plug>Lightspeed_,`
-
 Note: Be sure _not_ to use `-noremap`, as <Plug> mappings should be used
       recursively, by design.
+
+The following correspond to the native `;` and `,` ("cold" repeat):
+
+`<Plug>Lightspeed_;_sx`
+`<Plug>Lightspeed_,_sx`
+`<Plug>Lightspeed_;_ft`
+`<Plug>Lightspeed_,_ft`
+
+Note: These are currently experimental and might be changed or removed in the
+      future.
 
 For 2-character search, the keys for cycling between groups of matches, and
 the prefix triggering X-mode can be set in the `opts` table, see

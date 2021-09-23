@@ -817,54 +817,67 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 
 
 ; State for 2-character search that is persisted between invocations.
-(local sx {:prev-search {:in1 nil
-                         :in2 nil}
-           :prev-dot-repeatable-search {:in1 nil
-                                        :in2 nil
-                                        :in3 nil
-                                        :x-mode? nil}})
+(local sx {:state {:dot {:in1 nil
+                         :in2 nil
+                         :in3 nil
+                         :x-mode? nil}
+                   ; Enter-repeat uses these inputs too.
+                   :cold {:in1 nil
+                          :in2 nil
+                          :reverse? nil
+                          :x-mode? nil}
+                   }})
 
-(fn sx.to [self reverse? invoked-in-x-mode? dot-repeat?]
+(fn sx.to [self reverse? invoked-in-x-mode? repeat-invoc]
   "Entry point for 2-character search."
 
-  ; local helper functions
-  ; ----------------------
+  ; local helper macros & functions
+  ; -------------------------------
   ; #1 macro `with-hl-chores`
-  ; #2 fn    `cycle-through-match-groups`
-  ; #3 fn    `save-state-for`
-  ; #4 fn    `jump-with-wrap!`
-  ; #5 fn    `jump-and-ignore-ch2-until-timeout!`
+  ; #2 macro `exit`
+  ; #3 macro `exit-early`
+  ; #4 fn    `cycle-through-match-groups`
+  ; #5 fn    `save-state-for-repeat`
+  ; #6 fn    `jump-with-wrap!`
+  ; #7 fn    `jump-and-ignore-ch2-until-timeout!`
 
   ; algorithm skeleton
   ; ------------------
   ; get 1st input (in1) (direct input or persisted state)
   ; build 'match map' for in1
-  ; if no match: exit
+  ; if no match: exit-early (#3)
   ; elif only match:
-  ;   save state for repeats & jump w/ timeout & exit (#3,#5)
+  ;   save state for repeats & jump w/ timeout & exit (#5,#7,#2)
   ; else:
   ;   calculate 'shortcutable' positions
   ;   if new search (not persisted state):
   ;     light up beacons (see glossary) (#1)
   ;   get 2nd input (in2) (direct input or persisted state)
   ;   if in2 is a shortcut-label:
-  ;     save state for repeats & jump & exit (#3,#4)
+  ;     save state for repeats & jump & exit (#5,#6,#2)
   ;   else:
-  ;     save state for repeats (#3)
-  ;     if no match: exit
+  ;     save state for repeats (#5)
+  ;     if no match: exit-early (#3)
   ;     elif only match:
-  ;       jump & exit (#4)
+  ;       jump & exit (#6,#2)
   ;     else:
-  ;       if auto-jump to first match is set: jump (#4)
+  ;       if auto-jump to first match is set: jump (#6)
+  ;       if doing "cold" repeat:
+  ;          light up beacons w/o labels (#1)
+  ;          & get 3rd input & exit w/ feeding it (#2)
   ;       if not dot-repeating: light up beacons (#1)
-  ;       loop for getting 3rd input (in3) (#2)
-  ;           - potentially switching match groups here,
-  ;             the labels' referred targets might change
+  ;       loop for getting 3rd input (in3) (#4)
+  ;          potentially switching match groups here,
+  ;          the labels' referred targets might change
   ;       if in3 is a label in use:
-  ;         jump & exit (#4)
-  ;       else: exit
+  ;         jump & exit (#6,#2)
+  ;       elif auto-jump to first match is set:
+  ;         exit w/ feeding in3 (#2)
+  ;       else: exit-early (#3)
 
-  (let [op-mode? (operator-pending-mode?)
+  (let [dot-repeat? (= repeat-invoc :dot)
+        cold-repeat? (= repeat-invoc :cold)
+        op-mode? (operator-pending-mode?)
         change-op? (change-operation?)
         delete-op? (delete-operation?)
         dot-repeatable-op? (dot-repeatable-operation?)
@@ -879,15 +892,16 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         cmd-for-dot-repeat (replace-keycodes
                              (get-plug-key :sx reverse? invoked-in-x-mode? :dot))]
 
+    (var x-mode? invoked-in-x-mode?)
     (var enter-repeat? nil)
     (var new-search? nil)
-    (var x-mode? nil)
 
     (macro exit [...] `(exit-template :sx false ,...))
     (macro exit-early [...] `(exit-template :sx true ,...))
 
     (macro with-hl-chores [...]
-      `(do (when opts.grey_out_search_area (grey-out-search-area reverse?))
+      `(do (when (and opts.grey_out_search_area (not cold-repeat?))
+             (grey-out-search-area reverse?))
            (do ,...)
            (highlight-cursor)
            (vim.cmd :redraw)))
@@ -897,7 +911,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
       (var group-offset 0)
       (var loop? true)
       (while loop?
-        (match (or (when dot-repeat? self.prev-dot-repeatable-search.in3)
+        (match (or (when dot-repeat? self.state.dot.in3)
                    (get-input-and-clean-up)
                    (do (set loop? false)  ; <esc> or <c-c> should exit the loop
                        (set ret nil)
@@ -916,17 +930,15 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                    {: group-offset :repeat? enter-repeat?}))))))
       ret)
 
-    (fn save-state-for [{: enter-repeat : dot-repeat}]
+    (fn save-state-for-repeat [{: cold : dot}]
       (when new-search?
-        ; Arbitrary choice: let dot-repeatable ops _not_ update the previous
-        ; normal/visual/yank search - this seems more useful.
-        (if dot-repeatable-op? (when dot-repeat
-                                 (tset dot-repeat :x-mode? x-mode?)
-                                 (set self.prev-dot-repeatable-search dot-repeat))
-            ; FIXME: We should save `x-mode?` for enter-repeat too,
-            ;        or pressing <enter> should be alowed after the prefix.
-            ;        (Probably the latter.)
-            enter-repeat (set self.prev-search enter-repeat))))
+        (when cold 
+          (set self.state.cold (doto cold
+                                 (tset :x-mode? x-mode?)
+                                 (tset :reverse? reverse?))))
+        (when (and dot-repeatable-op? dot)
+          (set self.state.dot (doto dot
+                                (tset :x-mode? x-mode?))))))
 
     (local jump-with-wrap!
       (do
@@ -1030,36 +1042,38 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 
     (enter :sx)
 
-    (when-not dot-repeat?
+    (when-not repeat-invoc
       (echo "")  ; Clean up the command line.
       (with-hl-chores
         (when opts.highlight_unique_chars
           (highlight-unique-chars reverse?))))
 
-    (match (if dot-repeat?
-             (do (set x-mode? self.prev-dot-repeatable-search.x-mode?)
-                 self.prev-dot-repeatable-search.in1)
-             (match (or (get-input-and-clean-up)
-                        (exit-early))
-               ; Here we can handle any other modifier key as "zeroth" input,
-               ; if the need arises (e.g. regex search).
-               in0 (do (set enter-repeat? (= in0 "\r"))  ; User hit <enter> right away: repeat previous search.
-                       (set new-search? (not (or enter-repeat? dot-repeat?)))
-                       (set x-mode? (or invoked-in-x-mode?
-                                        (= in0 x-mode-prefix-key)))
-                       (if enter-repeat?
-                           (or self.prev-search.in1
-                               (exit-early
-                                 (echo-no-prev-search)))
-
-                           (and x-mode? (not invoked-in-x-mode?))
-                           (or (get-input-and-clean-up)  ; Get the "true" first input.
-                               (exit-early))
-
-                           in0))))
+    (match (if dot-repeat? (do (set x-mode? self.state.dot.x-mode?)
+                               self.state.dot.in1)
+               cold-repeat? self.state.cold.in1
+               (match (or (get-input-and-clean-up)
+                          (exit-early))
+                 ; Here we can handle any other modifier key as "zeroth" input,
+                 ; if the need arises (e.g. regex search).
+                 ; TODO: Refactor this block...
+                 in0 (do (match in0
+                           "\r" (set enter-repeat? true)
+                           x-mode-prefix-key (set x-mode? true))
+                         (var in0 in0)
+                         (when (and x-mode? (not invoked-in-x-mode?))
+                           ; Get the "true" first input then.
+                           (match (or (get-input-and-clean-up)
+                                      (exit-early))
+                             "\r" (set enter-repeat? true)
+                             in0* (set in0 in0*)))
+                         (set new-search? (not (or repeat-invoc enter-repeat?)))
+                         (if enter-repeat? (or self.state.cold.in1
+                                           (exit-early
+                                             (echo-no-prev-search)))
+                             in0))))
       in1
-      (let [prev-in2 (if enter-repeat? self.prev-search.in2
-                         dot-repeat? self.prev-dot-repeatable-search.in2)]
+      (let [prev-in2 (if (or cold-repeat? enter-repeat?) self.state.cold.in2
+                         dot-repeat? self.state.dot.in2)]
         (match (or (get-match-map-for in1 reverse?)
                    (exit-early
                      (echo-not-found (.. in1 (or prev-in2 "")))))
@@ -1067,8 +1081,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
           (if (or new-search? (= ch2 prev-in2))
               ; Successful exit, option #1: jump to a unique character right after the first input.
               (exit
-                (save-state-for {:enter-repeat {: in1 :in2 ch2}
-                                 :dot-repeat {: in1 :in2 ch2 :in3 (. labels 1)}})
+                (save-state-for-repeat {:cold {: in1 :in2 ch2}
+                                        :dot {: in1 :in2 ch2 :in3 (. labels 1)}})
                 (jump-and-ignore-ch2-until-timeout! pos ch2))
               (exit-early
                 (echo-not-found (.. in1 prev-in2))))
@@ -1097,64 +1111,97 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                 [pos ch2 &as shortcut]
                 ; Successful exit, option #2: selecting a shortcut-label.
                 (exit
-                  (save-state-for {:enter-repeat {: in1 :in2 ch2}
-                                   :dot-repeat {: in1 :in2 ch2 :in3 in2}})
+                  (save-state-for-repeat {:cold {: in1 :in2 ch2}
+                                          :dot {: in1 :in2 ch2 :in3 in2}})
                   (jump-with-wrap! pos))
 
                 _
                 (do
-                  (save-state-for {:enter-repeat {: in1 : in2}  ; endnote #1
-                                   ; For the moment, set the first match as the target.
-                                   :dot-repeat {: in1 : in2 :in3 (. labels 1)}})
+                  (save-state-for-repeat
+                    {:cold {: in1 : in2}  ; endnote #1
+                     ; For the moment, set the first match as the target.
+                     :dot {: in1 : in2 :in3 (. labels 1)}})
                   (match (or (. match-map in2)
                              (exit-early
                                (echo-not-found (.. in1 in2))))
                     positions
-                    (let [[first & rest] positions
+                    (let [[[line col &as first] & rest] positions
+                          ; TODO: Yeah, these lispy manipulations are very ugly
+                          ;       w/o linked lists... try to refactor this part
+                          ;       to sg more idiomatic.
+                          [f-rest & r-rest] rest
+                          ; Skipping makes no sense in the forward direction,
+                          ; since in OP-mode (when we land before the target)
+                          ; we always have to choose a label.
+                          [next-line next-col] (vim.fn.searchpos "\\_." :nWb)
+                          skip-one? (and cold-repeat? x-mode? reverse?
+                                         ; The first match is found at the saved
+                                         ; neighbouring position. (`(dec next-col)`
+                                         ; is an OK hack here, as a match can
+                                         ; only be on one line at once.)
+                                         (= line next-line) (= col (dec next-col)))
+                          [first rest positions] (if skip-one?
+                                                     [f-rest r-rest rest]
+                                                     [first rest positions])
+                          ; TODO: add `cold-repeat?` here when implementing the labeled version.
                           positions-to-label (if jump-to-first? rest positions)]
-                      (when (or jump-to-first? (empty? rest))
+                      (when (and first  ; there might be none if skipped one
+                                 (or cold-repeat? jump-to-first? (empty? rest)))
                         (jump-with-wrap! first))
                       (if (empty? rest)
-                        ; Successful exit, option #3: jumped to the only match automatically.
-                        (exit)
-                        (do
-                          ; Operations that spanned multiple groups are dot-repeated as
-                          ; <enter>-repeat, i.e., only the search pattern is saved then
-                          ; (endnote #3).
-                          (when-not (and dot-repeat? self.prev-dot-repeatable-search.in3)
-                            ; Lighting up beacons again, now only for pairs with `in2`
-                            ; as second character.
+                          ; Successful exit, option #3: jumped to the only match
+                          ; automatically.
+                          (exit)
+                          ; A special exit point - in case of "cold" repeat, we
+                          ; just wait for another input & unconditionally
+                          ; feed it, to be able to highlight the remaining
+                          ; matches in a clean way.
+                          cold-repeat?
+                          (when-not op-mode?
                             (with-hl-chores
-                              (set-beacon-groups in2 positions-to-label labels shortcuts
-                                                 {:repeat? enter-repeat?})))
-                          (match (or (cycle-through-match-groups in2 positions-to-label
-                                                                 shortcuts enter-repeat?)
-                                     ; Note: highlight is cleaned up by `cycle-through...`.
-                                     (exit-early))  ; <C-c> case
-                            [group-offset in3]
-                            (do
-                              (when (and dot-repeatable-op? (not dot-repeat?))
+                              (each [_ [line col] (ipairs rest)]
+                                (hl:add-hl hl.group.one-char-match
+                                           (dec line) (dec col) (inc col))))
+                              (exit
+                                (-> (or (get-input-and-clean-up) "")
+                                    (vim.fn.feedkeys :i))))
+                          (do
+                            ; Operations that spanned multiple groups are dot-repeated as
+                            ; <enter>-repeat, i.e., only the search pattern is saved then
+                            ; (endnote #3).
+                            (when-not (and dot-repeat? self.state.dot.in3)
+                              ; Lighting up beacons again, now only for pairs with `in2`
+                              ; as second character.
+                              (with-hl-chores
+                                (set-beacon-groups in2 positions-to-label labels shortcuts
+                                                   {:repeat? enter-repeat?})))
+                            (match (or (cycle-through-match-groups in2 positions-to-label
+                                                                   shortcuts enter-repeat?)
+                                       ; Note: highlight is cleaned up by `cycle-through...`.
+                                       (exit-early))  ; <C-c> case
+                              [group-offset in3]
+                              (do
                                 ; Reminder: above we have already set this to the character
                                 ; of the first label, as a default. (We might had only one
                                 ; match, and jumped automatically, not reaching this point.)
-                                (set self.prev-dot-repeatable-search.in3
-                                     ; If the operation spanned multiple groups, we are
-                                     ; switching dot-repeat to <enter>-repeat (endnote #3).
-                                     (if (= group-offset 0) in3 nil)))
-                              (match (-?>> in3
-                                           (. (reverse-lookup labels))  ; valid label (indexed on the list)?
-                                           (+ (* group-offset (length labels)))
-                                           (. positions-to-label))  ; currently active?
-                                ; Successful exit, option #4: selecting an active label.
-                                pos-of-active-label (exit
-                                                      (jump-with-wrap! pos-of-active-label))
-                                _ (if jump-to-first?
-                                      ; Successful exit, option #5: falling through with any
-                                      ; non-label key in "autojump" mode (so that we can
-                                      ; continue editing right away).
-                                      (exit
-                                        (vim.fn.feedkeys in3 :i))
-                                      (exit-early))))))))))))))))))
+                                ; If the operation spanned multiple groups, we are switching
+                                ; dot-repeat to <enter>-repeat (endnote #3).
+                                (when (and dot-repeatable-op? (not dot-repeat?))
+                                  (set self.state.dot.in3 (if (= group-offset 0) in3 nil)))
+                                (match (-?>> in3
+                                             (. (reverse-lookup labels))  ; valid label (indexed on the list)?
+                                             (+ (* group-offset (length labels)))
+                                             (. positions-to-label))  ; currently active?
+                                  ; Successful exit, option #4: selecting an active label.
+                                  pos-of-active-label (exit
+                                                        (jump-with-wrap! pos-of-active-label))
+                                  _ (if jump-to-first?
+                                        ; Successful exit, option #5: falling through with any
+                                        ; non-label key in "autojump" mode (so that we can
+                                        ; continue editing right away).
+                                        (exit
+                                          (vim.fn.feedkeys in3 :i))
+                                        (exit-early))))))))))))))))))
 
 ; }}}
 ; Handling editor options {{{
@@ -1212,7 +1259,13 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
      ["<Plug>Lightspeed_t" "ft:to(false, true)"]
      ["<Plug>Lightspeed_T" "ft:to(true, true)"]
 
-     ; "cold" repeat (;/,-like) (note: we should not start the name with ft_ if using `hasmapto`)
+     ; "cold" repeat (;/,-like) (note: we should not start the name with ft_ or sx_ if using `hasmapto`)
+     ["<Plug>Lightspeed_;_sx" "sx:to(require'lightspeed'.sx.state.cold['reverse?'], require'lightspeed'.sx.state.cold['x-mode?'], 'cold')"]
+     ["<Plug>Lightspeed_,_sx" "sx:to(not require'lightspeed'.sx.state.cold['reverse?'], require'lightspeed'.sx.state.cold['x-mode?'], 'cold')"]
+
+     ["<Plug>Lightspeed_;_ft" "ft:to(require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
+     ["<Plug>Lightspeed_,_ft" "ft:to(not require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
+     ; TODO: let these repeat the last one
      ["<Plug>Lightspeed_;" "ft:to(require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
      ["<Plug>Lightspeed_," "ft:to(not require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
      ])
@@ -1225,10 +1278,10 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
   ; Just for our convenience, to be used here in the script.
   (each [_ [lhs rhs-call]
          (ipairs
-           [["<Plug>Lightspeed_dotrepeat_s" "sx:to(false, false, true)"]
-            ["<Plug>Lightspeed_dotrepeat_S" "sx:to(true, false, true)"]
-            ["<Plug>Lightspeed_dotrepeat_x" "sx:to(false, true, true)"]
-            ["<Plug>Lightspeed_dotrepeat_X" "sx:to(true, true, true)"]
+           [["<Plug>Lightspeed_dotrepeat_s" "sx:to(false, false, 'dot')"]
+            ["<Plug>Lightspeed_dotrepeat_S" "sx:to(true, false, 'dot')"]
+            ["<Plug>Lightspeed_dotrepeat_x" "sx:to(false, true, 'dot')"]
+            ["<Plug>Lightspeed_dotrepeat_X" "sx:to(true, true, 'dot')"]
 
             ["<Plug>Lightspeed_dotrepeat_f" "ft:to(false, false, 'dot')"]
             ["<Plug>Lightspeed_dotrepeat_F" "ft:to(true, false, 'dot')"]

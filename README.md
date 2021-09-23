@@ -305,16 +305,21 @@ To set alternative keymaps, you can use the following `<Plug>` keys in all modes
 <Plug>Lightspeed_T  -  1-character  backward  T-like
 ```
 
-The following keys are also available to emulate the native `;` and `,`
-functionality ("cold" repeat):
-
-```
-<Plug>Lightspeed_;
-<Plug>Lightspeed_,
-```
-
 (Note: `<Plug>` keys need to be mapped to recursively by design, do not use
 `-noremap` for them.)
+
+The following keys are also available to emulate the native `;` and `,`
+functionality ("cold" repeat).
+
+***Note***: _These are currently experimental; neither the API nor the
+behaviours are fixed yet._
+
+```
+<Plug>Lightspeed_;_sx
+<Plug>Lightspeed_,_sx
+<Plug>Lightspeed_;_ft
+<Plug>Lightspeed_,_ft
+```
 
 It is considered an exceptional request if one would like to revert to the
 native behaviour of certain keys, that is, would not like to use some features
