@@ -241,7 +241,7 @@ character instead."
 
 (fn push-cursor! [direction]
   "Push cursor 1 character to the left or right, possibly beyond EOL."
-  (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW") ?stopline))
+  (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW")))
 
 
 (fn cursor-before-eof? []
@@ -688,7 +688,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
             ; In the forward direction, the previous match should be on top
             ; (overlapping the recent), in the reverse direction, the recent one.
             ; (The _label_ should be visible in both cases.)
-            (table.insert (. match-map ch2) [line col partially-covered? ?ch3])
+            (table.insert (. match-map ch2) [line col partially-covered?])
             (when (and overlap-with-prev? reverse?)
               ; Set the previous match to 'partially-covered'.
               (tset (last (. match-map prev.ch2)) 3 true))
@@ -753,20 +753,20 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                        {: group-offset : init-round? : repeat?}]
   (let [group-offset (or group-offset 0)
         |labels| (length labels)
-        ; Set one group of beacons that uses up the available target labels.
-        set-group (fn [start distant?]
-                    (for [i start (dec (+ start |labels|))  ; end is inclusive
-                          :until (or (< i 1) (> i (length positions)))]
-                      (let [pos (. positions i)
-                            ; 1-indexing is not a great match for modulo arithmetic.
-                            label (or (. labels (% i |labels|))
-                                      (. labels |labels|))  ; when mod = 0
-                            shortcut? (when-not distant? (. shortcuts pos))]
-                        (set-beacon-at pos ch2 label {:labeled? true
-                                                      : init-round? : distant?
-                                                      : repeat? : shortcut?}))))
         start (inc (* group-offset |labels|))
-        end (dec (+ start |labels|))]
+        ; Set one group of beacons that uses up the available target labels.
+        set-group
+        (fn [start distant?]
+          (for [i start (dec (+ start |labels|))  ; end is inclusive
+                :until (or (< i 1)
+                           (> i (length positions)))]
+            (let [pos (. positions i)
+                  ; 1-indexing is not a great match for modulo arithmetic.
+                  label (or (. labels (% i |labels|))
+                            (. labels |labels|))  ; when mod = 0
+                  shortcut? (when-not distant? (. shortcuts pos))]
+              (set-beacon-at pos ch2 label {:labeled? true : init-round?
+                                            : distant? : repeat? : shortcut?}))))]
     ; Inner group (directly reachable matches).
     (set-group start false)
     ; Outer group (matches that are one group switch away).
