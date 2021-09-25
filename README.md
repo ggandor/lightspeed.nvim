@@ -16,7 +16,7 @@ need a few _context-independent_ motions, that are flexible enough to do the job
 all the time, and can be invoked/operated with _total automatism_, without being
 aware of the type or the surroundings of the target; (2) for that, the most
 adequate basis is unidirectional 1- and 2-character search; (3) the interface
-should be optimized for the _common case_.
+should be _optimized for the common case_.
 
 #### Railways versus jetpacks
 
@@ -32,7 +32,7 @@ need to think about motions anymore - label-mode "sneaking" gets you everywhere
 you need to be, with maximal precision. It is like having a _jetpack_ on you all
 the time.
 
-#### A clairvoyant traveler
+#### Always a step ahead of you
 
 Lightspeed, in particular, is like having a jetpack _with a GPS_. While
 preserving the minimalist approach of Sneak, it has a bunch of brand-new
@@ -54,7 +54,7 @@ pause between entering your search pattern and selecting the target. Once you
 try it, you will never look back.
 
 To see these features in action, check the [screen
-recordings](https://github.com/ggandor/lightspeed.nvim#-an-in-depth-introduction-of-the-key-features)
+recordings](#-an-in-depth-introduction-of-the-key-features)
 in the in-depth introduction below.
 
 #### Universal motions
@@ -64,9 +64,9 @@ motions working over multiple lines**, with same-key repeat available (similar
 to [clever-f](https://github.com/rhysd/clever-f.vim) or Sneak's "clever" modes),
 and a so-called "X-mode" providing **exclusive/inclusive variations for
 2-character search**. Together the four (bi-directional) motions make it
-possible to reach the whole window area with high efficiency in all situations
-when there is no obvious _atomic_ alternative - like `w`, `{`, or `%` -
-available.
+possible to reach and operate on the whole window area with high efficiency in
+all situations when there is no obvious _atomic_ alternative - like `w`, `{`, or
+`%` - available.
 
 #### Other quality-of-life features
 
@@ -82,6 +82,18 @@ available.
   any input (opt-in)
 * the cursor stays visible all the time
 * uses extmarks, and does not mess with the Conceal group
+
+## Sky chart
+
+* [Getting started](#-getting-started)
+* [Usage](#-usage)
+* [Configuration](#-configuration)
+* [An in-depth introduction of the key features](#-an-in-depth-introduction-of-the-key-features)
+* [Coming sooner or later](#-coming-sooner-or-later)
+* [Why is there no feature X or Y?](#-why-is-there-no-feature-x-or-y)
+* [Goals and non-goals](#-goals-and-non-goals)
+* [Contributing](#-contributing)
+* [Inspired by](#-inspired-by)
 
 ## 🚀 Getting started
 
@@ -113,18 +125,17 @@ default settings:
 That is, 
 - invoke in the forward (`s`) or backward (`S`) direction
 - enter 1st character of the search pattern (might [short-circuit after
-  this](https://github.com/ggandor/lightspeed.nvim#jump-on-partial-input), if
-  the character is unique in the search direction) 
+  this](#jump-on-partial-input), if the character is unique in the search
+  direction) 
 - _the "beacons" are lit at this point; all potential matches are labeled (char1 + ?)_
 - enter 2nd character of the search pattern (might short-circuit after this, if
   there is only one match), or the label character, if the target is
-  [shortcutable](https://github.com/ggandor/lightspeed.nvim#shortcuts).
+  [shortcutable](#shortcuts).
 - _certain beacons are extinguished; only char1 + char2 matches remain_
 - _the cursor automatically jumps to the first match by default; pressing any
   other key than a group-switch or a target label exits the plugin now_
 - optionally [cycle through the groups of
-  matches](https://github.com/ggandor/lightspeed.nvim#grouping-matches-by-distance)
-  that can be labeled at once
+  matches](#grouping-matches-by-distance) that can be labeled at once
 - choose a labeled target to jump to (in the current group)
 
 In Operator-pending mode the search is invoked with `z`/`Z`, acknowledging that
@@ -192,8 +203,8 @@ All other beacons on top of `A` `X` matches look like:
 
 where the first field (the place of `X`, showing the character masked by the
 label) might be overlapped by the label of another match, and `label` itself
-might be a [shortcut](https://github.com/ggandor/lightspeed.nvim#shortcuts),
-with a filled background (the inverse of a regular label).
+might be a [shortcut](#shortcuts), with a filled background (the inverse of a
+regular label).
 
 ### 1-character search (f/t)
 
@@ -235,8 +246,7 @@ special cases, see `:h lightspeed-dot-repeat`.
 
 For more details, see the docs (`:h lightspeed-usage`, `:h
 lightspeed-default-mappings`), and the [in-depth
-introduction](https://github.com/ggandor/lightspeed.nvim#-an-in-depth-introduction-of-the-key-features)
-below.
+introduction](#-an-in-depth-introduction-of-the-key-features) below.
 
 ## 🔧 Configuration
 
