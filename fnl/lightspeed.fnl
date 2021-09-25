@@ -351,7 +351,7 @@ early termination in loops."
                       ; ...regardless of whether it _actually_ moved
                       :moved-the-cursor)))
 
-    (fn skip-to-next-onscreen-pos! []
+    (fn skip-to-next-in-window-pos! []
       (local [line col &as from-pos] (get-cursor-pos))
       (match (if (< col left-bound) (if reverse? (when (>= (dec line) stopline)
                                                    [(dec line) right-bound])
@@ -377,7 +377,7 @@ early termination in loops."
                   :not-in-fold
                   (if (or vim.wo.wrap (<= left-bound col right-bound))  ; = on-screen
                     (do (++ match-count) pos)
-                    (match (skip-to-next-onscreen-pos!)
+                    (match (skip-to-next-in-window-pos!)
                       :moved-the-cursor (rec true)  ; true -> we might be _on_ a match
                       _ (cleanup))))))))))
 

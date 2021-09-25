@@ -346,7 +346,7 @@ local function onscreen_match_positions(pattern, reverse_3f, _82_)
       return "moved-the-cursor"
     end
   end
-  local function skip_to_next_onscreen_pos_21()
+  local function skip_to_next_in_window_pos_21()
     local _local_92_ = get_cursor_pos()
     local line = _local_92_[1]
     local col = _local_92_[2]
@@ -416,7 +416,7 @@ local function onscreen_match_positions(pattern, reverse_3f, _82_)
               match_count = (match_count + 1)
               return pos
             else
-              local _108_ = skip_to_next_onscreen_pos_21()
+              local _108_ = skip_to_next_in_window_pos_21()
               if (_108_ == "moved-the-cursor") then
                 return rec(true)
               else
