@@ -573,7 +573,7 @@ interrupted change-operation."
 
         ; We should get this before the loop, because `onscreen-match-positions`
         ; moves the cursor while executing.
-        (local [next-line next-col] (vim.fn.searchpos "\\_." (.. :nW (if reverse?  :b ""))))
+        (local [next-line next-col] (vim.fn.searchpos "\\_." (if reverse? :nWb :nW)))
         (var match-pos nil)
         (var i 0)
         (each [[line col &as pos]
@@ -633,14 +633,12 @@ interrupted change-operation."
 
 ; The workaround described in :h lightspeed-custom-ft-repeat-mappings used these fields.
 (let [deprec-msg [["ligthspeed.nvim" :Question]
-                  [": You're trying to access deprecated fields in the lightspeed.ft table.\n" :Normal]
+                  [": You're trying to access deprecated fields in the lightspeed.ft table.\n"]
                   ["There are dedicated <Plug> keys available for native-like "]
-                  [";" :Visual] [" and " :Normal] ["," :Visual] [" functionality now.\n" :Normal]
-                  ["See " :Normal] [":h lightspeed-custom-mappings" :Visual] ["." :Normal]]]
+                  [";" :Visual] [" and "] ["," :Visual] [" functionality now.\n"]
+                  ["See "] [":h lightspeed-custom-mappings" :Visual] ["."]]]
   (setmetatable ft {:__index (fn [t k]
-                               (when (one-of? k
-                                       :instant-repeat?
-                                       :prev-t-like?)
+                               (when (one-of? k :instant-repeat? :prev-t-like?)
                                  (api.nvim_echo deprec-msg true {})))}))
 
 ; }}}
@@ -649,13 +647,15 @@ interrupted change-operation."
 (fn get-labels []
   (or opts.labels
       (if opts.jump_to_first_match
-        ["f" "s" "n" "u" "t" "/" "q" "F" "S" "G" "H" "L" "M" "N" "U" "R" "T" "Z" "?" "Q"]
-        ["f" "j" "d" "k" "s" "l" "a" ";" "e" "i" "w" "o" "g" "h" "v" "n" "c" "m" "z" "."])))
+          ["f" "s" "n" "u" "t" "/" "q" "F" "S" "G" "H" "L" "M" "N" "U" "R" "T" "Z" "?" "Q"]
+          ["f" "j" "d" "k" "s" "l" "a" ";" "e" "i" "w" "o" "g" "h" "v" "n" "c" "m" "z" "."])))
 
 
 (fn get-cycle-keys []
-  (->> [(or opts.cycle_group_fwd_key (if opts.jump_to_first_match "<tab>" "<space>"))
-        (or opts.cycle_group_bwd_key (if opts.jump_to_first_match "<s-tab>" "<tab>"))]
+  (->> [(or opts.cycle_group_fwd_key
+            (if opts.jump_to_first_match "<tab>" "<space>"))
+        (or opts.cycle_group_bwd_key
+            (if opts.jump_to_first_match "<s-tab>" "<tab>"))]
        (vim.tbl_map replace-keycodes)))
 
 
@@ -676,15 +676,17 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
             ch2 (or (char-at-pos pos {:char-offset 1})
                     "\r")  ; <enter> is the expected input for line breaks
             same-pair? (= ch2 prev.ch2)]
-        (if (or (when-not opts.match_only_the_start_of_same_char_seqs
-                  ; If match_only_the_start... is turned off, we are skipping
-                  ; only every second one from the consecutive overlapping
-                  ; matches of the same pair; thus, if the previous match has
-                  ; been skipped, we're good to go, no more checks necessary.
-                  prev.skipped?)
-                (not (and overlap-with-prev? same-pair?)))
+        (if (or 
+              ; If match_only_the_start... is turned off, we are skipping
+              ; only every second one from the consecutive overlapping
+              ; matches of the same pair; thus, if the previous match has
+              ; been skipped, we're good to go, no more checks necessary.
+              (when-not opts.match_only_the_start_of_same_char_seqs
+                prev.skipped?)
+              (not (and overlap-with-prev? same-pair?)))
           (let [partially-covered? (and overlap-with-prev? (not reverse?))]
-            (when-not (. match-map ch2) (tset match-map ch2 []))
+            (when-not (. match-map ch2)
+              (tset match-map ch2 []))
             ; In the forward direction, the previous match should be on top
             ; (overlapping the recent), in the reverse direction, the recent one.
             ; (The _label_ should be visible in both cases.)
@@ -1188,13 +1190,13 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                 ; dot-repeat to <enter>-repeat (endnote #3).
                                 (when (and dot-repeatable-op? (not dot-repeat?))
                                   (set self.state.dot.in3 (if (= group-offset 0) in3 nil)))
-                                (match (-?>> in3
-                                             (. (reverse-lookup labels))  ; valid label (indexed on the list)?
-                                             (+ (* group-offset (length labels)))
-                                             (. positions-to-label))  ; currently active?
+   *                            ; Valid label, currently in use (in the active match group)?
+                                (match (-?>> (. (reverse-lookup labels) in3)  ; (?)label-idx
+                                             (+ (* group-offset (length labels))) ; position-idx
+                                             (. positions-to-label))  ; (?)position
                                   ; Successful exit, option #4: selecting an active label.
-                                  pos-of-active-label (exit
-                                                        (jump-with-wrap! pos-of-active-label))
+                                  pos (exit
+                                        (jump-with-wrap! pos))
                                   _ (if jump-to-first?
                                         ; Successful exit, option #5: falling through with any
                                         ; non-label key in "autojump" mode (so that we can
