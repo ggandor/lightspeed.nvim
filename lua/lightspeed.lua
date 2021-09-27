@@ -867,7 +867,6 @@ local function set_beacon_at(_207_, ch1, ch2, _209_)
   local pos = _arg_208_
   local _arg_210_ = _209_
   local distant_3f = _arg_210_["distant?"]
-  local init_round_3f = _arg_210_["init-round?"]
   local labeled_3f = _arg_210_["labeled?"]
   local repeat_3f = _arg_210_["repeat?"]
   local shortcut_3f = _arg_210_["shortcut?"]
@@ -931,7 +930,6 @@ end
 local function set_beacon_groups(ch2, positions, labels, shortcuts, _219_)
   local _arg_220_ = _219_
   local group_offset = _arg_220_["group-offset"]
-  local init_round_3f = _arg_220_["init-round?"]
   local repeat_3f = _arg_220_["repeat?"]
   local group_offset0 = (group_offset or 0)
   local _7clabels_7c = #labels
@@ -948,7 +946,7 @@ local function set_beacon_groups(ch2, positions, labels, shortcuts, _219_)
       else
       shortcut_3f = nil
       end
-      set_beacon_at(pos, ch2, label, {["distant?"] = distant_3f, ["init-round?"] = init_round_3f, ["labeled?"] = true, ["repeat?"] = repeat_3f, ["shortcut?"] = shortcut_3f})
+      set_beacon_at(pos, ch2, label, {["distant?"] = distant_3f, ["labeled?"] = true, ["repeat?"] = repeat_3f, ["shortcut?"] = shortcut_3f})
     end
     return nil
   end
@@ -1454,10 +1452,10 @@ sx.to = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
               positions_to_label = positions
             end
             if (jump_to_first_3f or empty_3f(rest)) then
-              set_beacon_at(first, in1, ch2, {["init-round?"] = true})
+              set_beacon_at(first, in1, ch2, {})
             end
             if not empty_3f(rest) then
-              set_beacon_groups(ch2, positions_to_label, labels, shortcuts, {["init-round?"] = true})
+              set_beacon_groups(ch2, positions_to_label, labels, shortcuts, {})
             end
           end
         end

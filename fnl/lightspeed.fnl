@@ -707,9 +707,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
       _ match-map)))
 
 
-(fn set-beacon-at [[line col partially-covered? &as pos]
-                   ch1 ch2
-                   {: labeled? : init-round? : repeat? : distant? : shortcut?}]
+(fn set-beacon-at [[line col partially-covered? &as pos] ch1 ch2
+                   {: labeled? : repeat? : distant? : shortcut?}]
   (let [ch1 (or (. opts.substitute_chars ch1) ch1)
         ch2 (or (when-not labeled? (. opts.substitute_chars ch2)) ch2)
         ; When repeating, there is no initial round, i.e., no overlaps
@@ -725,9 +724,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                 hl.group.label-overlapped)
         [startcol chunk1 ?chunk2]
         (if (not labeled?)  ; = a first - i.e. "autojumpable" - match
-            ; `(not labeled?)` presupposes `init-round?` (and excludes `repeat?`,
-            ; logically), since it means we will just jump there after the next
-            ; input (that is why it doesn't get a label in the first place).
+            ; `(not labeled?)` presupposes the first round (and excludes
+            ; `repeat?`, logically), since it means we will just jump there
+            ; after the next input (that is why it doesn't get a label).
             (if partially-covered?
                 [(inc col) [ch2 hl.group.unlabeled-match] nil]
                 [col [ch1 hl.group.unlabeled-match] [ch2 hl.group.unlabeled-match]])
@@ -751,8 +750,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                                  :virt_text_pos "overlay"})))
 
 
-(fn set-beacon-groups [ch2 positions labels shortcuts
-                       {: group-offset : init-round? : repeat?}]
+(fn set-beacon-groups [ch2 positions labels shortcuts {: group-offset : repeat?}]
   (let [group-offset (or group-offset 0)
         |labels| (length labels)
         start (inc (* group-offset |labels|))
@@ -767,8 +765,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                   label (or (. labels (% i |labels|))
                             (. labels |labels|))  ; when mod = 0
                   shortcut? (when-not distant? (. shortcuts pos))]
-              (set-beacon-at pos ch2 label {:labeled? true : init-round?
-                                            : distant? : repeat? : shortcut?}))))]
+              (set-beacon-at pos ch2 label {:labeled? true : distant?
+                                            : repeat? : shortcut?}))))]
     ; Inner group (directly reachable matches).
     (set-group start false)
     ; Outer group (matches that are one group switch away).
@@ -1103,10 +1101,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                     ; If `rest` is empty (only one match for `ch2`), we will jump anyway.
                     (when (or jump-to-first? (empty? rest))  ; Fennel gotcha: empty rest = [], _not_ nil
                       ; Highlight these pairs with a "direct route" differently.
-                      (set-beacon-at first in1 ch2 {:init-round? true}))
+                      (set-beacon-at first in1 ch2 {}))
                     (when-not (empty? rest)
-                      (set-beacon-groups ch2 positions-to-label labels shortcuts
-                                         {:init-round? true}))))))
+                      (set-beacon-groups ch2 positions-to-label labels shortcuts {}))))))
             (match (or prev-in2
                        (get-input-and-clean-up)
                        (exit-early))
