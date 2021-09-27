@@ -1084,79 +1084,31 @@ sx.to = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
   local x_mode_3f = invoked_in_x_mode_3f
   local enter_repeat_3f = nil
   local new_search_3f = nil
-  local function cycle_through_match_groups(in2, positions_to_label, shortcuts, enter_repeat_3f0)
-    local ret = nil
-    local group_offset = 0
-    local loop_3f = true
-    while loop_3f do
-      local _254_
-      local function _255_()
-        if dot_repeat_3f then
-          return self.state.dot.in3
-        end
-      end
-      local function _256_()
-        loop_3f = false
-        ret = nil
-        return nil
-      end
-      _254_ = (_255_() or get_input_and_clean_up() or _256_())
-      if (nil ~= _254_) then
-        local input = _254_
-        if not ((input == cycle_fwd_key) or (input == cycle_bwd_key)) then
-          loop_3f = false
-          ret = {group_offset, input}
-        else
-          local max_offset = math.floor((#positions_to_label / #labels))
-          local _258_
-          do
-            local _257_ = input
-            if (_257_ == cycle_fwd_key) then
-              _258_ = inc
-            else
-              local _ = _257_
-              _258_ = dec
-            end
-          end
-          group_offset = clamp(_258_(group_offset), 0, max_offset)
-          if (opts.grey_out_search_area and not cold_repeat_3f) then
-            grey_out_search_area(reverse_3f)
-          end
-          do
-            set_beacon_groups(in2, positions_to_label, labels, shortcuts, {["group-offset"] = group_offset, ["repeat?"] = enter_repeat_3f0})
-          end
-          highlight_cursor()
-          vim.cmd("redraw")
-        end
-      end
-    end
-    return ret
-  end
-  local function save_state_for_repeat(_265_)
-    local _arg_266_ = _265_
-    local cold = _arg_266_["cold"]
-    local dot = _arg_266_["dot"]
+  local function save_state_for_repeat(_254_)
+    local _arg_255_ = _254_
+    local cold = _arg_255_["cold"]
+    local dot = _arg_255_["dot"]
     if new_search_3f then
       if cold then
-        local _267_ = cold
-        _267_["x-mode?"] = x_mode_3f
-        _267_["reverse?"] = reverse_3f
-        self.state.cold = _267_
+        local _256_ = cold
+        _256_["x-mode?"] = x_mode_3f
+        _256_["reverse?"] = reverse_3f
+        self.state.cold = _256_
       end
       if (dot_repeatable_op_3f and dot) then
         do
-          local _269_ = dot
-          _269_["x-mode?"] = x_mode_3f
-          self.state.dot = _269_
+          local _258_ = dot
+          _258_["x-mode?"] = x_mode_3f
+          self.state.dot = _258_
         end
         return nil
       end
     end
   end
-  local jump_with_wrap_21
+  local jump_wrapped_21
   do
     local first_jump_3f = true
-    local function _272_(target)
+    local function _261_(target)
       do
         local op_mode_3f_4_auto = operator_pending_mode_3f()
         local restore_virtualedit_autocmd_5_auto = ("autocmd CursorMoved,WinLeave,BufLeave" .. ",InsertEnter,CmdlineEnter,CmdwinEnter" .. " * ++once set virtualedit=" .. vim.o.virtualedit)
@@ -1171,10 +1123,10 @@ sx.to = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
           end
         end
         if (op_mode_3f_4_auto and not reverse_3f and (x_mode_3f and not reverse_3f)) then
-          local _276_ = string.sub(vim.fn.mode("t"), -1)
-          if (_276_ == "v") then
+          local _265_ = string.sub(vim.fn.mode("t"), -1)
+          if (_265_ == "v") then
             push_cursor_21("bwd")
-          elseif (_276_ == "o") then
+          elseif (_265_ == "o") then
             if not cursor_before_eof_3f() then
               push_cursor_21("fwd")
             else
@@ -1194,16 +1146,16 @@ sx.to = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
       first_jump_3f = false
       return nil
     end
-    jump_with_wrap_21 = _272_
+    jump_wrapped_21 = _261_
   end
-  local function jump_and_ignore_ch2_until_timeout_21(_282_, ch2)
-    local _arg_283_ = _282_
-    local target_line = _arg_283_[1]
-    local target_col = _arg_283_[2]
-    local _ = _arg_283_[3]
-    local target_pos = _arg_283_
+  local function jump_and_ignore_ch2_until_timeout_21(_271_, ch2)
+    local _arg_272_ = _271_
+    local target_line = _arg_272_[1]
+    local target_col = _arg_272_[2]
+    local _ = _arg_272_[3]
+    local target_pos = _arg_272_
     local orig_pos = get_cursor_pos()
-    jump_with_wrap_21(target_pos)
+    jump_wrapped_21(target_pos)
     if new_search_3f then
       local ctrl_v = replace_keycodes("<c-v>")
       local forward_x_3f = (x_mode_3f and not reverse_3f)
@@ -1211,7 +1163,7 @@ sx.to = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
       local forced_motion = string.sub(vim.fn.mode("t"), -1)
       local from_pos = vim.tbl_map(dec, orig_pos)
       local to_pos
-      local function _284_()
+      local function _273_()
         if backward_x_3f then
           return inc(inc(target_col))
         elseif forward_x_3f then
@@ -1220,29 +1172,29 @@ sx.to = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
           return target_col
         end
       end
-      to_pos = vim.tbl_map(dec, {target_line, _284_()})
-      local function _286_()
+      to_pos = vim.tbl_map(dec, {target_line, _273_()})
+      local function _275_()
         if reverse_3f then
           return to_pos
         else
           return from_pos
         end
       end
-      local _let_285_ = _286_()
-      local startline = _let_285_[1]
-      local startcol = _let_285_[2]
-      local start = _let_285_
-      local function _288_()
+      local _let_274_ = _275_()
+      local startline = _let_274_[1]
+      local startcol = _let_274_[2]
+      local start = _let_274_
+      local function _277_()
         if reverse_3f then
           return from_pos
         else
           return to_pos
         end
       end
-      local _let_287_ = _288_()
-      local endline = _let_287_[1]
-      local endcol = _let_287_[2]
-      local _end = _let_287_
+      local _let_276_ = _277_()
+      local endline = _let_276_[1]
+      local endcol = _let_276_[2]
+      local _end = _let_276_
       if not change_op_3f then
         local _3fpos_to_highlight_at
         if op_mode_3f then
@@ -1269,31 +1221,31 @@ sx.to = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
         local function hl_range(start0, _end0)
           return vim.highlight.range(0, hl.ns, hl_group, start0, _end0)
         end
-        local _293_ = forced_motion
-        if (_293_ == ctrl_v) then
+        local _282_ = forced_motion
+        if (_282_ == ctrl_v) then
           for line = startline, endline do
             hl_range({line, math.min(startcol, endcol)}, {line, inc(math.max(startcol, endcol))})
           end
-        elseif (_293_ == "V") then
+        elseif (_282_ == "V") then
           hl_range({startline, 0}, {endline, -1})
-        elseif (_293_ == "v") then
-          local function _294_()
+        elseif (_282_ == "v") then
+          local function _283_()
             if inclusive_motion_3f then
               return endcol
             else
               return inc(endcol)
             end
           end
-          hl_range(start, {endline, _294_()})
-        elseif (_293_ == "o") then
-          local function _295_()
+          hl_range(start, {endline, _283_()})
+        elseif (_282_ == "o") then
+          local function _284_()
             if inclusive_motion_3f then
               return inc(endcol)
             else
               return endcol
             end
           end
-          hl_range(start, {endline, _295_()})
+          hl_range(start, {endline, _284_()})
         end
       end
       vim.cmd("redraw")
@@ -1303,6 +1255,54 @@ sx.to = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
       end
       return hl:cleanup()
     end
+  end
+  local function select_match_group(in2, positions_to_label, shortcuts, enter_repeat_3f0)
+    local ret = nil
+    local group_offset = 0
+    local loop_3f = true
+    while loop_3f do
+      local _289_
+      local function _290_()
+        if dot_repeat_3f then
+          return self.state.dot.in3
+        end
+      end
+      local function _291_()
+        loop_3f = false
+        ret = nil
+        return nil
+      end
+      _289_ = (_290_() or get_input_and_clean_up() or _291_())
+      if (nil ~= _289_) then
+        local input = _289_
+        if not ((input == cycle_fwd_key) or (input == cycle_bwd_key)) then
+          loop_3f = false
+          ret = {group_offset, input}
+        else
+          local max_offset = math.floor((#positions_to_label / #labels))
+          local _293_
+          do
+            local _292_ = input
+            if (_292_ == cycle_fwd_key) then
+              _293_ = inc
+            else
+              local _ = _292_
+              _293_ = dec
+            end
+          end
+          group_offset = clamp(_293_(group_offset), 0, max_offset)
+          if (opts.grey_out_search_area and not cold_repeat_3f) then
+            grey_out_search_area(reverse_3f)
+          end
+          do
+            set_beacon_groups(in2, positions_to_label, labels, shortcuts, {["group-offset"] = group_offset, ["repeat?"] = enter_repeat_3f0})
+          end
+          highlight_cursor()
+          vim.cmd("redraw")
+        end
+      end
+    end
+    return ret
   end
   enter("sx")
   if not repeat_invoc then
@@ -1347,7 +1347,7 @@ sx.to = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
           x_mode_3f = true
         end
       end
-      local in00 = in0
+      local res = in0
       if (x_mode_3f and not invoked_in_x_mode_3f) then
         local _309_
         local function _310_()
@@ -1365,7 +1365,7 @@ sx.to = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
           enter_repeat_3f = true
         elseif (nil ~= _309_) then
           local in0_2a = _309_
-          in00 = in0_2a
+          res = in0_2a
         end
       end
       new_search_3f = not (repeat_invoc or enter_repeat_3f)
@@ -1383,7 +1383,7 @@ sx.to = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
         end
         _303_ = (self.state.cold.in1 or _314_())
       else
-        _303_ = in00
+        _303_ = res
       end
     else
     _303_ = nil
@@ -1490,7 +1490,7 @@ sx.to = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
           local shortcut = _334_
           do
             save_state_for_repeat({cold = {in1 = in1, in2 = ch2}, dot = {in1 = in1, in2 = ch2, in3 = in2}})
-            jump_with_wrap_21(pos)
+            jump_wrapped_21(pos)
           end
           doau_when_exists("LightspeedSxLeave")
           doau_when_exists("LightspeedLeave")
@@ -1544,7 +1544,7 @@ sx.to = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
               positions_to_label = positions0
             end
             if (first0 and (cold_repeat_3f or jump_to_first_3f or empty_3f(rest0))) then
-              jump_with_wrap_21(first0)
+              jump_wrapped_21(first0)
             end
             if empty_3f(rest0) then
               do
@@ -1598,7 +1598,7 @@ sx.to = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
                 doau_when_exists("LightspeedLeave")
                 return nil
               end
-              _353_ = (cycle_through_match_groups(in2, positions_to_label, shortcuts, enter_repeat_3f) or _354_())
+              _353_ = (select_match_group(in2, positions_to_label, shortcuts, enter_repeat_3f) or _354_())
               if ((type(_353_) == "table") and (nil ~= (_353_)[1]) and (nil ~= (_353_)[2])) then
                 local group_offset = (_353_)[1]
                 local in3 = (_353_)[2]
@@ -1626,7 +1626,7 @@ sx.to = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
                 if (nil ~= _358_) then
                   local pos = _358_
                   do
-                    jump_with_wrap_21(pos)
+                    jump_wrapped_21(pos)
                   end
                   doau_when_exists("LightspeedSxLeave")
                   doau_when_exists("LightspeedLeave")

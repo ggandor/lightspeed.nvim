@@ -835,13 +835,13 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 
   ; local helper macros & functions
   ; -------------------------------
-  ; #1 macro `with-hl-chores`
+  ; #1 macro `with-highlight-chores`
   ; #2 macro `exit`
   ; #3 macro `exit-early`
-  ; #4 fn    `cycle-through-match-groups`
-  ; #5 fn    `save-state-for-repeat`
-  ; #6 fn    `jump-with-wrap!`
-  ; #7 fn    `jump-and-ignore-ch2-until-timeout!`
+  ; #4 fn    `save-state-for-repeat`
+  ; #5 fn    `jump-wrapped!`
+  ; #6 fn    `jump-and-ignore-ch2-until-timeout!`
+  ; #7 fn    `select-match-group`
 
   ; algorithm skeleton
   ; ------------------
@@ -849,30 +849,30 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
   ; build 'match map' for in1
   ; if no match: exit-early (#3)
   ; elif only match:
-  ;   save state for repeats & jump w/ timeout & exit (#5,#7,#2)
+  ;   save state for repeats & jump w/ timeout & exit (#4,#6,#2)
   ; else:
   ;   calculate 'shortcutable' positions
   ;   if new search (not persisted state):
   ;     light up beacons (see glossary) (#1)
   ;   get 2nd input (in2) (direct input or persisted state)
   ;   if in2 is a shortcut-label:
-  ;     save state for repeats & jump & exit (#5,#6,#2)
+  ;     save state for repeats & jump & exit (#4,#5,#2)
   ;   else:
-  ;     save state for repeats (#5)
+  ;     save state for repeats (#4)
   ;     if no match: exit-early (#3)
   ;     elif only match:
-  ;       jump & exit (#6,#2)
+  ;       jump & exit (#5,#2)
   ;     else:
-  ;       if auto-jump to first match is set: jump (#6)
+  ;       if auto-jump to first match is set: jump (#5)
   ;       if doing "cold" repeat:
   ;          light up beacons w/o labels (#1)
   ;          & get 3rd input & exit w/ feeding it (#2)
   ;       if not dot-repeating: light up beacons (#1)
-  ;       loop for getting 3rd input (in3) (#4)
+  ;       loop for getting 3rd input (in3) (#7)
   ;          potentially switching match groups here,
   ;          the labels' referred targets might change
   ;       if in3 is a label in use:
-  ;         jump & exit (#6,#2)
+  ;         jump & exit (#5,#2)
   ;       elif auto-jump to first match is set:
   ;         exit w/ feeding in3 (#2)
   ;       else: exit-early (#3)
@@ -901,36 +901,12 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
     (macro exit [...] `(exit-template :sx false ,...))
     (macro exit-early [...] `(exit-template :sx true ,...))
 
-    (macro with-hl-chores [...]
+    (macro with-highlight-chores [...]
       `(do (when (and opts.grey_out_search_area (not cold-repeat?))
              (grey-out-search-area reverse?))
            (do ,...)
            (highlight-cursor)
            (vim.cmd :redraw)))
-
-    (fn cycle-through-match-groups [in2 positions-to-label shortcuts enter-repeat?]
-      (var ret nil)
-      (var group-offset 0)
-      (var loop? true)
-      (while loop?
-        (match (or (when dot-repeat? self.state.dot.in3)
-                   (get-input-and-clean-up)
-                   (do (set loop? false)  ; <esc> or <c-c> should exit the loop
-                       (set ret nil)
-                       nil))
-          input
-          (if (not (one-of? input cycle-fwd-key cycle-bwd-key))
-            ; Note: dot-repeat arrives here, and short-circuits.
-            (do (set loop? false) (set ret [group-offset input]))
-            ; Cycle to and highlight the next/previous group.
-            (let [max-offset (math.floor (/ (length positions-to-label) (length labels)))]
-              (set group-offset (-> group-offset
-                                    ((match input cycle-fwd-key inc _ dec))
-                                    (clamp 0 max-offset)))
-              (with-hl-chores
-                (set-beacon-groups in2 positions-to-label labels shortcuts
-                                   {: group-offset :repeat? enter-repeat?}))))))
-      ret)
 
     (fn save-state-for-repeat [{: cold : dot}]
       (when new-search?
@@ -942,7 +918,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
           (set self.state.dot (doto dot
                                 (tset :x-mode? x-mode?))))))
 
-    (local jump-with-wrap!
+    (local jump-wrapped!
       (do
         ; `first-jump?` should only be persisted inside `to` (i.e. the lifetime
         ; is one invocation) and should be managed by the function itself (it is
@@ -964,7 +940,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
     (fn jump-and-ignore-ch2-until-timeout! [[target-line target-col _ &as target-pos] ch2]
       (local orig-pos (get-cursor-pos))  ; 1,1
       ; TODO: what if `jump-to!` would return the final, adjusted position?
-      (jump-with-wrap! target-pos)
+      (jump-wrapped! target-pos)
       ; Jumping based on partial input is nice, but it's annoying that we don't
       ; see the actual changes right away (we are waiting for another input, so
       ; that we can introduce a safety timespan to ignore the character in the
@@ -1030,6 +1006,32 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
           (when change-op? (echo ""))
           (hl:cleanup))))
 
+    (fn select-match-group [in2 positions-to-label shortcuts enter-repeat?]
+      (var ret nil)
+      (var group-offset 0)
+      (var loop? true)
+      (while loop?
+        (match (or (when dot-repeat? self.state.dot.in3)
+                   (get-input-and-clean-up)
+                   (do (set loop? false)  ; <esc> or <c-c> should exit the loop
+                       (set ret nil)
+                       nil))
+          input
+          (if (not (one-of? input cycle-fwd-key cycle-bwd-key))
+              ; Note: dot-repeat arrives here, and short-circuits.
+              (do (set loop? false)
+                  (set ret [group-offset input]))
+              ; Cycle to and highlight the next/previous group.
+              (let [max-offset (math.floor (/ (length positions-to-label)
+                                              (length labels)))]
+                (set group-offset (-> group-offset
+                                      ((match input cycle-fwd-key inc _ dec))
+                                      (clamp 0 max-offset)))
+                (with-highlight-chores
+                  (set-beacon-groups in2 positions-to-label labels shortcuts
+                                     {: group-offset :repeat? enter-repeat?}))))))
+      ret)
+
     ; A note on a design decision: when a function encapsulates an inherently
     ; complex flow of logic, it is most important to get a good overview of the
     ; happy path as quickly as possible. Matched forms seem a good place to hide
@@ -1046,7 +1048,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 
     (when-not repeat-invoc
       (echo "")  ; Clean up the command line.
-      (with-hl-chores
+      (with-highlight-chores
         (when opts.highlight_unique_chars
           (highlight-unique-chars reverse?))))
 
@@ -1061,18 +1063,18 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                  in0 (do (match in0
                            "\r" (set enter-repeat? true)
                            x-mode-prefix-key (set x-mode? true))
-                         (var in0 in0)
+                         (var res in0)
                          (when (and x-mode? (not invoked-in-x-mode?))
                            ; Get the "true" first input then.
                            (match (or (get-input-and-clean-up)
                                       (exit-early))
                              "\r" (set enter-repeat? true)
-                             in0* (set in0 in0*)))
+                             in0* (set res in0*)))
                          (set new-search? (not (or repeat-invoc enter-repeat?)))
                          (if enter-repeat? (or self.state.cold.in1
-                                           (exit-early
-                                             (echo-no-prev-search)))
-                             in0))))
+                                               (exit-early
+                                                 (echo-no-prev-search)))
+                             res))))
       in1
       (let [prev-in2 (if (or cold-repeat? enter-repeat?) self.state.cold.in2
                          dot-repeat? self.state.dot.in2)]
@@ -1094,7 +1096,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
             (when new-search?
               ; Initial round of setting beacons, for all possible targets.
               ; (Assigning labels for each list of positions independently.)
-              (with-hl-chores
+              (with-highlight-chores
                 (each [ch2 positions (pairs match-map)]
                   (let [[first & rest] positions
                         positions-to-label (if jump-to-first? rest positions)]
@@ -1115,7 +1117,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                 (exit
                   (save-state-for-repeat {:cold {: in1 :in2 ch2}
                                           :dot {: in1 :in2 ch2 :in3 in2}})
-                  (jump-with-wrap! pos))
+                  (jump-wrapped! pos))
 
                 _
                 (do
@@ -1149,7 +1151,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                           positions-to-label (if jump-to-first? rest positions)]
                       (when (and first  ; there might be none if skipped one
                                  (or cold-repeat? jump-to-first? (empty? rest)))
-                        (jump-with-wrap! first))
+                        (jump-wrapped! first))
                       (if (empty? rest)
                           ; Successful exit, option #3: jumped to the only match
                           ; automatically.
@@ -1160,7 +1162,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                           ; matches in a clean way.
                           cold-repeat?
                           (when-not op-mode?
-                            (with-hl-chores
+                            (with-highlight-chores
                               (each [_ [line col] (ipairs rest)]
                                 (hl:add-hl hl.group.one-char-match
                                            (dec line) (dec col) (inc col))))
@@ -1174,13 +1176,12 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                             (when-not (and dot-repeat? self.state.dot.in3)
                               ; Lighting up beacons again, now only for pairs with `in2`
                               ; as second character.
-                              (with-hl-chores
+                              (with-highlight-chores
                                 (set-beacon-groups in2 positions-to-label labels shortcuts
                                                    {:repeat? enter-repeat?})))
-                            (match (or (cycle-through-match-groups in2 positions-to-label
-                                                                   shortcuts enter-repeat?)
-                                       ; Note: highlight is cleaned up by `cycle-through...`.
-                                       (exit-early))  ; <C-c> case
+                            (match (or (select-match-group in2 positions-to-label
+                                                           shortcuts enter-repeat?)
+                                       (exit-early))  ; <C-c> (note: no highlight to clean up)
                               [group-offset in3]
                               (do
                                 ; Reminder: above we have already set this to the character
@@ -1196,7 +1197,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                                              (. positions-to-label))  ; (?)position
                                   ; Successful exit, option #4: selecting an active label.
                                   pos (exit
-                                        (jump-with-wrap! pos))
+                                        (jump-wrapped! pos))
                                   _ (if jump-to-first?
                                         ; Successful exit, option #5: falling through with any
                                         ; non-label key in "autojump" mode (so that we can
