@@ -231,6 +231,29 @@ character instead."
     ; Expects 0,0-indexed args; `finish` is exclusive.
     (vim.highlight.range 0 hl.ns hl.group.greywash start finish)))
 
+
+(fn highlight-range [hl-group
+                     [startline startcol &as start] [endline endcol &as end]
+                     {: forced-motion : inclusive-motion?}]
+  "A wrapper around `vim.highlight.range` that handles forced motion
+types properly."
+  (let [ctrl-v (replace-keycodes "<c-v>")
+        hl-range (fn [start end end-inclusive?]
+                   (vim.highlight.range
+                     0 hl.ns hl-group start end nil end-inclusive?))]
+    (match forced-motion
+      ctrl-v (let [[startcol endcol] [(math.min startcol endcol)
+                                      (math.max startcol endcol)]]
+               (for [line startline endline]
+                 ; Blockwise operations make the motion inclusive on
+                 ; both ends, unconditionally.
+                 (hl-range [line startcol] [line endcol] true)))
+      :V (hl-range [startline 0] [endline -1])
+      ; We are in OP mode, doing chairwise motion, so 'v' _flips_ its
+      ; inclusive/exclusive behaviour (:h o_v).
+      :v (hl-range start end (not inclusive-motion?))
+      _ (hl-range start end inclusive-motion?))))
+
 ; }}}
 ; Common {{{
 
@@ -976,27 +999,11 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
               ; In any other case, the actual position will be highlighted.
               (highlight-cursor ?pos-to-highlight-at)))
           (when op-mode?
-            (local inclusive-motion? forward-x?)
-            (local hl-group (if (or change-op? delete-op?)
-                                hl.group.pending-change-op-area
-                                hl.group.pending-op-area))
-            ; The range is _exclusive_ (the end column will _not_ be included
-            ; in the highlight).
-            (fn hl-range [start end]
-              (vim.highlight.range 0 hl.ns hl-group start end))
-            (match forced-motion
-              ctrl-v (for [line startline endline]
-                       (hl-range [line (math.min startcol endcol)]
-                                 ; Blockwise operations make the motion
-                                 ; inclusive on both ends, so we should
-                                 ; increment the end column. (Reminder:
-                                 ; `highlight.range` will not include it.)
-                                 [line (inc (math.max startcol endcol))]))
-              :V (hl-range [startline 0] [endline -1])
-              ; We are in OP mode, doing chairwise motion, so 'v' _flips_ its
-              ; inclusive/exclusive behaviour (:h o_v).
-              :v (hl-range start [endline (if inclusive-motion? endcol (inc endcol))])
-              :o (hl-range start [endline (if inclusive-motion? (inc endcol) endcol)])))
+            (let [hl-group (if (or change-op? delete-op?)
+                               hl.group.pending-change-op-area
+                               hl.group.pending-op-area)]
+              (highlight-range hl-group start end
+                               {: forced-motion :inclusive-motion? forward-x?})))
           (vim.cmd :redraw)
           (ignore-char-until-timeout ch2)
           ; Mitigate blink on the command line (see also
