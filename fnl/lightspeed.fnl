@@ -528,7 +528,7 @@ interrupted change-operation."
                    :cold {:in nil :reverse? nil :t-mode? nil}
                   }})
 
-(fn ft.to [self reverse? t-mode? repeat-invoc]
+(fn ft.go [self reverse? t-mode? repeat-invoc]
   "Entry point for 1-character search."
   (let [instant-repeat? (or (= repeat-invoc :instant)
                             (= repeat-invoc :reverted-instant))
@@ -626,7 +626,7 @@ interrupted change-operation."
                               (if revert? (match (table.remove self.state.instant.stack)
                                             old-pos (vim.fn.cursor old-pos))
                                   repeat? (table.insert self.state.instant.stack (get-cursor-pos)))
-                              (ft:to reverse? t-mode? (if revert? :reverted-instant :instant)))
+                              (ft:go reverse? t-mode? (if revert? :reverted-instant :instant)))
                             (exit
                               (vim.fn.feedkeys in2 :i)))))))))))))
 
@@ -828,7 +828,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
                           :x-mode? nil}
                    }})
 
-(fn sx.to [self reverse? invoked-in-x-mode? repeat-invoc]
+(fn sx.go [self reverse? invoked-in-x-mode? repeat-invoc]
   "Entry point for 2-character search."
 
   ; local helper macros & functions
@@ -1248,26 +1248,27 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
   (local plug-keys
     [
      ; params: reverse? [x-mode?] [repeat-invoc]
-     ["<Plug>Lightspeed_s" "sx:to(false)"]
-     ["<Plug>Lightspeed_S" "sx:to(true)"]
-     ["<Plug>Lightspeed_x" "sx:to(false, true)"]
-     ["<Plug>Lightspeed_X" "sx:to(true, true)"]
+     ["<Plug>Lightspeed_s" "sx:go(false)"]
+     ["<Plug>Lightspeed_S" "sx:go(true)"]
+     ["<Plug>Lightspeed_x" "sx:go(false, true)"]
+     ["<Plug>Lightspeed_X" "sx:go(true, true)"]
 
      ; params: reverse? [t-mode?] [repeat-invoc]
-     ["<Plug>Lightspeed_f" "ft:to(false)"]
-     ["<Plug>Lightspeed_F" "ft:to(true)"]
-     ["<Plug>Lightspeed_t" "ft:to(false, true)"]
-     ["<Plug>Lightspeed_T" "ft:to(true, true)"]
+     ["<Plug>Lightspeed_f" "ft:go(false)"]
+     ["<Plug>Lightspeed_F" "ft:go(true)"]
+     ["<Plug>Lightspeed_t" "ft:go(false, true)"]
+     ["<Plug>Lightspeed_T" "ft:go(true, true)"]
 
      ; "cold" repeat (;/,-like) (note: we should not start the name with ft_ or sx_ if using `hasmapto`)
-     ["<Plug>Lightspeed_;_sx" "sx:to(require'lightspeed'.sx.state.cold['reverse?'], require'lightspeed'.sx.state.cold['x-mode?'], 'cold')"]
-     ["<Plug>Lightspeed_,_sx" "sx:to(not require'lightspeed'.sx.state.cold['reverse?'], require'lightspeed'.sx.state.cold['x-mode?'], 'cold')"]
+     ["<Plug>Lightspeed_;_sx" "sx:go(require'lightspeed'.sx.state.cold['reverse?'], require'lightspeed'.sx.state.cold['x-mode?'], 'cold')"]
+     ["<Plug>Lightspeed_,_sx" "sx:go(not require'lightspeed'.sx.state.cold['reverse?'], require'lightspeed'.sx.state.cold['x-mode?'], 'cold')"]
 
-     ["<Plug>Lightspeed_;_ft" "ft:to(require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
-     ["<Plug>Lightspeed_,_ft" "ft:to(not require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
+     ["<Plug>Lightspeed_;_ft" "ft:go(require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
+     ["<Plug>Lightspeed_,_ft" "ft:go(not require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
+
      ; TODO: let these repeat the last one
-     ["<Plug>Lightspeed_;" "ft:to(require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
-     ["<Plug>Lightspeed_," "ft:to(not require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
+     ["<Plug>Lightspeed_;" "ft:go(require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
+     ["<Plug>Lightspeed_," "ft:go(not require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
      ])
 
   (each [_ [lhs rhs-call] (ipairs plug-keys)]
@@ -1278,15 +1279,15 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
   ; Just for our convenience, to be used here in the script.
   (each [_ [lhs rhs-call]
          (ipairs
-           [["<Plug>Lightspeed_dotrepeat_s" "sx:to(false, false, 'dot')"]
-            ["<Plug>Lightspeed_dotrepeat_S" "sx:to(true, false, 'dot')"]
-            ["<Plug>Lightspeed_dotrepeat_x" "sx:to(false, true, 'dot')"]
-            ["<Plug>Lightspeed_dotrepeat_X" "sx:to(true, true, 'dot')"]
+           [["<Plug>Lightspeed_dotrepeat_s" "sx:go(false, false, 'dot')"]
+            ["<Plug>Lightspeed_dotrepeat_S" "sx:go(true, false, 'dot')"]
+            ["<Plug>Lightspeed_dotrepeat_x" "sx:go(false, true, 'dot')"]
+            ["<Plug>Lightspeed_dotrepeat_X" "sx:go(true, true, 'dot')"]
 
-            ["<Plug>Lightspeed_dotrepeat_f" "ft:to(false, false, 'dot')"]
-            ["<Plug>Lightspeed_dotrepeat_F" "ft:to(true, false, 'dot')"]
-            ["<Plug>Lightspeed_dotrepeat_t" "ft:to(false, true, 'dot')"]
-            ["<Plug>Lightspeed_dotrepeat_T" "ft:to(true, true, 'dot')"]])]
+            ["<Plug>Lightspeed_dotrepeat_f" "ft:go(false, false, 'dot')"]
+            ["<Plug>Lightspeed_dotrepeat_F" "ft:go(true, false, 'dot')"]
+            ["<Plug>Lightspeed_dotrepeat_t" "ft:go(false, true, 'dot')"]
+            ["<Plug>Lightspeed_dotrepeat_T" "ft:go(true, true, 'dot')"]])]
     (api.nvim_set_keymap :o lhs (.. "<cmd>lua require'lightspeed'." rhs-call "<cr>")
                          {:noremap true :silent true})))
 
