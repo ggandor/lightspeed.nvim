@@ -1176,66 +1176,64 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
     local _arg_277_ = _276_
     local target_line = _arg_277_[1]
     local target_col = _arg_277_[2]
-    local _ = _arg_277_[3]
-    local target_pos = _arg_277_
-    local orig_pos = get_cursor_pos()
-    jump_wrapped_21(target_pos)
+    local from_pos = vim.tbl_map(dec, get_cursor_pos())
+    jump_wrapped_21({target_line, target_col})
     if new_search_3f then
-      local ctrl_v = replace_keycodes("<c-v>")
-      local forward_x_3f = (x_mode_3f and not reverse_3f)
-      local backward_x_3f = (x_mode_3f and reverse_3f)
-      local forced_motion = string.sub(vim.fn.mode("t"), -1)
-      local from_pos = vim.tbl_map(dec, orig_pos)
-      local to_pos
-      local function _278_()
+      do
+        local ctrl_v = replace_keycodes("<c-v>")
+        local forward_x_3f = (x_mode_3f and not reverse_3f)
+        local backward_x_3f = (x_mode_3f and reverse_3f)
+        local forced_motion = string.sub(vim.fn.mode("t"), -1)
+        local to_col
         if backward_x_3f then
-          return inc(inc(target_col))
+          to_col = inc(inc(target_col))
         elseif forward_x_3f then
-          return inc(target_col)
+          to_col = inc(target_col)
         else
-          return target_col
+          to_col = target_col
         end
-      end
-      to_pos = vim.tbl_map(dec, {target_line, _278_()})
-      local function _280_()
-        if reverse_3f then
-          return to_pos
-        else
-          return from_pos
-        end
-      end
-      local _let_279_ = _280_()
-      local startline = _let_279_[1]
-      local startcol = _let_279_[2]
-      local start = _let_279_
-      local function _282_()
-        if reverse_3f then
-          return from_pos
-        else
-          return to_pos
-        end
-      end
-      local _let_281_ = _282_()
-      local endline = _let_281_[1]
-      local endcol = _let_281_[2]
-      local _end = _let_281_
-      if not change_op_3f then
-        local _3fpos_to_highlight_at
-        if op_mode_3f then
-          if (forced_motion == ctrl_v) then
-            _3fpos_to_highlight_at = {inc(startline), inc(math.min(startcol, endcol))}
-          elseif not reverse_3f then
-            _3fpos_to_highlight_at = orig_pos
+        local to_pos = vim.tbl_map(dec, {target_line, to_col})
+        local function _280_()
+          if reverse_3f then
+            return to_pos
           else
-          _3fpos_to_highlight_at = nil
+            return from_pos
           end
-        else
-        _3fpos_to_highlight_at = nil
         end
-        highlight_cursor(_3fpos_to_highlight_at)
-      end
-      if op_mode_3f then
-        highlight_range(hl.group["pending-op-area"], start, _end, {["forced-motion"] = forced_motion, ["inclusive-motion?"] = forward_x_3f})
+        local _let_279_ = _280_()
+        local startline = _let_279_[1]
+        local startcol = _let_279_[2]
+        local start = _let_279_
+        local function _282_()
+          if reverse_3f then
+            return from_pos
+          else
+            return to_pos
+          end
+        end
+        local _let_281_ = _282_()
+        local _ = _let_281_[1]
+        local endcol = _let_281_[2]
+        local _end = _let_281_
+        local _3fhighlight_cursor_at
+        if op_mode_3f then
+          local function _283_()
+            if (forced_motion == ctrl_v) then
+              return {startline, math.min(startcol, endcol)}
+            elseif not reverse_3f then
+              return from_pos
+            end
+          end
+          _3fhighlight_cursor_at = vim.tbl_map(inc, _283_())
+        else
+        _3fhighlight_cursor_at = nil
+        end
+        if not change_op_3f then
+          highlight_cursor(_3fhighlight_cursor_at)
+        end
+        if op_mode_3f then
+          highlight_range(hl.group["pending-op-area"], start, _end, {["forced-motion"] = forced_motion, ["inclusive-motion?"] = forward_x_3f})
+        end
       end
       vim.cmd("redraw")
       ignore_char_until_timeout(ch2)
