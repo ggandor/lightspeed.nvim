@@ -149,7 +149,6 @@ character instead."
            :one-char-match           "LightspeedOneCharMatch"
            :unique-ch                "LightspeedUniqueChar"
            :pending-op-area          "LightspeedPendingOpArea"
-           :pending-change-op-area   "LightspeedPendingChangeOpArea"
            :greywash                 "LightspeedGreyWash"
            :cursor                   "LightspeedCursor"}
    :ns (api.nvim_create_namespace "")
@@ -198,11 +197,6 @@ character instead."
                                          :cterm "bold"}]
      [hl.group.pending-op-area          {:guibg "#f00077" :ctermbg "Red"
                                          :guifg "#ffffff" :ctermfg "White"}]  ; ~shortcut without bold/underline
-     [hl.group.pending-change-op-area   {:guifg (match bg :light "#f02077" _ "#ff2f87")
-                                         :ctermfg "Red"
-                                         :guibg :NONE :ctermbg :NONE
-                                         :gui "strikethrough"
-                                         :cterm "strikethrough"}]
      [hl.group.greywash                 {:guifg "#777777" :ctermfg "Grey"
                                          :guibg :NONE :ctermbg :NONE
                                          :gui :NONE :cterm :NONE}]])
@@ -999,11 +993,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
               ; In any other case, the actual position will be highlighted.
               (highlight-cursor ?pos-to-highlight-at)))
           (when op-mode?
-            (let [hl-group (if (or change-op? delete-op?)
-                               hl.group.pending-change-op-area
-                               hl.group.pending-op-area)]
-              (highlight-range hl-group start end
-                               {: forced-motion :inclusive-motion? forward-x?})))
+            (highlight-range hl.group.pending-op-area start end
+                             {: forced-motion :inclusive-motion? forward-x?}))
           (vim.cmd :redraw)
           (ignore-char-until-timeout ch2)
           ; Mitigate blink on the command line (see also

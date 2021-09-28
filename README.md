@@ -410,9 +410,7 @@ If you enter a character that is the only match in the search direction,
 Lightspeed jumps to it directly, without waiting for a second input. To mitigate
 accidents, a short timeout is set by default, until the second character in the
 pair (and only that) is "swallowed". In operator-pending mode, the operated area
-gets a temporary highlight (strikethrough for "destructive" operations - change
-and delete -, colored background for others) until the next character is
-entered.
+gets a temporary highlight until the next character is entered.
 
 ![jumping to unique characters](../media/intro_img1_jump_to_unique.gif?raw=true)
 

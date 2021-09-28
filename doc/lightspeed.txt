@@ -1,4 +1,4 @@
-*lightspeed.txt*      For Neovim version 0.5      Last change: 2021 September 20
+*lightspeed.txt*      For Neovim version 0.5      Last change: 2021 September 28
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -396,13 +396,10 @@ own liking:
         |LightspeedUnlabeledMatch| by default.
 
     *LightspeedPendingOpArea*
-    *LightspeedPendingChangeOpArea*
         When jumping based on partial input in operator-pending mode, we do
         not see the operation executed right away, because of the "safety"
         timeout (see |lightspeed-jump-on-partial-input|), therefore we set a
-        temporary highlight on the operated area. ("Destructive" operations -
-        change and delete - get a different highlight, with strikethrough, by
-        default.)
+        temporary highlight on the operated area.
 
     *LightspeedCursor*
         Linked to |hl-Cursor| by default.
