@@ -981,11 +981,13 @@ local function set_beacon_groups(ch2, positions, labels, shortcuts, _224_)
   return set_group((start + _7clabels_7c), true)
 end
 local function get_shortcuts(match_map, labels, reverse_3f, jump_to_first_3f)
-  local collides_with_a_ch2_3f
-  local function _228_(_241)
-    return vim.tbl_contains(vim.tbl_keys(match_map), _241)
+  local shortcut_candidates = {}
+  local ch2s = vim.tbl_keys(match_map)
+  local among_ch2s_3f
+  local function _228_(label)
+    return vim.tbl_contains(ch2s, label)
   end
-  collides_with_a_ch2_3f = _228_
+  among_ch2s_3f = _228_
   local by_distance_from_cursor
   local function _235_(_229_, _232_)
     local _arg_230_ = _229_
@@ -1015,7 +1017,6 @@ local function get_shortcuts(match_map, labels, reverse_3f, jump_to_first_3f)
     end
   end
   by_distance_from_cursor = _235_
-  local shortcuts = {}
   for ch2, positions in pairs(match_map) do
     for i, pos in ipairs(positions) do
       local labeled_pos_3f = not ((#positions == 1) or (jump_to_first_3f and (i == 1)))
@@ -1030,19 +1031,19 @@ local function get_shortcuts(match_map, labels, reverse_3f, jump_to_first_3f)
         _239_ = labels[_240_]
         if (nil ~= _239_) then
           local label = _239_
-          if not collides_with_a_ch2_3f(label) then
-            table.insert(shortcuts, {pos, label, ch2})
+          if not among_ch2s_3f(label) then
+            table.insert(shortcut_candidates, {pos, label, ch2})
           end
         end
       end
     end
   end
-  table.sort(shortcuts, by_distance_from_cursor)
-  local lookup_by_pos
+  table.sort(shortcut_candidates, by_distance_from_cursor)
+  local by_pos
   do
     local labels_used_up = {}
     local tbl_9_auto = {}
-    for _, _245_ in ipairs(shortcuts) do
+    for _, _245_ in ipairs(shortcut_candidates) do
       local _each_246_ = _245_
       local pos = _each_246_[1]
       local label = _each_246_[2]
@@ -1060,12 +1061,12 @@ local function get_shortcuts(match_map, labels, reverse_3f, jump_to_first_3f)
         tbl_9_auto[k_10_auto] = v_11_auto
       end
     end
-    lookup_by_pos = tbl_9_auto
+    by_pos = tbl_9_auto
   end
-  local lookup_by_label
+  local by_label
   do
     local tbl_9_auto = {}
-    for pos, _251_ in pairs(lookup_by_pos) do
+    for pos, _251_ in pairs(by_pos) do
       local _each_252_ = _251_
       local label = _each_252_[1]
       local ch2 = _each_252_[2]
@@ -1076,9 +1077,9 @@ local function get_shortcuts(match_map, labels, reverse_3f, jump_to_first_3f)
         tbl_9_auto[k_10_auto] = v_11_auto
       end
     end
-    lookup_by_label = tbl_9_auto
+    by_label = tbl_9_auto
   end
-  return vim.tbl_extend("error", lookup_by_pos, lookup_by_label)
+  return vim.tbl_extend("error", by_pos, by_label)
 end
 local function ignore_char_until_timeout(char_to_ignore)
   local start = os.clock()

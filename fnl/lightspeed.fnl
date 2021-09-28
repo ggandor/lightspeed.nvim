@@ -796,33 +796,43 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
 ; chars, and we can simply say in round 2 in the main function, "ok, then do the
 ; labeling for just a given ch2 now", and everything is set for us.)
 (fn get-shortcuts [match-map labels reverse? jump-to-first?]
-  (let [collides-with-a-ch2? #(vim.tbl_contains (vim.tbl_keys match-map) $)
+  (let [shortcut-candidates []  ; [[pos label ch2]]
+        ch2s (vim.tbl_keys match-map)
+        among-ch2s? (fn [label] (vim.tbl_contains ch2s label))
         by-distance-from-cursor (fn [[[l1 c1] _ _] [[l2 c2] _ _]]
-                                  (if (= l1 l2) (if reverse? (> c1 c2) (< c1 c2))
-                                      (if reverse? (> l1 l2) (< l1 l2))))
-        shortcuts []]
+                                  (if (= l1 l2)
+                                      (if reverse? (> c1 c2) (< c1 c2))
+                                      (if reverse? (> l1 l2) (< l1 l2))))]
+    ; Step 1: Filter positions for which there is a label assigned, and
+    ; the label character is _not_ in the set of follow-up chars (i.e.,
+    ; potential second inputs).
     (each [ch2 positions (pairs match-map)]
-      ; Note: ignoring the distant group.
       (each [i pos (ipairs positions)]
-        (local labeled-pos? (not (or (= (length positions) 1)
-                                     (and jump-to-first? (= i 1)))))
-        (when labeled-pos?
-          (match (. labels (if jump-to-first? (dec i) i))
-            label (when-not (collides-with-a-ch2? label)
-                    ; Even if ending up using the shortcut, we will need
-                    ; `ch2`, to save the search attributes for repeats.
-                    (table.insert shortcuts [pos label ch2]))))))
-    (table.sort shortcuts by-distance-from-cursor)
-    (let [lookup-by-pos (let [labels-used-up {}]
-                          ; Keep only the first of each label,
-                          ; and return the stuff as a lookup table.
-                          (collect [_ [pos label ch2] (ipairs shortcuts)]
-                            (when-not (. labels-used-up label)
-                              (tset labels-used-up label true)
-                              (values pos [label ch2]))))
-          lookup-by-label (collect [pos [label ch2] (pairs lookup-by-pos)]
-                            (values label [pos ch2]))]
-      (vim.tbl_extend :error lookup-by-pos lookup-by-label))))
+        (let [labeled-pos? (not (or (= (length positions) 1)
+                                    (and jump-to-first? (= i 1))))]
+          (when labeled-pos?
+            ; Note: Shortcutting is only possible for the first match
+            ; group, we're ignoring the distant one(s) (i > #labels
+            ; simply short-circuits here).
+            (match (. labels (if jump-to-first? (dec i) i))
+              label (when-not (among-ch2s? label)
+                      ; Even if ending up using the shortcut, we need
+                      ; `ch2`, to save the search pattern for repeats.
+                      (table.insert shortcut-candidates [pos label ch2])))))))
+    ; Step 2: If there are multiple candidate positions with the same
+    ; label, we'd like to make the shortcut from the closest one.
+    (table.sort shortcut-candidates by-distance-from-cursor)
+    ; Step 3: Keep the first (i.e., closest) one among candidates using
+    ; the same label, and return a table allowing for lookup both by
+    ; position and by label.
+    (let [by-pos (let [labels-used-up {}]
+                   (collect [_ [pos label ch2] (ipairs shortcut-candidates)]
+                     (when-not (. labels-used-up label)
+                       (tset labels-used-up label true)
+                       (values pos [label ch2]))))
+          by-label (collect [pos [label ch2] (pairs by-pos)]
+                     (values label [pos ch2]))]
+      (vim.tbl_extend :error by-pos by-label))))
 
 
 (fn ignore-char-until-timeout [char-to-ignore]
