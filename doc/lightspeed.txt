@@ -17,6 +17,7 @@ CONTENTS                                                   *lightspeed-contents*
   Default mappings ······························|lightspeed-default-mappings|
   Custom mappings ······························· |lightspeed-custom-mappings|
   Highlighting ········································ |lightspeed-highlight|
+  Events ················································· |lightspeed-events|
 
 ==============================================================================
 INTRODUCTION                *lightspeed* *lightspeed.nvim* *lightspeed-introduction*
