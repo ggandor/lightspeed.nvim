@@ -23,9 +23,9 @@ should be _optimized for the common case_.
 [EasyMotion](https://github.com/easymotion/vim-easymotion) and its derivatives
 ([Hop](https://github.com/phaazon/hop.nvim), or
 [Avy](https://github.com/abo-abo/avy) for Emacs) are like a bunch of different -
-however sophisticated - railway (maglev, hyperloop...) networks, with pre-built
-stations: you have to think about which train to take, which exit point is the
-closest to your goal, etc.
+however sophisticated - railway networks, with pre-built stations: you have to
+think about which train to take, which exit point is the closest to your goal,
+etc.
 
 A user of Sneak, on the other hand, embraces a different philosophy: you barely
 need to think about motions anymore - label-mode "sneaking" gets you everywhere
@@ -189,19 +189,21 @@ by `¬` in the highlighted match).
 
 #### A note on the highlighting strategy
 
-Let's say you would like to jump to an `AB` pair, and you have already entered
-`A`, the first character of the search pattern.
+Let's say you would like to jump to an `A` `B` pair, and you have entered `A`,
+the first character of the search pattern.
 
-If `jump_to_first_match` is on - the default setting -, then the directly
-reachable ones among the `AX` matches will be highlighted as they are (with
-white/black for dark/light themes, respectively). For these, it is enough to
-finish the pattern, i.e., type `B`, to land on the target.
+At that moment, all `A` `?` matches will be highlighted, in different manners
+according to the next step needed to be taken to reach them.
 
-All other beacons on top of `A` `X` matches look like:
+The directly reachable ones among the `A` `?` matches will be highlighted as they
+are (with white/black for dark/light themes, respectively). For those, it is
+enough to finish the pattern, i.e., type `?`, to land on the target.
 
-`X` `label`
+All other beacons on top of `A` `?` matches look like:
 
-where the first field (the place of `X`, showing the character masked by the
+`?` `label`
+
+where the first field (the place of `?`, showing the character masked by the
 label) might be overlapped by the label of another match, and `label` itself
 might be a [shortcut](#shortcuts), with a filled background (the inverse of a
 regular label).
@@ -336,6 +338,12 @@ native behaviour of certain keys, that is, would not like to use some features
 of the plugin at all; but in that case, all they have to do is to `unmap` the
 relevant keys after the plugin has been sourced (e.g. `unmap t | unmap T`).
 
+### User events
+
+Lightspeed triggers `User` events on entering/exiting, so that you can set
+up autocommands, e.g. to change the values of some editor options while the
+plugin is active. For details, check `:h lightspeed-events`.
+
 ### Highlight groups
 
 For customizing the highlight colors, see `:h lightspeed-highlight`.
@@ -373,12 +381,6 @@ autocmd ColorScheme * lua require'lightspeed'.init_highlight(true)
 
 This can be tweaked further, you could e.g. check the actual colorscheme, and
 only execute for certain ones, etc.
-
-### User events
-
-Lightspeed triggers `User` events on entering/exiting, so that you can set
-up autocommands, e.g. to change the values of some editor options while the
-plugin is active. For details, check `:h lightspeed-events`.
 
 ### Notes
 

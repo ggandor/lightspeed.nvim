@@ -1,4 +1,4 @@
-*lightspeed.txt*      For Neovim version 0.5      Last change: 2021 September 28
+*lightspeed.txt*       For Neovim version 0.5       Last change: 2021 October 05
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -198,13 +198,13 @@ Available options~
 `instant_repeat_fwd_key = nil`
 `instant_repeat_bwd_key = nil`
 
-    Custom keys to trigger instant-repeat. These will only be "hijacked" while
-    1-character search is active, so you are free to use any key here, the
-    original mappings will not be disturbed.
+    Custom keys to trigger instant-repeat and revert. These will only be
+    "hijacked" while 1-character search is active, so you are free to use any
+    key here, the original mappings will not be disturbed.
 
     Note: If you would like to keep using `;` and `,` to trigger repeat
-          at any time, even after `ft:to` has finished executing, see
-          |lightspeed-custom-ft-repeat-mappings| for a workaround.
+          at any time, even after `ft:go` has finished executing, see
+          |lightspeed-custom-mappings|.
 
 If the following attributes are not specified by the user, Lightspeed will
 decide their values at runtime, based on whether `jump_to_first_match` is
