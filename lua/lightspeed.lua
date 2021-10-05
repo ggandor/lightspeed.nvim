@@ -734,10 +734,15 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
         end
       end
       if op_mode_3f then
-        if dot_repeatable_op_3f then
-          self.state.dot = {["in"] = in1}
-          return set_dot_repeat(cmd_for_dot_repeat, count)
+        do
+          if dot_repeatable_op_3f then
+            self.state.dot = {["in"] = in1}
+            set_dot_repeat(cmd_for_dot_repeat, count)
+          end
         end
+        doau_when_exists("LightspeedFtLeave")
+        doau_when_exists("LightspeedLeave")
+        return nil
       else
         highlight_cursor()
         vim.cmd("redraw")

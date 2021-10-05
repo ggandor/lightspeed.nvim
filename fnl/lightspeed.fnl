@@ -619,9 +619,10 @@ interrupted change-operation."
                            : reverse?
                            :inclusive-motion? true}))  ; like the native f/t
               (if op-mode?  ; note: no highlight to clean up
-                  (when dot-repeatable-op?
-                    (set self.state.dot {:in in1})
-                    (set-dot-repeat cmd-for-dot-repeat count))
+                  (exit
+                    (when dot-repeatable-op?
+                      (set self.state.dot {:in in1})
+                      (set-dot-repeat cmd-for-dot-repeat count)))
                   (do
                     (highlight-cursor)
                     (vim.cmd :redraw)
