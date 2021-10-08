@@ -679,60 +679,49 @@ interrupted change-operation."
 
 (fn get-match-map-for [ch1 reverse?]
   "Return a map that stores the positions of all on-screen pairs starting
-with `ch1` in separate ordered lists, keyed by the succeeding char."
-  (let [match-map {}                       ; {str [[1, 1, bool]]} i.e.:
-                                           ; {successor-char [[line, col, partially-covered?]]}
+with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
+  (let [match-map {}  ; {str [[1, 1, bool]]} i.e.: {succ-char [[line, col, overlapped?]]}
         prefix "\\V\\C"                    ; force matching case (for the moment)
         input (ch1:gsub "\\" "\\\\")       ; backslash still needs to be escaped for \V
         pattern (.. prefix input "\\_.")]  ; match anything (including EOL) after it
-    (var match-count 0)
-    ; Saving some of the search state locally, in order to discover overlaps.
-    (var prev {})
+    (var prev {})  ; saving some search state locally, to discover overlaps
+    (var added-prev-as-match? nil)
     (each [[line col &as pos] (onscreen-match-positions pattern reverse? {})]
-      (let [overlap-with-prev? (and (= line prev.line)
-                                    (= col ((if reverse? dec inc) prev.col)))
-            ch2 (or (char-at-pos pos {:char-offset 1})
+      (let [ch2 (or (char-at-pos pos {:char-offset 1})
                     "\r")  ; <enter> is the expected input for line breaks
-            same-pair? (= ch2 prev.ch2)]
-        (if (or 
-              ; If match_only_the_start... is turned off, we are skipping
-              ; only every second one from the consecutive overlapping
-              ; matches of the same pair; thus, if the previous match has
-              ; been skipped, we're good to go, no more checks necessary.
-              (when-not opts.match_only_the_start_of_same_char_seqs
-                prev.skipped?)
-              (not (and overlap-with-prev? same-pair?)))
-          (let [partially-covered? (and overlap-with-prev? (not reverse?))]
-            (when-not (. match-map ch2)
-              (tset match-map ch2 []))
-            ; In the forward direction, the previous match should be on top
-            ; (overlapping the recent), in the reverse direction, the recent one.
-            ; (The _label_ should be visible in both cases.)
-            (table.insert (. match-map ch2) [line col partially-covered?])
-            (when (and overlap-with-prev? reverse?)
-              ; Set the previous match to 'partially-covered'.
-              (tset (last (. match-map prev.ch2)) 3 true))
-            (set prev {: line : col : ch2 :skipped? false})
-            (++ match-count))
-          (set prev {: line : col : ch2 :skipped? true}))))
-    (match match-count
-      0 nil
-      ; A sole match will be handled specially, so we extract the
-      ; necessary information from the map.
-      1 (let [ch2 (. (vim.tbl_keys match-map) 1)
-              pos (. (vim.tbl_values match-map) 1 1)]
-          [ch2 pos])
-      _ match-map)))
+            overlap-with-prev? (and (= line prev.line)
+                                    (= col ((if reverse? dec inc) prev.col)))
+            same-char-triplet? (and overlap-with-prev? (= ch2 prev.ch2))]
+        (set prev {: line : col : ch2})
+        (if (and same-char-triplet?
+                 (or added-prev-as-match?
+                     opts.match_only_the_start_of_same_char_seqs))
+            (set added-prev-as-match? false)
+            (do
+              (when-not (. match-map ch2) (tset match-map ch2 []))
+              (table.insert (. match-map ch2) [line col])
+              (when overlap-with-prev?
+                ; Set either the previous or the current match to
+                ; 'overlapped', depending on the direction (the invariant
+                ; is that the _label_ should remain visible in any case).
+                (-> (last (. match-map (if reverse? prev.ch2 ch2)))
+                    (tset 3 true)))
+              (set added-prev-as-match? true)))))
+    (match (next match-map)  ; not empty
+      (ch2 positions) (or (when-not (next match-map ch2)  ; no further keys
+                            (match positions
+                              [pos nil] [ch2 pos]))  ; only match
+                          match-map))))
 
 
-(fn set-beacon-at [[line col partially-covered? &as pos] ch1 ch2
+(fn set-beacon-at [[line col overlapped? &as pos] ch1 ch2
                    {: labeled? : repeat? : distant? : shortcut?}]
   (let [ch1 (or (. opts.substitute_chars ch1) ch1)
         ch2 (or (when-not labeled? (. opts.substitute_chars ch2)) ch2)
         ; When repeating, there is no initial round, i.e., no overlaps
         ; possible (triplets of the same character are _always_ skipped),
         ; and neither are there shortcuts.
-        partially-covered? (when-not repeat? partially-covered?)
+        overlapped? (when-not repeat? overlapped?)
         shortcut? (when-not repeat? shortcut?)
         label-hl (if shortcut? hl.group.shortcut
                      distant? hl.group.label-distant
@@ -745,11 +734,11 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
             ; `(not labeled?)` presupposes the first round (and excludes
             ; `repeat?`, logically), since it means we will just jump there
             ; after the next input (that is why it doesn't get a label).
-            (if partially-covered?
+            (if overlapped?
                 [(inc col) [ch2 hl.group.unlabeled-match] nil]
                 [col [ch1 hl.group.unlabeled-match] [ch2 hl.group.unlabeled-match]])
 
-            partially-covered?  ; labeled
+            overlapped?  ; labeled
             ; Note: The label keeps the same special highlight in the 2nd round.
             ; (It is important for a label to stay unchanged once shown up, if
             ; possible, else the eye might get confused, which kinda beats the
@@ -757,7 +746,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
             [(inc col) [ch2 overlapped-label-hl] nil]
 
             ; `repeat?` is mutually exclusive both with `(not labeled?)` and
-            ; `partially-covered?` (since only the second round takes place).
+            ; `overlapped?` (since only the second round takes place).
             ; Obviously, there is no need for a ch2-reminder in the first field.
             repeat?
             [(inc col) [ch2 label-hl] nil]
@@ -1092,7 +1081,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char."
         (match (or (get-match-map-for in1 reverse?)
                    (exit-early
                      (echo-not-found (.. in1 (or prev-in2 "")))))
-          [ch2 pos &as unique-match]
+          [ch2 pos &as only-match]
           (if (or new-search? (= ch2 prev-in2))
               ; Successful exit, option #1: jump to a unique character right after the first input.
               (exit
