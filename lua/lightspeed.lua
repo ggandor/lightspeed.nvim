@@ -456,7 +456,7 @@ local function onscreen_match_positions(pattern, reverse_3f, _85_)
 end
 local function highlight_unique_chars(reverse_3f, ignorecase)
   local unique_chars = {}
-  local pattern = ".."
+  local pattern = ".\\_."
   for pos in onscreen_match_positions(pattern, reverse_3f, {}) do
     local ch = char_at_pos(pos, {})
     local _119_

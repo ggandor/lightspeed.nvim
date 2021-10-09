@@ -409,7 +409,7 @@ early termination in loops."
 ; (This is unusably slow if the window has a lot of content.)
 (fn highlight-unique-chars [reverse? ignorecase]
   (let [unique-chars {}
-        pattern ".."]  ; does not match before EOL
+        pattern ".\\_."]
     (each [pos (onscreen-match-positions pattern reverse? {})]
       (local ch (char-at-pos pos {}))
       (tset unique-chars ch (match (. unique-chars ch) nil pos _ false)))
