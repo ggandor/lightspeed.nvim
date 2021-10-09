@@ -63,7 +63,8 @@ character instead."
   (let [line-str (vim.fn.getline line)
         char-idx (vim.fn.charidx line-str (dec byte-col))  ; charidx expects 0-indexed col
         char-nr (vim.fn.strgetchar line-str (+ char-idx (or char-offset 0)))]
-    (when (not= char-nr -1) (vim.fn.nr2char char-nr))))
+    (when (not= char-nr -1)
+      (vim.fn.nr2char char-nr))))
 
 
 (fn leftmost-editable-wincol []
@@ -205,14 +206,16 @@ character instead."
     (let [attrs-str (-> (icollect [k v (pairs attrs)] (.. k "=" v))
                         (table.concat " "))]
       ; "default" = do not override any existing definition for the group.
-      (vim.cmd (.. "highlight " (if force? "" "default ")
+      (vim.cmd (.. "highlight "
+                   (if force? "" "default ")
                    group " " attrs-str))))
   ; Setting linked groups.
   (each [_ [from-group to-group]
          (ipairs [[hl.group.unique-ch hl.group.unlabeled-match]
                   [hl.group.shortcut-overlapped hl.group.shortcut]
                   [hl.group.cursor "Cursor"]])]
-    (vim.cmd (.. "highlight " (if force? "" "default ")
+    (vim.cmd (.. "highlight "
+                 (if force? "" "default ")
                  "link " from-group " " to-group))))
 
 
@@ -227,7 +230,8 @@ character instead."
 
 
 (fn highlight-range [hl-group
-                     [startline startcol &as start] [endline endcol &as end]
+                     [startline startcol &as start]
+                     [endline endcol &as end]
                      {: forced-motion : inclusive-motion?}]
   "A wrapper around `vim.highlight.range` that handles forced motion
 types properly."
@@ -284,7 +288,8 @@ types properly."
   (vim.cmd "silent! doautocmd matchup_matchparen CursorMoved"))
 
 
-(macro jump-to! [target {: add-to-jumplist? : after : reverse? : inclusive-motion?}]
+(macro jump-to! [target
+                 {: add-to-jumplist? : after : reverse? : inclusive-motion?}]
   `(let [op-mode?# (operator-pending-mode?)
          ; Needs to be here, inside the returned form, as we need to get
          ; `vim.o.virtualedit` at runtime.
@@ -361,7 +366,8 @@ early termination in loops."
         right-bound (+ left-bound (dec (- window-width non-editable-width 1)))]
 
     (fn skip-to-fold-edge! []
-      (match ((if reverse? vim.fn.foldclosed vim.fn.foldclosedend) (vim.fn.line "."))
+      (match ((if reverse? vim.fn.foldclosed vim.fn.foldclosedend)
+              (vim.fn.line "."))
         -1 :not-in-fold
         fold-edge (do (vim.fn.cursor fold-edge 0)
                       (vim.fn.cursor 0 (if reverse? 1 (vim.fn.col "$")))
@@ -395,22 +401,25 @@ early termination in loops."
                   (if (or vim.wo.wrap (<= left-bound col right-bound))  ; = on-screen
                     (do (++ match-count) pos)
                     (match (skip-to-next-in-window-pos!)
-                      :moved-the-cursor (rec true)  ; true -> we might be _on_ a match
+                      :moved-the-cursor (rec true)  ; true, as we might be _on_ a match
                       _ (cleanup))))))))))
 
 
 ; Thinking about some totally different implementation, not using search().
 ; (This is unusably slow if the window has a lot of content.)
 (fn highlight-unique-chars [reverse? ignorecase]
-  (local unique-chars {})
-  (each [pos (onscreen-match-positions ".." reverse? {})]  ; do not match before EOL
-    (let [ch (char-at-pos pos {})]
-      (tset unique-chars ch (match (. unique-chars ch) nil pos _ false))))
-  (each [ch pos-or-false (pairs unique-chars)]
-    (when pos-or-false
-      (let [[line col] pos-or-false]
-        (hl:set-extmark (dec line) (dec col)
-          {:virt_text [[ch hl.group.unique-ch]] :virt_text_pos "overlay"})))))
+  (let [unique-chars {}
+        pattern ".."]  ; does not match before EOL
+    (each [pos (onscreen-match-positions pattern reverse? {})]
+      (local ch (char-at-pos pos {}))
+      (tset unique-chars ch (match (. unique-chars ch) nil pos _ false)))
+    (each [ch pos (pairs unique-chars)]
+      (match pos
+        [line col]
+        (hl:set-extmark (dec line)
+                        (dec col)
+                        {:virt_text [[ch hl.group.unique-ch]]
+                         :virt_text_pos "overlay"})))))
 
 
 (fn highlight-cursor [?pos]
@@ -420,9 +429,11 @@ so we set a temporary highlight on it to see where we are."
         ; nil means the cursor is on an empty line.
         ch-at-curpos (or (char-at-pos pos {}) " ")]  ; char-at-pos needs 1,1-idx
     ; (Ab)using extmarks even here, to be able to highlight the cursor on empty lines too.
-    (hl:set-extmark (dec line) (dec col) {:virt_text [[ch-at-curpos hl.group.cursor]]
-                                          :virt_text_pos "overlay"
-                                          :hl_mode "combine"})))
+    (hl:set-extmark (dec line)
+                    (dec col)
+                    {:virt_text [[ch-at-curpos hl.group.cursor]]
+                     :virt_text_pos "overlay"
+                     :hl_mode "combine"})))
 
 
 (fn handle-interrupted-change-op! []
@@ -510,13 +521,10 @@ interrupted change-operation."
 
 
 (fn get-plug-key [kind reverse? x-or-t? repeat-invoc]
-  (local ->bool #(-> $ not not))
   (.. "<Plug>Lightspeed_"
-      (match repeat-invoc
-        :dot "dotrepeat_"
-        _ "")
-        ; Forcing to bools, as those values can be nils, and nil != false.
-      (match [kind (->bool reverse?) (->bool x-or-t?)]
+      (match repeat-invoc :dot "dotrepeat_" _ "")
+      ; Forcing to bools with not-not, as those values can be nils.
+      (match [kind (not (not reverse?)) (not (not x-or-t?))]
         [:ft false false] "f" 
         [:ft true  false] "F"
         [:ft false true ] "t"
@@ -539,10 +547,12 @@ interrupted change-operation."
 ; issues than it absorbs, I guess. Time might prove me wrong.
 
 ; State for 1-character search that is persisted between invocations.
-; TODO: refactor `sx` accordingly (maybe allow for cold-repeat too...)
-(local ft {:state {:instant {:in nil :stack nil}
+(local ft {:state {:instant {:in nil
+                             :stack nil}
                    :dot {:in nil}
-                   :cold {:in nil :reverse? nil :t-mode? nil}
+                   :cold {:in nil
+                          :reverse? nil
+                          :t-mode? nil}
                   }})
 
 (fn ft.go [self reverse? t-mode? repeat-invoc]
@@ -714,23 +724,26 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
                           match-map))))
 
 
-(fn set-beacon-at [[line col overlapped? &as pos] ch1 ch2
+(fn set-beacon-at [[line col overlapped?]
+                   ch1
+                   ch2
                    {: labeled? : repeat? : distant? : shortcut?}]
   (let [ch1 (or (. opts.substitute_chars ch1) ch1)
         ch2 (or (when-not labeled? (. opts.substitute_chars ch2)) ch2)
         ; When repeating, there is no initial round, i.e., no overlaps
         ; possible (triplets of the same character are _always_ skipped),
         ; and neither are there shortcuts.
-        overlapped? (when-not repeat? overlapped?)
-        shortcut? (when-not repeat? shortcut?)
-        label-hl (if shortcut? hl.group.shortcut
-                     distant? hl.group.label-distant
-                     hl.group.label)
-        overlapped-label-hl (if shortcut? hl.group.shortcut-overlapped
-                                distant? hl.group.label-distant-overlapped
-                                hl.group.label-overlapped)
+        overlapped? (and (not repeat?) overlapped?)
+        shortcut? (and (not repeat?) shortcut?)
+
+        [label-hl overlapped-label-hl]
+        (if shortcut? [hl.group.shortcut hl.group.shortcut-overlapped]
+            distant? [hl.group.label-distant hl.group.label-distant-overlapped]
+            [hl.group.label hl.group.label-overlapped])
+
         [startcol chunk1 ?chunk2]
-        (if (not labeled?)  ; = a first - i.e. "autojumpable" - match
+        (if (not labeled?)
+            ; That is, a first ("autojumpable") match.
             ; `(not labeled?)` presupposes the first round (and excludes
             ; `repeat?`, logically), since it means we will just jump there
             ; after the next input (that is why it doesn't get a label).
@@ -738,23 +751,26 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
                 [(inc col) [ch2 hl.group.unlabeled-match] nil]
                 [col [ch1 hl.group.unlabeled-match] [ch2 hl.group.unlabeled-match]])
 
-            overlapped?  ; labeled
-            ; Note: The label keeps the same special highlight in the 2nd round.
-            ; (It is important for a label to stay unchanged once shown up, if
-            ; possible, else the eye might get confused, which kinda beats the
-            ; purpose.)
+            overlapped?
+            ; Note that the label keeps the same special highlight in the 2nd
+            ; round. (It is important for a label to stay unchanged once shown
+            ; up, if possible, else the eye might get confused, which kinda
+            ; beats the purpose.)
             [(inc col) [ch2 overlapped-label-hl] nil]
 
+            repeat?
             ; `repeat?` is mutually exclusive both with `(not labeled?)` and
             ; `overlapped?` (since only the second round takes place).
             ; Obviously, there is no need for a ch2-reminder in the first field.
-            repeat?
             [(inc col) [ch2 label-hl] nil]
 
-            ; Common case: labeled, fully visible match, new invocation.
+            :else
+            ; Common case: new invocation, labeled, fully visible match.
             [col [ch1 hl.group.masked-ch] [ch2 label-hl]])]
-      (hl:set-extmark (dec line) (dec startcol) {:virt_text [chunk1 ?chunk2]
-                                                 :virt_text_pos "overlay"})))
+      (hl:set-extmark (dec line)
+                      (dec startcol)
+                      {:virt_text [chunk1 ?chunk2]
+                       :virt_text_pos "overlay"})))
 
 
 (fn set-beacon-groups [ch2 positions labels shortcuts {: group-offset : repeat?}]
@@ -765,15 +781,16 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
         set-group
         (fn [start distant?]
           (for [i start (dec (+ start |labels|))  ; end is inclusive
-                :until (or (< i 1)
-                           (> i (length positions)))]
+                :until (or (< i 1) (> i (length positions)))]
             (let [pos (. positions i)
                   ; 1-indexing is not a great match for modulo arithmetic.
                   label (or (. labels (% i |labels|))
                             (. labels |labels|))  ; when mod = 0
-                  shortcut? (when-not distant? (. shortcuts pos))]
-              (set-beacon-at pos ch2 label {:labeled? true : distant?
-                                            : repeat? : shortcut?}))))]
+                  shortcut? (and (not distant?) (. shortcuts pos))]
+              (set-beacon-at pos ch2 label {:labeled? true
+                                            : distant?
+                                            : repeat?
+                                            : shortcut?}))))]
     ; Inner group (directly reachable matches).
     (set-group start false)
     ; Outer group (matches that are one group switch away).
@@ -833,7 +850,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
   (let [start (os.clock)
         timeout-secs (/ opts.jump_on_partial_input_safety_timeout 1000)
         (ok? input) (getchar-as-str)]
-    (when-not (and (= input char-to-ignore) (< (os.clock) (+ start timeout-secs)))
+    (when-not (and (= input char-to-ignore)
+                   (< (os.clock) (+ start timeout-secs)))
       (when ok? (vim.fn.feedkeys input :i)))))
 
 
@@ -998,13 +1016,13 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
             (highlight-cursor ?highlight-cursor-at))  ; nil = at the actual position
           (when op-mode?
             (highlight-range hl.group.pending-op-area start end
-                             {: forced-motion :inclusive-motion? forward-x?})))
-        (vim.cmd :redraw)
-        (ignore-char-until-timeout ch2)
-        ; Mitigate blink on the command line
-        ; (see also `handle-interrupted-change-op!`).
-        (when change-op? (echo ""))
-        (hl:cleanup)))
+                             {: forced-motion :inclusive-motion? forward-x?}))
+          (vim.cmd :redraw)
+          (ignore-char-until-timeout ch2)
+          ; Mitigate blink on the command line
+          ; (see also `handle-interrupted-change-op!`).
+          (when change-op? (echo ""))
+          (hl:cleanup))))
 
     (fn select-match-group [in2 positions-to-label shortcuts enter-repeat?]
       (var ret nil)
@@ -1128,10 +1146,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
                              (exit-early
                                (echo-not-found (.. in1 in2))))
                     positions
+                    ; TODO: Refactor this part...
                     (let [[[line col &as first] & rest] positions
-                          ; TODO: Yeah, these lispy manipulations are very ugly
-                          ;       w/o linked lists... try to refactor this part
-                          ;       to sg more idiomatic.
                           [f-rest & r-rest] rest
                           ; Skipping makes no sense in the forward direction,
                           ; since in OP-mode (when we land before the target)
@@ -1146,7 +1162,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
                           [first rest positions] (if skip-one?
                                                      [f-rest r-rest rest]
                                                      [first rest positions])
-                          ; TODO: add `cold-repeat?` here when implementing the labeled version.
+                          ; TODO: add `cold-repeat?` here when implementing
+                          ;       the labeled version.
                           positions-to-label (if jump-to-first? rest positions)]
                       (when (and first  ; there might be none if skipped one
                                  (or cold-repeat? jump-to-first? (empty? rest)))
