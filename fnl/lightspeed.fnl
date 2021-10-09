@@ -773,7 +773,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
                        :virt_text_pos "overlay"})))
 
 
-(fn set-beacon-groups [ch2 positions labels shortcuts {: group-offset : repeat?}]
+(fn set-labeled-beacons [ch2 positions labels shortcuts
+                         {: group-offset : repeat?}]
   (let [group-offset (or group-offset 0)
         |labels| (length labels)
         start (inc (* group-offset |labels|))
@@ -1046,8 +1047,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
                                       ((match input cycle-fwd-key inc _ dec))
                                       (clamp 0 max-offset)))
                 (with-highlight-chores
-                  (set-beacon-groups in2 positions-to-label labels shortcuts
-                                     {: group-offset :repeat? enter-repeat?}))))))
+                  (set-labeled-beacons
+                    in2 positions-to-label labels shortcuts
+                    {: group-offset :repeat? enter-repeat?}))))))
       ret)
 
     ; A note on a design decision: when a function encapsulates an inherently
@@ -1123,7 +1125,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
                       ; Highlight these pairs with a "direct route" differently.
                       (set-beacon-at first in1 ch2 {}))
                     (when-not (empty? rest)
-                      (set-beacon-groups ch2 positions-to-label labels shortcuts {}))))))
+                      (set-labeled-beacons
+                        ch2 positions-to-label labels shortcuts {}))))))
             (match (or prev-in2
                        (get-input-and-clean-up)
                        (exit-early))
@@ -1193,8 +1196,9 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
                               ; Lighting up beacons again, now only for pairs with `in2`
                               ; as second character.
                               (with-highlight-chores
-                                (set-beacon-groups in2 positions-to-label labels shortcuts
-                                                   {:repeat? enter-repeat?})))
+                                (set-labeled-beacons
+                                  in2 positions-to-label labels shortcuts
+                                  {:repeat? enter-repeat?})))
                             (match (or (select-match-group in2 positions-to-label
                                                            shortcuts enter-repeat?)
                                        (exit-early))  ; <C-c> (note: no highlight to clean up)

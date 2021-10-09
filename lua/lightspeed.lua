@@ -943,7 +943,7 @@ local function set_beacon_at(_216_, ch1, ch2, _218_)
   local _3fchunk2 = _let_223_[3]
   return hl["set-extmark"](hl, dec(line), dec(startcol), {virt_text = {chunk1, _3fchunk2}, virt_text_pos = "overlay"})
 end
-local function set_beacon_groups(ch2, positions, labels, shortcuts, _226_)
+local function set_labeled_beacons(ch2, positions, labels, shortcuts, _226_)
   local _arg_227_ = _226_
   local group_offset = _arg_227_["group-offset"]
   local repeat_3f = _arg_227_["repeat?"]
@@ -1244,7 +1244,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
             grey_out_search_area(reverse_3f)
           end
           do
-            set_beacon_groups(in2, positions_to_label, labels, shortcuts, {["group-offset"] = group_offset, ["repeat?"] = enter_repeat_3f0})
+            set_labeled_beacons(in2, positions_to_label, labels, shortcuts, {["group-offset"] = group_offset, ["repeat?"] = enter_repeat_3f0})
           end
           highlight_cursor()
           vim.cmd("redraw")
@@ -1406,7 +1406,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
               set_beacon_at(first, in1, ch2, {})
             end
             if not empty_3f(rest) then
-              set_beacon_groups(ch2, positions_to_label, labels, shortcuts, {})
+              set_labeled_beacons(ch2, positions_to_label, labels, shortcuts, {})
             end
           end
         end
@@ -1531,7 +1531,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
                   grey_out_search_area(reverse_3f)
                 end
                 do
-                  set_beacon_groups(in2, positions_to_label, labels, shortcuts, {["repeat?"] = enter_repeat_3f})
+                  set_labeled_beacons(in2, positions_to_label, labels, shortcuts, {["repeat?"] = enter_repeat_3f})
                 end
                 highlight_cursor()
                 vim.cmd("redraw")
