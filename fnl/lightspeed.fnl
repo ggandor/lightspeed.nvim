@@ -1,9 +1,9 @@
-; Imports & aliases {{{
+; Imports & aliases ///1
 
 (local api vim.api)
 
-; }}}
-; Fennel utils {{{
+
+; Fennel utils ///1
 
 (fn inc [x] (+ x 1))
 (fn dec [x] (- x 1))
@@ -31,8 +31,8 @@
 (macro when-not [condition ...]
   `(when (not ,condition) ,...))
 
-; }}}
-; Nvim utils {{{
+
+; Nvim utils ///1
 
 (fn getchar-as-str []
   (local (ok? ch) (pcall vim.fn.getchar))  ; handling <C-c>
@@ -75,8 +75,8 @@ character instead."
   (vim.fn.winrestview view)
   wincol)
 
-; }}}
-; Glossary {{{
+
+; Glossary ///1
 
 ; Instant-repeat (1-char search)
 ; While Lightspeed is active, repeatedly pressing f/F/t/T goes  (or
@@ -111,8 +111,8 @@ character instead."
 ; bypassing the second one. The label gets a different highlight in
 ; these cases.
 
-; }}}
-; Setup {{{
+
+; Setup ///1
 
 (var opts {:jump_to_first_match true
            :jump_on_partial_input_safety_timeout 400
@@ -135,8 +135,8 @@ character instead."
 (fn setup [user-opts]
   (set opts (setmetatable user-opts {:__index opts})))
 
-; }}}
-; Highlight {{{
+
+; Highlight ///1
 
 (local hl
   {:group {:label                    "LightspeedLabel"
@@ -252,8 +252,8 @@ types properly."
       :v (hl-range start end (not inclusive-motion?))
       _ (hl-range start end inclusive-motion?))))
 
-; }}}
-; Common {{{
+
+; Common ///1
 
 (fn echo-no-prev-search [] (echo "no previous search"))
 
@@ -519,7 +519,6 @@ interrupted change-operation."
         (pcall vim.fn.repeat#set seq -1)))))
 
 
-
 (fn get-plug-key [kind reverse? x-or-t? repeat-invoc]
   (.. "<Plug>Lightspeed_"
       (match repeat-invoc :dot "dotrepeat_" _ "")
@@ -534,8 +533,8 @@ interrupted change-operation."
         [:sx true  false] "x"
         [:sx true  true ] "X")))
 
-; }}}
-; 1-character search {{{
+
+; 1-character search ///1
 
 ; Precursory remarks: do not readily succumb to the siren call of
 ; generality here. 1- and 2-character search, according to this plugin's
@@ -552,8 +551,7 @@ interrupted change-operation."
                    :dot {:in nil}
                    :cold {:in nil
                           :reverse? nil
-                          :t-mode? nil}
-                  }})
+                          :t-mode? nil}}})
 
 (fn ft.go [self reverse? t-mode? repeat-invoc]
   "Entry point for 1-character search."
@@ -669,8 +667,10 @@ interrupted change-operation."
                                (when (one-of? k :instant-repeat? :prev-t-like?)
                                  (api.nvim_echo deprec-msg true {})))}))
 
-; }}}
-; 2-character search {{{
+
+; 2-character search ///1
+
+; Helpers ///
 
 (fn get-labels []
   (or opts.labels
@@ -855,6 +855,7 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
                    (< (os.clock) (+ start timeout-secs)))
       (when ok? (vim.fn.feedkeys input :i)))))
 
+; //> Helpers
 
 ; State for 2-character search that is persisted between invocations.
 (local sx {:state {:dot {:in1 nil
@@ -865,11 +866,12 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
                    :cold {:in1 nil
                           :in2 nil
                           :reverse? nil
-                          :x-mode? nil}
-                   }})
+                          :x-mode? nil}}})
 
 (fn sx.go [self reverse? invoked-in-x-mode? repeat-invoc]
   "Entry point for 2-character search."
+
+  ; Overview ///
 
   ; local helper macros & functions
   ; -------------------------------
@@ -915,6 +917,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
   ;         exit w/ feeding in3 (#2)
   ;       else: exit-early (#3)
 
+  ; //> Overview
+
   (let [dot-repeat? (= repeat-invoc :dot)
         cold-repeat? (= repeat-invoc :cold)
         op-mode? (operator-pending-mode?)
@@ -935,6 +939,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
     (var x-mode? invoked-in-x-mode?)
     (var enter-repeat? nil)
     (var new-search? nil)
+
+    ; Helpers ///
 
     (macro exit [...] `(exit-template :sx false ,...))
     (macro exit-early [...] `(exit-template :sx true ,...))
@@ -1051,6 +1057,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
                     in2 positions-to-label labels shortcuts
                     {: group-offset :repeat? enter-repeat?}))))))
       ret)
+
+    ; //> Helpers
 
     ; A note on a design decision: when a function encapsulates an inherently
     ; complex flow of logic, it is most important to get a good overview of the
@@ -1226,8 +1234,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
                                           (vim.fn.feedkeys in3 :i))
                                         (exit-early))))))))))))))))))
 
-; }}}
-; Handling editor options {{{
+
+; Handling editor options ///1
 
 ; Quick-and-dirty code, we'll tidy up/expand/rethink this section later.
 
@@ -1264,8 +1272,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
 (fn restore-editor-opts []
   (set-editor-opts saved-editor-opts))
 
-; }}}
-; Mappings {{{
+
+; Mappings ///1
 
 (fn set-plug-keys []
   (local plug-keys
@@ -1349,8 +1357,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
             (= (vim.fn.hasmapto rhs mode) 0))
       (api.nvim_set_keymap mode lhs rhs {:silent true}))))
 
-; }}}
-; Init {{{
+
+; Init ///1
 
 (init-highlight)
 (set-plug-keys)
@@ -1371,8 +1379,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
    autocmd User LightspeedLeave lua require'lightspeed'.restore_editor_opts()
    augroup end")
 
-; }}}
-; Endnotes {{{
+
+; Endnotes ///1
 
 ; (1) These should be saved right here, because the repeated search
 ;     might have a match anyway.
@@ -1395,7 +1403,8 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
 ;     match..."?). The most intuitive/logical behaviour is repeating as
 ;     <enter>-repeat in these cases, prompting for a target label again.
 
-; }}}
+
+; Module ///1
 
 {: opts
  : setup
@@ -1409,4 +1418,5 @@ with `ch1` in separate ordered lists, keyed by the succeeding char (`ch2`)."
  :init_highlight init-highlight
  :set_default_keymaps set-default-keymaps}
 
-; vim:foldmethod=marker
+
+; vim: foldmethod=marker foldmarker=///,//>
