@@ -101,6 +101,11 @@ all situations when there is no obvious _atomic_ alternative - like `w`, `{`, or
 
 * Neovim >= 0.5.0
 
+### Dependencies
+
+* [repeat.vim](https://github.com/tpope/vim-repeat) is required for the dot-repeat
+functionality to work as intended.
+
 ### Installation
 
 #### [packer](https://github.com/wbthomason/packer.nvim)
