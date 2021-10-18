@@ -81,7 +81,7 @@ character instead."
 ; Glossary ///1
 
 ; Instant-repeat (1-char search)
-; While Lightspeed is active, repeatedly pressing f/F/t/T goes  (or
+; While Lightspeed is active, repeatedly pressing f/F/t/T goes to (or
 ; right before/after) the next/previous match (effectively repeats the
 ; last 1-character search with a count of 1). Pressing any other key
 ; exits from this "standby" mode; subsequent calls will behave as new
@@ -91,23 +91,23 @@ character instead."
 ; An extmark positioned over an on-screen matching pair, giving
 ; information about how it can be reached. It can take on many forms; in
 ; the common case, the first field shows the 2nd character of the
-; original pair, as a reminder (that is, it is shown on p of the
+; original pair, as a reminder (that is, it is shown on top of the
 ; _first_ character), while the second field shows a "target label"
 ; (that is possibly a "shortcut"). If there is only one match, the
 ; extmark shows the pair as it is, with a different highlighting (we
-; will jump there aumatically then).
-; Beacons can also overlap each other - in that case, the invariant 
+; will jump there automatically then).
+; Beacons can also overlap each other - in that case, the invariant to
 ; be maintained is that the target label (i.e., the second/right field)
 ; should remain visible in all circumstances.
 
 ; Label (2-char search)
-; The character needed  be pressed to jump to the match position,
+; The character needed to be pressed to jump to the match position,
 ; after the whole search pattern has been given. It is always shown on
-; p of the second character of the pair.
+; top of the second character of the pair.
 
 ; Shortcut (2-char search)
-; A position where the assigned label itself is enough  determine the
-; target you want  jump to (for example when a character is always
+; A position where the assigned label itself is enough to determine the
+; target you want to jump to (for example when a character is always
 ; followed by a certain other character in the search area). Those you
 ; can reach via typing the label character right after the first input,
 ; bypassing the second one. The label gets a different highlight in
