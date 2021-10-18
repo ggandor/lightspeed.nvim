@@ -862,6 +862,15 @@ sub-table containing label-target k-v pairs for these targets."
                        :virt_text_pos "overlay"}))))
 
 
+(fn get-target-with-active-primary-label [target-list input]
+  (var res nil)
+  (each [_ {: label : label-state &as target} (ipairs target-list)
+         :until res]
+    (when (and (= label input) (= label-state :active-primary))
+      (set res target)))
+  res)
+
+
 (fn ignore-char-until-timeout [char-to-ignore]
   (let [start (os.clock)
         timeout-secs (/ opts.jump_on_partial_input_safety_timeout 1000)
@@ -1071,14 +1080,6 @@ sub-table containing label-target k-v pairs for these targets."
               ; Note: dot-repeat arrives here, and short-circuits.
               (do (set loop? false)
                   (set res [input group-offset])))))
-      res)
-
-    (fn get-target-with-active-primary-label [target-list input]
-      (var res nil)
-      (each [_ {: label : label-state &as target} (ipairs target-list)
-             :until res]
-        (when (and (= label input) (= label-state :active-primary))
-          (set res target)))
       res)
 
     ; //> Helpers
