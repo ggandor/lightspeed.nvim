@@ -17,6 +17,8 @@
 
 (local empty? vim.tbl_isempty)
 
+(local map vim.tbl_map)
+
 (fn string? [x] (= (type x) :string))
 
 (fn reverse-lookup [tbl]
@@ -222,7 +224,7 @@ character instead."
 
 
 (fn grey-out-search-area [reverse?]
-  (let [[curline curcol] (vim.tbl_map dec (get-cursor-pos))
+  (let [[curline curcol] (map dec (get-cursor-pos))
         [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]
         [start finish] (if reverse?
                          [[win-top 0] [curline curcol]]
@@ -570,7 +572,7 @@ interrupted change-operation."
         count (if reverted-instant-repeat? 0 vim.v.count1)
         [repeat-key revert-key] (->> [opts.instant_repeat_fwd_key
                                       opts.instant_repeat_bwd_key]
-                                     (vim.tbl_map replace-keycodes))
+                                     (map replace-keycodes))
         op-mode? (operator-pending-mode?)
         dot-repeatable-op? (dot-repeatable-operation?)
         cmd-for-dot-repeat (replace-keycodes
@@ -686,7 +688,7 @@ interrupted change-operation."
             (if opts.jump_to_first_match "<tab>" "<space>"))
         (or opts.cycle_group_bwd_key
             (if opts.jump_to_first_match "<s-tab>" "<tab>"))]
-       (vim.tbl_map replace-keycodes)))
+       (map replace-keycodes)))
 
 
 (fn get-targets [ch1 reverse?]
@@ -803,13 +805,12 @@ sub-table containing label-target k-v pairs for these targets."
 (fn set-beacon [{:pos [_ col] :pair [ch1 ch2]
                  : label : label-state : overlapped? : shortcut? &as target}
                 repeat?]
-  (let [[ch1 ch2] (->> [ch1 ch2]
-                       (vim.tbl_map #(or (. opts.substitute_chars $) $)))
+  (let [[ch1 ch2] (->> [ch1 ch2] (map #(or (. opts.substitute_chars $) $)))
         ; When repeating, there is no initial round, i.e., no overlaps
         ; possible (triplets of the same character are _always_ skipped),
         ; and neither are there shortcuts.
         [overlapped? shortcut?] (->> [overlapped? shortcut?]
-                                     (vim.tbl_map #(and (not repeat?) $)))
+                                     (map #(and (not repeat?) $)))
         unlabeled-hl hl.group.unlabeled-match
         [label-hl overlapped-label-hl]
         (if shortcut? [hl.group.shortcut hl.group.shortcut-overlapped]
@@ -979,7 +980,7 @@ sub-table containing label-target k-v pairs for these targets."
             (set first-jump? false))))
 
     (fn jump-and-ignore-ch2-until-timeout! [[target-line target-col] ch2]
-      (local from-pos (vim.tbl_map dec (get-cursor-pos)))  ; 1,1 -> 0,0
+      (local from-pos (map dec (get-cursor-pos)))  ; 1,1 -> 0,0
       ; Note to myself: what if `jump-to!` would return the final,
       ; adjusted position?
       (jump-wrapped! [target-line target-col])  ; 1,1
@@ -998,7 +999,7 @@ sub-table containing label-target k-v pairs for these targets."
               to-col (if backward-x? (inc (inc target-col))
                          forward-x? (inc target-col)
                          target-col)
-              to-pos (vim.tbl_map dec [target-line to-col])  ; 1,1 -> 0,0
+              to-pos (map dec [target-line to-col])  ; 1,1 -> 0,0
               ; Preliminary boundaries of the highlighted - operated - area
               ; (forced-motion might affect these).
               [startline startcol &as start] (if reverse? to-pos from-pos)
@@ -1015,7 +1016,7 @@ sub-table containing label-target k-v pairs for these targets."
                                               ; position with our virtual cursor.
                                               (not reverse?)
                                               from-pos)
-                                          (vim.tbl_map inc)))]  ; 0,0 -> 1,1 (`highlight-cursor`)
+                                          (map inc)))]  ; 0,0 -> 1,1 (`highlight-cursor`)
           (when-not change-op?  ; then we're entering insert mode anyway (cannot move away)
             (highlight-cursor ?highlight-cursor-at))  ; nil = at the actual position
           (when op-mode?

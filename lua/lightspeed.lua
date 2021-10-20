@@ -18,6 +18,7 @@ local function last(tbl)
   return tbl[#tbl]
 end
 local empty_3f = vim.tbl_isempty
+local map = vim.tbl_map
 local function string_3f(x)
   return (type(x) == "string")
 end
@@ -236,7 +237,7 @@ local function init_highlight(force_3f)
   return nil
 end
 local function grey_out_search_area(reverse_3f)
-  local _let_68_ = vim.tbl_map(dec, get_cursor_pos())
+  local _let_68_ = map(dec, get_cursor_pos())
   local curline = _let_68_[1]
   local curcol = _let_68_[2]
   local _let_69_ = {dec(vim.fn.line("w0")), dec(vim.fn.line("w$"))}
@@ -589,7 +590,7 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
   else
     count = vim.v.count1
   end
-  local _let_151_ = vim.tbl_map(replace_keycodes, {opts.instant_repeat_fwd_key, opts.instant_repeat_bwd_key})
+  local _let_151_ = map(replace_keycodes, {opts.instant_repeat_fwd_key, opts.instant_repeat_bwd_key})
   local repeat_key = _let_151_[1]
   local revert_key = _let_151_[2]
   local op_mode_3f = operator_pending_mode_3f()
@@ -833,7 +834,7 @@ local function get_cycle_keys()
       return "<tab>"
     end
   end
-  return vim.tbl_map(replace_keycodes, {(opts.cycle_group_fwd_key or _199_()), (opts.cycle_group_bwd_key or _200_())})
+  return map(replace_keycodes, {(opts.cycle_group_fwd_key or _199_()), (opts.cycle_group_bwd_key or _200_())})
 end
 local function get_targets(ch1, reverse_3f)
   local targets = {}
@@ -1011,13 +1012,13 @@ local function set_beacon(_237_, repeat_3f)
   local function _242_(_241)
     return (opts.substitute_chars[_241] or _241)
   end
-  local _let_241_ = vim.tbl_map(_242_, {ch1, ch2})
+  local _let_241_ = map(_242_, {ch1, ch2})
   local ch10 = _let_241_[1]
   local ch20 = _let_241_[2]
   local function _244_(_241)
     return (not repeat_3f and _241)
   end
-  local _let_243_ = vim.tbl_map(_244_, {overlapped_3f, shortcut_3f})
+  local _let_243_ = map(_244_, {overlapped_3f, shortcut_3f})
   local overlapped_3f0 = _let_243_[1]
   local shortcut_3f0 = _let_243_[2]
   local unlabeled_hl = hl.group["unlabeled-match"]
@@ -1263,7 +1264,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
     local _arg_298_ = _297_
     local target_line = _arg_298_[1]
     local target_col = _arg_298_[2]
-    local from_pos = vim.tbl_map(dec, get_cursor_pos())
+    local from_pos = map(dec, get_cursor_pos())
     jump_wrapped_21({target_line, target_col})
     if new_search_3f then
       local ctrl_v = replace_keycodes("<c-v>")
@@ -1278,7 +1279,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
       else
         to_col = target_col
       end
-      local to_pos = vim.tbl_map(dec, {target_line, to_col})
+      local to_pos = map(dec, {target_line, to_col})
       local function _301_()
         if reverse_3f then
           return to_pos
@@ -1310,7 +1311,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
             return from_pos
           end
         end
-        _3fhighlight_cursor_at = vim.tbl_map(inc, _304_())
+        _3fhighlight_cursor_at = map(inc, _304_())
       else
       _3fhighlight_cursor_at = nil
       end
