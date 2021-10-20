@@ -951,15 +951,22 @@ sub-table containing label-target k-v pairs for these targets."
                                           (exit-early (echo-no-prev-search)))
                         res)))))
 
-    (fn save-state-for-repeat [{: cold : dot}]
+    (fn save-state-for-repeat* [in1]
+      ; No need to pass in `in1` for every call after we get it,
+      ; so let's curry this.
+      (fn [{: cold : dot}]
         (when new-search?
           (when cold
-            (set self.state.cold (doto cold
-                                   (tset :x-mode? x-mode?)
-                                   (tset :reverse? reverse?))))
+            (set self.state.cold
+                 (doto cold
+                   (tset :in1 in1)
+                   (tset :x-mode? x-mode?)
+                   (tset :reverse? reverse?))))
           (when (and dot-repeatable-op? dot)
-            (set self.state.dot (doto dot
-                                  (tset :x-mode? x-mode?))))))
+            (set self.state.dot
+                 (doto dot
+                   (tset :in1 in1)
+                   (tset :x-mode? x-mode?)))))))
 
     (local jump-wrapped!
       ; `first-jump?` should only be persisted inside `to` (i.e. the
@@ -1095,17 +1102,18 @@ sub-table containing label-target k-v pairs for these targets."
 
     (match (get-first-input)
       in1
-      (let [prev-in2 (if (or cold-repeat? enter-repeat?) self.state.cold.in2
+      (let [save-state-for-repeat (save-state-for-repeat* in1)
+            prev-in2 (if (or cold-repeat? enter-repeat?) self.state.cold.in2
                          dot-repeat? self.state.dot.in2)]
         (match (or (get-targets in1 reverse?)
                    (exit-early (echo-not-found (.. in1 (or prev-in2 "")))))
-          [{: pos :pair [_ ch2]} nil]  ; only match
+          [{: pos :pair [_ ch2]} nil]  ; only target
           (if (or new-search? (= ch2 prev-in2))
               ; Successful exit #1
               ; Jumping to a unique character right after the first input.
               (exit (save-state-for-repeat
-                      {:cold {: in1 :in2 ch2}
-                       :dot {: in1 :in2 ch2 :in3 (. labels 1)}})
+                      {:cold {:in2 ch2}
+                       :dot {:in2 ch2 :in3 (. labels 1)}})
                     (jump-and-ignore-ch2-until-timeout! pos ch2))
               (exit-early (echo-not-found (.. in1 prev-in2))))
 
@@ -1129,15 +1137,15 @@ sub-table containing label-target k-v pairs for these targets."
                 ; Successful exit #2
                 ; Selecting a shortcut-label.
                 {: pos :pair [_ ch2]} (exit (save-state-for-repeat
-                                              {:cold {: in1 :in2 ch2}
-                                               :dot {: in1 :in2 ch2 :in3 in2}})
+                                              {:cold {:in2 ch2}
+                                               :dot {:in2 ch2 :in3 in2}})
                                             (jump-wrapped! pos))
                 _ (do
                     (save-state-for-repeat
-                      {:cold {: in1 : in2}  ; endnote #1
+                      {:cold {: in2}  ; endnote #1
                        ; For the moment, set the first match as the target.
                        ; (We might jump to the only match automatically.)
-                       :dot {: in1 : in2 :in3 (. labels 1)}})
+                       :dot {: in2 :in3 (. labels 1)}})
                     (match (or (. targets.sublists in2)
                                (exit-early (echo-not-found (.. in1 in2))))
                       sublist
