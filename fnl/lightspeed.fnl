@@ -748,7 +748,7 @@ implicit attribute of the target - whether and how it should actually be
 displayed depends on `label-state`."
   (let [labels (get-labels)]
     (each [_ sublist (pairs targets.sublists)]
-      (when (> (length sublist) 1)  ; then we'll jump automatically anyway
+      (when (> (length sublist) 1)  ; else we'll jump automatically anyway
         (each [i target (ipairs sublist)]
           (->> (when-not (and jump-to-first? (= i 1))
                  ; In case of `jump-to-first?`, the i-th label is assigned
@@ -803,13 +803,14 @@ sub-table containing label-target k-v pairs for these targets."
 (fn set-beacon [{:pos [_ col] :pair [ch1 ch2]
                  : label : label-state : overlapped? : shortcut? &as target}
                 repeat?]
-  (let [ch1 (or (. opts.substitute_chars ch1) ch1)
-        ch2 (or (. opts.substitute_chars ch2) ch2)
+  (let [[ch1 ch2] (->> [ch1 ch2]
+                       (vim.tbl_map #(or (. opts.substitute_chars $) $)))
         ; When repeating, there is no initial round, i.e., no overlaps
         ; possible (triplets of the same character are _always_ skipped),
         ; and neither are there shortcuts.
-        overlapped? (and (not repeat?) overlapped?)
-        shortcut? (and (not repeat?) shortcut?)
+        [overlapped? shortcut?] (->> [overlapped? shortcut?]
+                                     (vim.tbl_map #(and (not repeat?) $)))
+        unlabeled-hl hl.group.unlabeled-match
         [label-hl overlapped-label-hl]
         (if shortcut? [hl.group.shortcut hl.group.shortcut-overlapped]
             (match label-state
@@ -817,34 +818,31 @@ sub-table containing label-target k-v pairs for these targets."
                                  hl.group.label-distant-overlapped]
               :active-primary [hl.group.label hl.group.label-overlapped]
               _ [nil nil]))]  ; :inactive and nil cases
-    (->> (if (not label) 
-             ; Note: No need to check for `repeat?` here, as there's no first
-             ; highlighting round then (in the second round we will have jumped
-             ; to the unlabeled match already if it was on the "winning"
-             ; sublist, and we will only pass the "rest" part to `set-beacons`).
-             (if overlapped?
-                 [(inc col) [ch2 hl.group.unlabeled-match]]
-                 [col [ch1 hl.group.unlabeled-match] [ch2 hl.group.unlabeled-match]])
+    (->> (if
+           ; Note: No need to check for `repeat?` here, as there's no first
+           ; highlighting round then (in the second round we will have jumped
+           ; to the unlabeled match already if it was on the "winning"
+           ; sublist, and we will only pass the "rest" part to `set-beacons`).
+           (not label) (if overlapped?
+                           [(inc col) [ch2 unlabeled-hl]]
+                           [col [ch1 unlabeled-hl] [ch2 unlabeled-hl]])
 
-             (= label-state :inactive)
-             nil
+           (= label-state :inactive) nil
 
-             ; Note that the label gets the same highlight in the 2nd round
-             ; (when not overlapped anymore). It is important for a label to
-             ; stay unchanged once shown up, if possible, else the eye might
-             ; get confused, which kinda beats the purpose.
-             overlapped?
-             [(inc col) [label overlapped-label-hl]]
+           ; Note that the label gets the same highlight in the 2nd round
+           ; (when not overlapped anymore). It is important for a label to
+           ; stay unchanged once shown up, if possible, else the eye might
+           ; get confused, which kinda beats the purpose.
+           overlapped? [(inc col) [label overlapped-label-hl]]
 
-             ; `repeat?` is mutually exclusive both with "unlabeled" and
-             ; "overlapped" (since only the second round takes place, we
-             ; have the full search pattern ready then).
-             repeat?
-             [(inc col) [label label-hl]]
+           ; `repeat?` is mutually exclusive both with "unlabeled" and
+           ; "overlapped" (since only the second round takes place, we
+           ; have the full search pattern ready then).
+           repeat? [(inc col) [label label-hl]]
 
-             ; Common case: new invocation, labeled, fully visible match.
-             [col [ch2 hl.group.masked-ch] [label label-hl]])
-          (tset target :beacon))))
+           ; Common case: new invocation, labeled, fully visible match.
+           [col [ch2 hl.group.masked-ch] [label label-hl]])
+         (tset target :beacon))))
 
 
 (fn set-beacons [target-list {: repeat?}]
