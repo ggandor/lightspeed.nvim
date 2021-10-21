@@ -409,23 +409,6 @@ early termination in loops."
                       _ (cleanup))))))))))
 
 
-; Thinking about some totally different implementation, not using search().
-; (This is unusably slow if the window has a lot of content.)
-(fn highlight-unique-chars [reverse? ignorecase]
-  (let [unique-chars {}
-        pattern ".\\_."]
-    (each [pos (onscreen-match-positions pattern reverse? {})]
-      (local ch (char-at-pos pos {}))
-      (tset unique-chars ch (match (. unique-chars ch) nil pos _ false)))
-    (each [ch pos (pairs unique-chars)]
-      (match pos
-        [line col]
-        (hl:set-extmark (dec line)
-                        (dec col)
-                        {:virt_text [[ch hl.group.unique-ch]]
-                         :virt_text_pos "overlay"})))))
-
-
 (fn highlight-cursor [?pos]
   "The cursor is down on the command line during `getchar`,
 so we set a temporary highlight on it to see where we are."
@@ -689,6 +672,23 @@ interrupted change-operation."
         (or opts.cycle_group_bwd_key
             (if opts.jump_to_first_match "<s-tab>" "<tab>"))]
        (map replace-keycodes)))
+
+
+; Thinking about some totally different implementation, not using search().
+; (This is unusably slow if the window has a lot of content.)
+(fn highlight-unique-chars [reverse? ignorecase]
+  (let [unique-chars {}
+        pattern ".\\_."]
+    (each [pos (onscreen-match-positions pattern reverse? {})]
+      (local ch (char-at-pos pos {}))
+      (tset unique-chars ch (match (. unique-chars ch) nil pos _ false)))
+    (each [ch pos (pairs unique-chars)]
+      (match pos
+        [line col]
+        (hl:set-extmark (dec line)
+                        (dec col)
+                        {:virt_text [[ch hl.group.unique-ch]]
+                         :virt_text_pos "overlay"})))))
 
 
 (fn get-targets [ch1 reverse?]

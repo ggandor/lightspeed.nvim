@@ -458,38 +458,11 @@ local function onscreen_match_positions(pattern, reverse_3f, _85_)
   end
   return rec
 end
-local function highlight_unique_chars(reverse_3f, ignorecase)
-  local unique_chars = {}
-  local pattern = ".\\_."
-  for pos in onscreen_match_positions(pattern, reverse_3f, {}) do
-    local ch = char_at_pos(pos, {})
-    local _119_
-    do
-      local _118_ = unique_chars[ch]
-      if (_118_ == nil) then
-        _119_ = pos
-      else
-        local _ = _118_
-        _119_ = false
-      end
-    end
-    unique_chars[ch] = _119_
-  end
-  for ch, pos in pairs(unique_chars) do
-    local _123_ = pos
-    if ((type(_123_) == "table") and (nil ~= (_123_)[1]) and (nil ~= (_123_)[2])) then
-      local line = (_123_)[1]
-      local col = (_123_)[2]
-      hl["set-extmark"](hl, dec(line), dec(col), {virt_text = {{ch, hl.group["unique-ch"]}}, virt_text_pos = "overlay"})
-    end
-  end
-  return nil
-end
 local function highlight_cursor(_3fpos)
-  local _let_125_ = (_3fpos or get_cursor_pos())
-  local line = _let_125_[1]
-  local col = _let_125_[2]
-  local pos = _let_125_
+  local _let_118_ = (_3fpos or get_cursor_pos())
+  local line = _let_118_[1]
+  local col = _let_118_[2]
+  local pos = _let_118_
   local ch_at_curpos = (char_at_pos(pos, {}) or " ")
   return hl["set-extmark"](hl, dec(line), dec(col), {hl_mode = "combine", virt_text = {{ch_at_curpos, hl.group.cursor}}, virt_text_pos = "overlay"})
 end
@@ -512,10 +485,10 @@ local function doau_when_exists(event)
 end
 local function enter(mode)
   doau_when_exists("LightspeedEnter")
-  local _128_ = mode
-  if (_128_ == "sx") then
+  local _121_ = mode
+  if (_121_ == "sx") then
     return doau_when_exists("LightspeedSxEnter")
-  elseif (_128_ == "ft") then
+  elseif (_121_ == "ft") then
     return doau_when_exists("LightspeedFtEnter")
   end
 end
@@ -543,40 +516,40 @@ local function set_dot_repeat(cmd, _3fcount)
   end
 end
 local function get_plug_key(kind, reverse_3f, x_or_t_3f, repeat_invoc)
-  local _135_
+  local _128_
   do
-    local _134_ = repeat_invoc
-    if (_134_ == "dot") then
-      _135_ = "dotrepeat_"
+    local _127_ = repeat_invoc
+    if (_127_ == "dot") then
+      _128_ = "dotrepeat_"
     else
-      local _ = _134_
-      _135_ = ""
+      local _ = _127_
+      _128_ = ""
     end
   end
-  local _140_
+  local _133_
   do
-    local _139_ = {kind, not not reverse_3f, not not x_or_t_3f}
-    if ((type(_139_) == "table") and ((_139_)[1] == "ft") and ((_139_)[2] == false) and ((_139_)[3] == false)) then
-      _140_ = "f"
-    elseif ((type(_139_) == "table") and ((_139_)[1] == "ft") and ((_139_)[2] == true) and ((_139_)[3] == false)) then
-      _140_ = "F"
-    elseif ((type(_139_) == "table") and ((_139_)[1] == "ft") and ((_139_)[2] == false) and ((_139_)[3] == true)) then
-      _140_ = "t"
-    elseif ((type(_139_) == "table") and ((_139_)[1] == "ft") and ((_139_)[2] == true) and ((_139_)[3] == true)) then
-      _140_ = "T"
-    elseif ((type(_139_) == "table") and ((_139_)[1] == "sx") and ((_139_)[2] == false) and ((_139_)[3] == false)) then
-      _140_ = "s"
-    elseif ((type(_139_) == "table") and ((_139_)[1] == "sx") and ((_139_)[2] == false) and ((_139_)[3] == true)) then
-      _140_ = "S"
-    elseif ((type(_139_) == "table") and ((_139_)[1] == "sx") and ((_139_)[2] == true) and ((_139_)[3] == false)) then
-      _140_ = "x"
-    elseif ((type(_139_) == "table") and ((_139_)[1] == "sx") and ((_139_)[2] == true) and ((_139_)[3] == true)) then
-      _140_ = "X"
+    local _132_ = {kind, not not reverse_3f, not not x_or_t_3f}
+    if ((type(_132_) == "table") and ((_132_)[1] == "ft") and ((_132_)[2] == false) and ((_132_)[3] == false)) then
+      _133_ = "f"
+    elseif ((type(_132_) == "table") and ((_132_)[1] == "ft") and ((_132_)[2] == true) and ((_132_)[3] == false)) then
+      _133_ = "F"
+    elseif ((type(_132_) == "table") and ((_132_)[1] == "ft") and ((_132_)[2] == false) and ((_132_)[3] == true)) then
+      _133_ = "t"
+    elseif ((type(_132_) == "table") and ((_132_)[1] == "ft") and ((_132_)[2] == true) and ((_132_)[3] == true)) then
+      _133_ = "T"
+    elseif ((type(_132_) == "table") and ((_132_)[1] == "sx") and ((_132_)[2] == false) and ((_132_)[3] == false)) then
+      _133_ = "s"
+    elseif ((type(_132_) == "table") and ((_132_)[1] == "sx") and ((_132_)[2] == false) and ((_132_)[3] == true)) then
+      _133_ = "S"
+    elseif ((type(_132_) == "table") and ((_132_)[1] == "sx") and ((_132_)[2] == true) and ((_132_)[3] == false)) then
+      _133_ = "x"
+    elseif ((type(_132_) == "table") and ((_132_)[1] == "sx") and ((_132_)[2] == true) and ((_132_)[3] == true)) then
+      _133_ = "X"
     else
-    _140_ = nil
+    _133_ = nil
     end
   end
-  return ("<Plug>Lightspeed_" .. _135_ .. _140_)
+  return ("<Plug>Lightspeed_" .. _128_ .. _133_)
 end
 local ft = {state = {cold = {["in"] = nil, ["reverse?"] = nil, ["t-mode?"] = nil}, dot = {["in"] = nil}, instant = {["in"] = nil, stack = nil}}}
 ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
@@ -590,9 +563,9 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
   else
     count = vim.v.count1
   end
-  local _let_151_ = map(replace_keycodes, {opts.instant_repeat_fwd_key, opts.instant_repeat_bwd_key})
-  local repeat_key = _let_151_[1]
-  local revert_key = _let_151_[2]
+  local _let_144_ = map(replace_keycodes, {opts.instant_repeat_fwd_key, opts.instant_repeat_bwd_key})
+  local repeat_key = _let_144_[1]
+  local revert_key = _let_144_[2]
   local op_mode_3f = operator_pending_mode_3f()
   local dot_repeatable_op_3f = dot_repeatable_operation_3f()
   local cmd_for_dot_repeat = replace_keycodes(get_plug_key("ft", reverse_3f, t_mode_3f, "dot"))
@@ -604,16 +577,16 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
     highlight_cursor()
     vim.cmd("redraw")
   end
-  local _154_
+  local _147_
   if instant_repeat_3f then
-    _154_ = self.state.instant["in"]
+    _147_ = self.state.instant["in"]
   elseif dot_repeat_3f then
-    _154_ = self.state.dot["in"]
+    _147_ = self.state.dot["in"]
   elseif cold_repeat_3f then
-    _154_ = self.state.cold["in"]
+    _147_ = self.state.cold["in"]
   else
-    local _155_
-    local function _156_()
+    local _148_
+    local function _149_()
       if change_operation_3f() then
         handle_interrupted_change_op_21()
       end
@@ -623,9 +596,9 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
       doau_when_exists("LightspeedLeave")
       return nil
     end
-    _155_ = (get_input_and_clean_up() or _156_())
-    if (_155_ == "\13") then
-      local function _158_()
+    _148_ = (get_input_and_clean_up() or _149_())
+    if (_148_ == "\13") then
+      local function _151_()
         if change_operation_3f() then
           handle_interrupted_change_op_21()
         end
@@ -636,32 +609,32 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
         doau_when_exists("LightspeedLeave")
         return nil
       end
-      _154_ = (self.state.cold["in"] or _158_())
-    elseif (nil ~= _155_) then
-      local in0 = _155_
-      _154_ = in0
+      _147_ = (self.state.cold["in"] or _151_())
+    elseif (nil ~= _148_) then
+      local in0 = _148_
+      _147_ = in0
     else
-    _154_ = nil
+    _147_ = nil
     end
   end
-  if (nil ~= _154_) then
-    local in1 = _154_
+  if (nil ~= _147_) then
+    local in1 = _147_
     if not repeat_invoc then
       self.state.cold = {["in"] = in1, ["reverse?"] = reverse_3f, ["t-mode?"] = t_mode_3f}
     end
-    local function _164_()
+    local function _157_()
       if reverse_3f then
         return "nWb"
       else
         return "nW"
       end
     end
-    local _local_163_ = vim.fn.searchpos("\\_.", _164_())
-    local next_line = _local_163_[1]
-    local next_col = _local_163_[2]
+    local _local_156_ = vim.fn.searchpos("\\_.", _157_())
+    local next_line = _local_156_[1]
+    local next_col = _local_156_[2]
     local match_pos = nil
     local i = 0
-    local function _167_()
+    local function _160_()
       local pattern = ("\\V" .. in1:gsub("\\", "\\\\"))
       local limit
       if opts.limit_ft_matches then
@@ -671,11 +644,11 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
       end
       return onscreen_match_positions(pattern, reverse_3f, {["ft-search?"] = true, limit = limit})
     end
-    for _165_ in _167_() do
-      local _each_168_ = _165_
-      local line = _each_168_[1]
-      local col = _each_168_[2]
-      local pos = _each_168_
+    for _158_ in _160_() do
+      local _each_161_ = _158_
+      local line = _each_161_[1]
+      local col = _each_161_[2]
+      local pos = _each_161_
       if not (repeat_invoc and t_mode_3f and (i == 0) and (line == next_line) and (col == next_col)) then
         i = (i + 1)
         if (i <= count) then
@@ -706,20 +679,20 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
         end
         vim.fn.cursor(match_pos)
         if t_mode_3f then
-          local function _174_()
+          local function _167_()
             if reverse_3f then
               return "fwd"
             else
               return "bwd"
             end
           end
-          push_cursor_21(_174_())
+          push_cursor_21(_167_())
         end
         if (op_mode_3f_4_auto and not reverse_3f and true) then
-          local _176_ = string.sub(vim.fn.mode("t"), -1)
-          if (_176_ == "v") then
+          local _169_ = string.sub(vim.fn.mode("t"), -1)
+          if (_169_ == "v") then
             push_cursor_21("bwd")
-          elseif (_176_ == "o") then
+          elseif (_169_ == "o") then
             if not cursor_before_eof_3f() then
               push_cursor_21("fwd")
             else
@@ -746,17 +719,17 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
       else
         highlight_cursor()
         vim.cmd("redraw")
-        local _183_
-        local function _184_()
+        local _176_
+        local function _177_()
           do
           end
           doau_when_exists("LightspeedFtLeave")
           doau_when_exists("LightspeedLeave")
           return nil
         end
-        _183_ = (get_input_and_clean_up() or _184_())
-        if (nil ~= _183_) then
-          local in2 = _183_
+        _176_ = (get_input_and_clean_up() or _177_())
+        if (nil ~= _176_) then
+          local in2 = _176_
           local mode
           if (vim.fn.mode() == "n") then
             mode = "n"
@@ -771,22 +744,22 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
               self.state.instant = {["in"] = in1, stack = {}}
             end
             if revert_3f then
-              local _187_ = table.remove(self.state.instant.stack)
-              if (nil ~= _187_) then
-                local old_pos = _187_
+              local _180_ = table.remove(self.state.instant.stack)
+              if (nil ~= _180_) then
+                local old_pos = _180_
                 vim.fn.cursor(old_pos)
               end
             elseif repeat_3f then
               table.insert(self.state.instant.stack, get_cursor_pos())
             end
-            local function _190_()
+            local function _183_()
               if revert_3f then
                 return "reverted-instant"
               else
                 return "instant"
               end
             end
-            return ft:go(reverse_3f, t_mode_3f, _190_())
+            return ft:go(reverse_3f, t_mode_3f, _183_())
           else
             do
               vim.fn.feedkeys(in2, "i")
@@ -802,39 +775,66 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
 end
 do
   local deprec_msg = {{"ligthspeed.nvim", "Question"}, {": You're trying to access deprecated fields in the lightspeed.ft table.\n"}, {"There are dedicated <Plug> keys available for native-like "}, {";", "Visual"}, {" and "}, {",", "Visual"}, {" functionality now.\n"}, {"See "}, {":h lightspeed-custom-mappings", "Visual"}, {"."}}
-  local function _196_(t, k)
+  local function _189_(t, k)
     if ((k == "instant-repeat?") or (k == "prev-t-like?")) then
       return api.nvim_echo(deprec_msg, true, {})
     end
   end
-  setmetatable(ft, {__index = _196_})
+  setmetatable(ft, {__index = _189_})
 end
 local function get_labels()
-  local function _198_()
+  local function _191_()
     if opts.jump_to_first_match then
       return {"f", "s", "n", "u", "t", "/", "q", "F", "S", "G", "H", "L", "M", "N", "U", "R", "T", "Z", "?", "Q"}
     else
       return {"f", "j", "d", "k", "s", "l", "a", ";", "e", "i", "w", "o", "g", "h", "v", "n", "c", "m", "z", "."}
     end
   end
-  return (opts.labels or _198_())
+  return (opts.labels or _191_())
 end
 local function get_cycle_keys()
-  local function _199_()
+  local function _192_()
     if opts.jump_to_first_match then
       return "<tab>"
     else
       return "<space>"
     end
   end
-  local function _200_()
+  local function _193_()
     if opts.jump_to_first_match then
       return "<s-tab>"
     else
       return "<tab>"
     end
   end
-  return map(replace_keycodes, {(opts.cycle_group_fwd_key or _199_()), (opts.cycle_group_bwd_key or _200_())})
+  return map(replace_keycodes, {(opts.cycle_group_fwd_key or _192_()), (opts.cycle_group_bwd_key or _193_())})
+end
+local function highlight_unique_chars(reverse_3f, ignorecase)
+  local unique_chars = {}
+  local pattern = ".\\_."
+  for pos in onscreen_match_positions(pattern, reverse_3f, {}) do
+    local ch = char_at_pos(pos, {})
+    local _195_
+    do
+      local _194_ = unique_chars[ch]
+      if (_194_ == nil) then
+        _195_ = pos
+      else
+        local _ = _194_
+        _195_ = false
+      end
+    end
+    unique_chars[ch] = _195_
+  end
+  for ch, pos in pairs(unique_chars) do
+    local _199_ = pos
+    if ((type(_199_) == "table") and (nil ~= (_199_)[1]) and (nil ~= (_199_)[2])) then
+      local line = (_199_)[1]
+      local col = (_199_)[2]
+      hl["set-extmark"](hl, dec(line), dec(col), {virt_text = {{ch, hl.group["unique-ch"]}}, virt_text_pos = "overlay"})
+    end
+  end
+  return nil
 end
 local function get_targets(ch1, reverse_3f)
   local targets = {}
