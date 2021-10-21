@@ -1475,10 +1475,10 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
       return nil
     end
     _338_ = (get_targets(in1, reverse_3f) or _339_())
-    if ((type(_338_) == "table") and ((type((_338_)[1]) == "table") and (nil ~= ((_338_)[1]).pos) and ((type(((_338_)[1]).pair) == "table") and true and (nil ~= (((_338_)[1]).pair)[2]))) and ((_338_)[2] == nil)) then
-      local pos = ((_338_)[1]).pos
+    if ((type(_338_) == "table") and ((type((_338_)[1]) == "table") and ((type(((_338_)[1]).pair) == "table") and true and (nil ~= (((_338_)[1]).pair)[2])) and (nil ~= ((_338_)[1]).pos)) and ((_338_)[2] == nil)) then
       local _ = (((_338_)[1]).pair)[1]
       local ch2 = (((_338_)[1]).pair)[2]
+      local pos = ((_338_)[1]).pos
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           save_state_for_repeat({cold = {in2 = ch2}, dot = {in2 = ch2, in3 = labels[1]}})
@@ -1541,10 +1541,10 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
         else
         _350_ = nil
         end
-        if ((type(_350_) == "table") and (nil ~= (_350_).pos) and ((type((_350_).pair) == "table") and true and (nil ~= ((_350_).pair)[2]))) then
-          local pos = (_350_).pos
+        if ((type(_350_) == "table") and ((type((_350_).pair) == "table") and true and (nil ~= ((_350_).pair)[2])) and (nil ~= (_350_).pos)) then
           local _ = ((_350_).pair)[1]
           local ch2 = ((_350_).pair)[2]
+          local pos = (_350_).pos
           do
             save_state_for_repeat({cold = {in2 = ch2}, dot = {in2 = ch2, in3 = in2}})
             jump_wrapped_21(pos)

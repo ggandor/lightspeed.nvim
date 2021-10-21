@@ -805,12 +805,12 @@ sub-table containing label-target k-v pairs for these targets."
 (fn set-beacon [{:pos [_ col] :pair [ch1 ch2]
                  : label : label-state : overlapped? : shortcut? &as target}
                 repeat?]
-  (let [[ch1 ch2] (->> [ch1 ch2] (map #(or (. opts.substitute_chars $) $)))
+  (let [[ch1 ch2] (map #(or (. opts.substitute_chars $) $) [ch1 ch2])
         ; When repeating, there is no initial round, i.e., no overlaps
         ; possible (triplets of the same character are _always_ skipped),
         ; and neither are there shortcuts.
-        [overlapped? shortcut?] (->> [overlapped? shortcut?]
-                                     (map #(and (not repeat?) $)))
+        [overlapped? shortcut?] (map #(and (not repeat?) $)
+                                     [overlapped? shortcut?])
         unlabeled-hl hl.group.unlabeled-match
         [label-hl overlapped-label-hl]
         (if shortcut? [hl.group.shortcut hl.group.shortcut-overlapped]
@@ -951,22 +951,19 @@ sub-table containing label-target k-v pairs for these targets."
                                           (exit-early (echo-no-prev-search)))
                         res)))))
 
+    ; No need to pass in `in1` every time once we have it, so let's curry this.
     (fn save-state-for-repeat* [in1]
-      ; No need to pass in `in1` for every call after we get it,
-      ; so let's curry this.
       (fn [{: cold : dot}]
         (when new-search?
           (when cold
-            (set self.state.cold
-                 (doto cold
-                   (tset :in1 in1)
-                   (tset :x-mode? x-mode?)
-                   (tset :reverse? reverse?))))
+            (set self.state.cold (doto cold
+                                   (tset :in1 in1)
+                                   (tset :x-mode? x-mode?)
+                                   (tset :reverse? reverse?))))
           (when (and dot-repeatable-op? dot)
-            (set self.state.dot
-                 (doto dot
-                   (tset :in1 in1)
-                   (tset :x-mode? x-mode?)))))))
+            (set self.state.dot (doto dot
+                                  (tset :in1 in1)
+                                  (tset :x-mode? x-mode?)))))))
 
     (local jump-wrapped!
       ; `first-jump?` should only be persisted inside `to` (i.e. the
@@ -1111,9 +1108,8 @@ sub-table containing label-target k-v pairs for these targets."
           (if (or new-search? (= ch2 prev-in2))
               ; Successful exit #1
               ; Jumping to a unique character right after the first input.
-              (exit (save-state-for-repeat
-                      {:cold {:in2 ch2}
-                       :dot {:in2 ch2 :in3 (. labels 1)}})
+              (exit (save-state-for-repeat {:cold {:in2 ch2}
+                                            :dot {:in2 ch2 :in3 (. labels 1)}})
                     (jump-and-ignore-ch2-until-timeout! pos ch2))
               (exit-early (echo-not-found (.. in1 prev-in2))))
 
@@ -1127,8 +1123,7 @@ sub-table containing label-target k-v pairs for these targets."
               (doto targets
                 (set-shortcuts-and-populate-shortcuts-map)
                 (set-beacons {:repeat? false}))
-              (with-highlight-chores
-                (light-up-beacons targets)))
+              (with-highlight-chores (light-up-beacons targets)))
             (match (or prev-in2
                        (get-input-and-clean-up)
                        (exit-early))
@@ -1136,52 +1131,54 @@ sub-table containing label-target k-v pairs for these targets."
               (match (when new-search? (. targets.shortcuts in2))
                 ; Successful exit #2
                 ; Selecting a shortcut-label.
-                {: pos :pair [_ ch2]} (exit (save-state-for-repeat
-                                              {:cold {:in2 ch2}
-                                               :dot {:in2 ch2 :in3 in2}})
-                                            (jump-wrapped! pos))
-                _ (do
-                    (save-state-for-repeat
-                      {:cold {: in2}  ; endnote #1
-                       ; For the moment, set the first match as the target.
-                       ; (We might jump to the only match automatically.)
-                       :dot {: in2 :in3 (. labels 1)}})
-                    (match (or (. targets.sublists in2)
-                               (exit-early (echo-not-found (.. in1 in2))))
-                      sublist
-                      (let [[first rest sublist] (handle-cold-repeating-X sublist)
-                            target-list (if jump-to-first? rest sublist)]
-                        (when (and first  ; the list might be completely empty if we've skipped one above
-                                   (or (empty? rest) cold-repeat? jump-to-first?))
-                          (jump-wrapped! (. first :pos)))
-                            ; Successful exit #3
-                            ; Jumping to the only match automatically.
-                        (if (empty? rest) (exit)
-                            ; Special exit point - highlight the rest, then do the
-                            ; cleanup, and exit unconditionally on the next input. 
-                            cold-repeat? (after-cold-repeat rest)
-                            (do
-                              (when-not (and dot-repeat? self.state.dot.in3)  ; endnote #3
-                                (set-beacons target-list {:repeat? enter-repeat?})
-                                (with-highlight-chores (light-up-beacons target-list)))
-                              (match (or (select-match-group target-list enter-repeat?)
-                                         (exit-early))  ; <C-c> case (note: no highlight to clean up)
-                                [in3 group-offset]
-                                (do (when (and dot-repeatable-op? (not dot-repeat?))
-                                      ; Reminder: above we have already set this to the character
-                                      ; of the first label, as a default. (We might had only one
-                                      ; match, and jumped automatically, not reaching this point.)
-                                      (set self.state.dot.in3
-                                           (if (> group-offset 0) nil in3)))  ; endnote #3
-                                    (match (get-target-with-active-primary-label target-list in3)
-                                      ; Successful exit #4
-                                      ; Selecting an active label.
-                                      {: pos} (exit (jump-wrapped! pos))
-                                      _ (if jump-to-first?
-                                            ; Successful exit #5
-                                            ; Falling through with any non-label key in "autojump" mode.
-                                            (exit (vim.fn.feedkeys in3 :i))
-                                            (exit-early))))))))))))))))))
+                {: pos :pair [_ ch2]} 
+                (exit (save-state-for-repeat {:cold {:in2 ch2}
+                                              :dot {:in2 ch2 :in3 in2}})
+                      (jump-wrapped! pos))
+
+                _
+                (do
+                  (save-state-for-repeat {:cold {: in2}  ; endnote #1
+                                          ; For the moment, set the first match
+                                          ; as the target. (We might jump to the
+                                          ; only match automatically.)
+                                          :dot {: in2 :in3 (. labels 1)}})
+                  (match (or (. targets.sublists in2)
+                             (exit-early (echo-not-found (.. in1 in2))))
+                    sublist
+                    (let [[first rest sublist] (handle-cold-repeating-X sublist)
+                          target-list (if jump-to-first? rest sublist)]
+                      (when (and first  ; the list might be completely empty if we've skipped one above
+                                 (or (empty? rest) cold-repeat? jump-to-first?))
+                        (jump-wrapped! (. first :pos)))
+                          ; Successful exit #3
+                          ; Jumping to the only match automatically.
+                      (if (empty? rest) (exit)
+                          ; Special exit point - highlight the rest, then do the
+                          ; cleanup, and exit unconditionally on the next input. 
+                          cold-repeat? (after-cold-repeat rest)
+                          (do
+                            (when-not (and dot-repeat? self.state.dot.in3)  ; endnote #3
+                              (set-beacons target-list {:repeat? enter-repeat?})
+                              (with-highlight-chores (light-up-beacons target-list)))
+                            (match (or (select-match-group target-list enter-repeat?)
+                                       (exit-early))  ; <C-c> case (note: no highlight to clean up)
+                              [in3 group-offset]
+                              (do (when (and dot-repeatable-op? (not dot-repeat?))
+                                    ; Reminder: above we have already set this to the character
+                                    ; of the first label, as a default. (We might had only one
+                                    ; match, and jumped automatically, not reaching this point.)
+                                    (set self.state.dot.in3
+                                         (if (> group-offset 0) nil in3)))  ; endnote #3
+                                  (match (get-target-with-active-primary-label target-list in3)
+                                    ; Successful exit #4
+                                    ; Selecting an active label.
+                                    {: pos} (exit (jump-wrapped! pos))
+                                    _ (if jump-to-first?
+                                          ; Successful exit #5
+                                          ; Falling through with any non-label key in "autojump" mode.
+                                          (exit (vim.fn.feedkeys in3 :i))
+                                          (exit-early))))))))))))))))))
 
 
 ; Handling editor options ///1
