@@ -503,15 +503,14 @@ nnoremap <expr> g/ '/<C-u>\%>'.(col(".")-v:count1).'v\%<'.(col(".")+v:count1).'v
 nnoremap <expr> g? '?<C-u>\%>'.(col(".")-v:count1).'v\%<'.(col(".")+v:count1).'v'
 ```
 
-### Ignore case for 2-character search?
+### Case insensitivity for 2-character search?
 
-Yep, that is a no-brainer, but unfortunately not _that_ trivial to implement
-here - because we are not actually "searching" for the second character of the
-pair -, and I guess it would complicate the codebase pretty significantly. (It
-might be that I am missing something obvious though.) At the same time, note
-that with the different shortcutting methods available, the lack of an "ignore
-case" option is less of a problem for us: in this plugin, capitals _can_ very
-frequently make you reach the target faster - so start using them!
+See [#64](https://github.com/ggandor/lightspeed.nvim/issues/64). TL;DR:
+`smartcase`-like behaviour would be super-useful, but is unfortunately
+impossible for this plugin, _by design_. At the same time, the value of a plain
+"ignore case" setting is questionable, because that would mean ignoring our
+clever "shortcutting" features too. Here, capitals can very frequently make you
+reach the target faster - so start using them!
 
 ### Arbitrary-length search pattern?
 
