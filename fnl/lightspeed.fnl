@@ -1061,29 +1061,25 @@ sub-table containing label-target k-v pairs for these targets."
         (exit (-> (or (get-input-and-clean-up) "")
                   (vim.fn.feedkeys :i)))))
 
-    (fn select-match-group [target-list enter-repeat?]
-      (var res nil)
-      (var group-offset 0)
-      (var loop? true)
-      (while loop?
-        (match (or (when dot-repeat? self.state.dot.in3)
-                   (get-input-and-clean-up)
-                   ; <esc> or <c-c> should exit the loop.
-                   (do (set loop? false) (set res nil) nil))
-          input
-          (if (one-of? input cycle-fwd-key cycle-bwd-key)
-              (let [max-offset (math.floor (/ (length target-list) (length labels)))]
-                (set group-offset (-> group-offset
+    (fn select-match-group [target-list]
+      ((fn rec [group-offset]
+         (match (or (when dot-repeat? self.state.dot.in3)
+                    (get-input-and-clean-up))
+           input
+           (if (one-of? input cycle-fwd-key cycle-bwd-key)
+               (let [|groups| (math.floor (/ (length target-list) (length labels)))
+                     group-offset (-> group-offset
                                       ((match input cycle-fwd-key inc _ dec))
-                                      (clamp 0 max-offset)))
-                (set-label-states-for-sublist
-                  target-list {:jump-to-first? false : group-offset})
-                (set-beacons target-list {:repeat? enter-repeat?})
-                (with-highlight-chores (light-up-beacons target-list)))
-              ; Note: dot-repeat arrives here, and short-circuits.
-              (do (set loop? false)
-                  (set res [input group-offset])))))
-      res)
+                                      (clamp 0 |groups|))]
+                 (set-label-states-for-sublist
+                   target-list {:jump-to-first? false : group-offset})
+                 (set-beacons target-list {:repeat? enter-repeat?})
+                 (with-highlight-chores (light-up-beacons target-list))
+                 (rec group-offset))
+               ; Note: dot-repeat arrives here right away, and short-circuits.
+               ; (We only save the input if no group-switching takes place.)
+               [input group-offset])))
+       0))
 
     ; //> Helpers
 
@@ -1161,7 +1157,7 @@ sub-table containing label-target k-v pairs for these targets."
                             (when-not (and dot-repeat? self.state.dot.in3)  ; endnote #3
                               (set-beacons target-list {:repeat? enter-repeat?})
                               (with-highlight-chores (light-up-beacons target-list)))
-                            (match (or (select-match-group target-list enter-repeat?)
+                            (match (or (select-match-group target-list)
                                        (exit-early))  ; <C-c> case (note: no highlight to clean up)
                               [in3 group-offset]
                               (do (when (and dot-repeatable-op? (not dot-repeat?))
