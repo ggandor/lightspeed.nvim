@@ -1063,21 +1063,19 @@ sub-table containing label-target k-v pairs for these targets."
 
     (fn select-match-group [target-list]
       ((fn rec [group-offset]
-         (match (or (when dot-repeat? self.state.dot.in3)
-                    (get-input-and-clean-up))
+         (set-beacons target-list {:repeat? enter-repeat?})
+         (with-highlight-chores (light-up-beacons target-list))
+         (match (get-input-and-clean-up)
            input
            (if (one-of? input cycle-fwd-key cycle-bwd-key)
                (let [|groups| (floor (/ (length target-list) (length labels)))
-                     group-offset (-> group-offset
-                                      ((match input cycle-fwd-key inc _ dec))
-                                      (clamp 0 |groups|))]
-                 (set-label-states-for-sublist
-                   target-list {:jump-to-first? false : group-offset})
-                 (set-beacons target-list {:repeat? enter-repeat?})
-                 (with-highlight-chores (light-up-beacons target-list))
-                 (rec group-offset))
-               ; Note: dot-repeat arrives here right away, and short-circuits.
-               ; (We only save the input if no group-switching takes place.)
+                     group-offset* (-> group-offset
+                                       ((match input cycle-fwd-key inc _ dec))
+                                       (clamp 0 |groups|))]
+                 (set-label-states-for-sublist target-list 
+                                               {:jump-to-first? false
+                                                :group-offset group-offset*})
+                 (rec group-offset*))
                [input group-offset])))
        0))
 
@@ -1131,14 +1129,13 @@ sub-table containing label-target k-v pairs for these targets."
                 (exit (save-state-for-repeat {:cold {:in2 ch2}
                                               :dot {:in2 ch2 :in3 in2}})
                       (jump-wrapped! pos))
-
                 _
                 (do
-                  (save-state-for-repeat {:cold {: in2}  ; endnote #1
-                                          ; For the moment, set the first match
-                                          ; as the target. (We might jump to the
-                                          ; only match automatically.)
-                                          :dot {: in2 :in3 (. labels 1)}})
+                  (save-state-for-repeat
+                    {:cold {: in2}  ; endnote #1
+                     ; For the moment, set the first match as the target.
+                     ; (We might jump to the only match automatically.)
+                     :dot {: in2 :in3 (. labels 1)}})
                   (match (or (. targets.sublists in2)
                              (exit-early (echo-not-found (.. in1 in2))))
                     sublist
@@ -1153,28 +1150,22 @@ sub-table containing label-target k-v pairs for these targets."
                           ; Special exit point - highlight the rest, then do the
                           ; cleanup, and exit unconditionally on the next input. 
                           cold-repeat? (after-cold-repeat rest)
-                          (do
-                            (when-not (and dot-repeat? self.state.dot.in3)  ; endnote #3
-                              (set-beacons target-list {:repeat? enter-repeat?})
-                              (with-highlight-chores (light-up-beacons target-list)))
-                            (match (or (select-match-group target-list)
-                                       (exit-early))  ; <C-c> case (note: no highlight to clean up)
-                              [in3 group-offset]
-                              (do (when (and dot-repeatable-op? (not dot-repeat?))
-                                    ; Reminder: above we have already set this to the character
-                                    ; of the first label, as a default. (We might had only one
-                                    ; match, and jumped automatically, not reaching this point.)
-                                    (set self.state.dot.in3
-                                         (if (> group-offset 0) nil in3)))  ; endnote #3
-                                  (match (get-target-with-active-primary-label target-list in3)
-                                    ; Successful exit #4
-                                    ; Selecting an active label.
-                                    {: pos} (exit (jump-wrapped! pos))
-                                    _ (if jump-to-first?
-                                          ; Successful exit #5
-                                          ; Falling through with any non-label key in "autojump" mode.
-                                          (exit (vim.fn.feedkeys in3 :i))
-                                          (exit-early))))))))))))))))))
+                          (match (or (and dot-repeat? self.state.dot.in3 [self.state.dot.in3])  ; endnote #3
+                                     (select-match-group target-list)
+                                     (exit-early))
+                            [in3 ?group-offset]
+                            (do (when (and (not dot-repeat?) dot-repeatable-op?)
+                                  ; Reminder: above we have already set this to
+                                  ; the character of the first label, as a default.
+                                  (set self.state.dot.in3 (if (> ?group-offset 0) nil in3)))  ; endnote #3
+                                (match (get-target-with-active-primary-label target-list in3)
+                                  ; Successful exit #4
+                                  ; Selecting an active label.
+                                  {: pos} (exit (jump-wrapped! pos))
+                                        ; Successful exit #5
+                                        ; Falling through with any non-label key in "autojump" mode.
+                                  _ (if jump-to-first? (exit (vim.fn.feedkeys in3 :i))
+                                        (exit-early)))))))))))))))))
 
 
 ; Handling editor options ///1
@@ -1346,6 +1337,9 @@ sub-table containing label-target k-v pairs for these targets."
 ;     again till the 27th match..."?). The most intuitive/logical
 ;     behaviour is repeating as <enter>-repeat in these cases, prompting
 ;     for a target label again.
+;     Note: `save-state-for-repeat` only executes on new searches - if
+;     we're currently dot-repeating, then it won't overwrite the state,
+;     we can safely get `self.state.dot.in3` for the previous value.
 
 
 ; Module ///1
