@@ -97,13 +97,10 @@ all situations when there is no obvious _atomic_ alternative - like `w`, `{`, or
 
 ### Quick links (FAQ)
 
-* [I cannot escape from the evil spell of the semicolon and the comma. How can I
-keep using them to repeat f/t motions?](#1-character-search-ft)
-* [The enhanced f/t motions with their multiline scoping might break some macro
-and :normal patterns. What can be done about it?](#notes)
-* [A colorscheme author felt too creative and messed up Lightspeed's carefully
-thought out visual cues. How can I enforce the default
-highlighting?](#enforce-the-default-highlighting)
+* [Using ;/, to repeat f/t](#1-character-search-ft)
+* [Multi-line f/t motions VS macros and :normal](#notes)
+* [Enforce the default highlighting if a colorscheme messes up
+things](#enforce-the-default-highlighting)
 
 ## 🚀 Getting started
 
