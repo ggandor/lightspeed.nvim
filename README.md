@@ -97,12 +97,12 @@ all situations when there is no obvious _atomic_ alternative - like `w`, `{`, or
 
 ### Quick links (FAQ)
 
-* [How can I set custom keymaps?](#-keymaps)
+* [How can I set custom keymaps?](#keymaps)
 * [The enhanced f/t motions with their multiline scoping might break some macro
-and :normal patterns. What can be done about it?](#-notes)
+and :normal patterns. What can be done about it?](#notes)
 * [A colorscheme author felt too creative and messed up Lightspeed's carefully
 thought out visual cues. How can I enforce the default
-highlighting?](#-enforce-the-default-highlighting)
+highlighting?](#enforce-the-default-highlighting)
 
 ## 🚀 Getting started
 
