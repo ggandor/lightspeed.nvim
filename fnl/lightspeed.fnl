@@ -1,28 +1,14 @@
 ; Imports & aliases ///1
 
 (local api vim.api)
+(local empty? vim.tbl_isempty)
+(local map vim.tbl_map)
+(local min math.min)
+(local max math.max)
+(local floor math.floor)
 
 
 ; Fennel utils ///1
-
-(fn inc [x] (+ x 1))
-(fn dec [x] (- x 1))
-
-(fn clamp [val min max]
-  (if (< val min) min
-      (> val max) max
-      :else val))
-
-(fn last [tbl] (. tbl (length tbl)))
-
-(local empty? vim.tbl_isempty)
-
-(local map vim.tbl_map)
-
-(fn string? [x] (= (type x) :string))
-
-(fn reverse-lookup [tbl]
-  (collect [k v (ipairs tbl)] (values v k)))
 
 (macro ++ [x] `(set ,x (+ ,x 1)))
 
@@ -35,12 +21,18 @@
 (macro when-not [condition ...]
   `(when (not ,condition) ,...))
 
+(fn inc [x] (+ x 1))
+(fn dec [x] (- x 1))
+
+(fn clamp [val min max]
+  (if (< val min) min
+      (> val max) max
+      :else val))
+
+(fn last [tbl] (. tbl (length tbl)))
+
 
 ; Nvim utils ///1
-
-(fn getchar-as-str []
-  (local (ok? ch) (pcall vim.fn.getchar))  ; handling <C-c>
-  (values ok? (if (= (type ch) :number) (vim.fn.nr2char ch) ch)))
 
 (fn replace-keycodes [s]
   (api.nvim_replace_termcodes s true false true))
@@ -49,15 +41,23 @@
   (vim.cmd :redraw) (api.nvim_echo [[msg]] false []))
 
 (fn operator-pending-mode? []
-  (-> (. (api.nvim_get_mode) :mode) (string.match "o")))
+  (-> (. (api.nvim_get_mode) :mode) (string.match :o)))
 
-(fn yank-operation? [] (and (operator-pending-mode?) (= vim.v.operator :y)))
-(fn change-operation? [] (and (operator-pending-mode?) (= vim.v.operator :c)))
-(fn delete-operation? [] (and (operator-pending-mode?) (= vim.v.operator :d)))
-(fn dot-repeatable-operation? [] (and (operator-pending-mode?) (not= vim.v.operator :y)))
+(fn is-current-operation? [op-ch]
+  (and (operator-pending-mode?) (= vim.v.operator op-ch)))
 
-(fn get-cursor-pos []
-  [(vim.fn.line ".") (vim.fn.col ".")])
+(fn change-operation? [] (is-current-operation? :c))
+(fn delete-operation? [] (is-current-operation? :d))
+
+(fn dot-repeatable-operation? []
+  (and (operator-pending-mode?) (not= vim.v.operator :y)))
+
+(fn get-cursor-pos [] [(vim.fn.line ".") (vim.fn.col ".")])
+
+
+(fn getchar-as-str []
+  (local (ok? ch) (pcall vim.fn.getchar))  ; handling <C-c>
+  (values ok? (if (= (type ch) :number) (vim.fn.nr2char ch) ch)))
 
 
 (fn char-at-pos [[line byte-col] {: char-offset}]  ; expects (1,1)-indexed input
@@ -244,8 +244,8 @@ types properly."
                    (vim.highlight.range
                      0 hl.ns hl-group start end nil end-inclusive?))]
     (match forced-motion
-      ctrl-v (let [[startcol endcol] [(math.min startcol endcol)
-                                      (math.max startcol endcol)]]
+      ctrl-v (let [[startcol endcol] [(min startcol endcol)
+                                      (max startcol endcol)]]
                (for [line startline endline]
                  ; Blockwise operations make the motion inclusive on
                  ; both ends, unconditionally.
@@ -1012,9 +1012,9 @@ sub-table containing label-target k-v pairs for these targets."
               ; area, and that is _not_ necessarily our targeted position.
               ?highlight-cursor-at (when op-mode?
                                      (->> (if (= forced-motion ctrl-v)
-                                              ; For blockwise mode, we need to find
-                                              ; the top/leftmost "corner". 
-                                              [startline (math.min startcol endcol)]
+                                              ; For blockwise mode, we need to
+                                              ; find the top/leftmost "corner".
+                                              [startline (min startcol endcol)]
                                               ; Otherwise, in the forward direction,
                                               ; we need to stay at the _start_
                                               ; position with our virtual cursor.
@@ -1067,7 +1067,7 @@ sub-table containing label-target k-v pairs for these targets."
                     (get-input-and-clean-up))
            input
            (if (one-of? input cycle-fwd-key cycle-bwd-key)
-               (let [|groups| (math.floor (/ (length target-list) (length labels)))
+               (let [|groups| (floor (/ (length target-list) (length labels)))
                      group-offset (-> group-offset
                                       ((match input cycle-fwd-key inc _ dec))
                                       (clamp 0 |groups|))]
