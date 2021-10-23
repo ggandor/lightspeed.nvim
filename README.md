@@ -97,7 +97,8 @@ all situations when there is no obvious _atomic_ alternative - like `w`, `{`, or
 
 ### Quick links (FAQ)
 
-* [How can I set custom keymaps?](#keymaps)
+* [I cannot escape from the evil spell of the semicolon and the comma. How can I
+keep using them to repeat f/t motions?](#1-character-search-ft)
 * [The enhanced f/t motions with their multiline scoping might break some macro
 and :normal patterns. What can be done about it?](#notes)
 * [A colorscheme author felt too creative and messed up Lightspeed's carefully
