@@ -120,7 +120,7 @@ character instead."
 
 (var opts {:jump_to_first_match true
            :jump_on_partial_input_safety_timeout 400
-           :highlight_unique_chars false
+           :highlight_unique_chars true
            :grey_out_search_area true
            :match_only_the_start_of_same_char_seqs true
            :limit_ft_matches 5
@@ -346,6 +346,20 @@ types properly."
        (force-matchparen-refresh))))
 
 
+(fn get-horizontal-bounds []
+  (let [non-editable-width (dec (leftmost-editable-wincol))  ; sign/number/foldcolumn
+        col-in-edit-area (- (vim.fn.wincol) non-editable-width)
+        left-bound (- (vim.fn.col ".") (dec col-in-edit-area))
+        window-width (api.nvim_win_get_width 0)
+        ; -1, as both chars of the match should be visible (2-char search).
+        ; NOTE: Should we change our minds and allow f/t to skip folds
+        ;       and offscreen segments, then this has to be incremented
+        ;       at the proper place(s)!
+        ; TODO: Uhm, what about matching before EOL for 2-char search?
+        right-bound (+ left-bound (dec (- window-width non-editable-width 1)))]
+    [left-bound right-bound]))
+
+
 (fn onscreen-match-positions [pattern reverse? {: ft-search? : limit}]
   "Returns an iterator streaming the return values of `searchpos` for
 the given pattern, stopping at the window edge; in case of 2-character
@@ -358,16 +372,7 @@ early termination in loops."
         opts (if reverse? "b" "")
         stopline (vim.fn.line (if reverse? "w0" "w$"))  ; top/bottom of window
         cleanup #(do (vim.fn.winrestview view) (set vim.o.cpo cpo) nil)
-        ; Only relevant for 2-character search from here on.
-        non-editable-width (dec (leftmost-editable-wincol))  ; sign/number/foldcolumn
-        col-in-edit-area (- (vim.fn.wincol) non-editable-width)
-        left-bound (- (vim.fn.col ".") (dec col-in-edit-area))
-        window-width (api.nvim_win_get_width 0)
-        ; -1, as both chars of the match should be visible.
-        ; NOTE: Should we change our minds and allow f/t to skip folds
-        ;       and offscreen segments, then this has to be incremented
-        ;       at the proper place(s)!
-        right-bound (+ left-bound (dec (- window-width non-editable-width 1)))]
+        [left-bound right-bound] (get-horizontal-bounds)]
 
     (fn skip-to-fold-edge! []
       (match ((if reverse? vim.fn.foldclosed vim.fn.foldclosedend)
@@ -674,21 +679,29 @@ interrupted change-operation."
        (map replace-keycodes)))
 
 
-; Thinking about some totally different implementation, not using search().
-; (This is unusably slow if the window has a lot of content.)
-(fn highlight-unique-chars [reverse? ignorecase]
+(fn highlight-unique-chars [reverse?]
   (let [unique-chars {}
-        pattern ".\\_."]
-    (each [pos (onscreen-match-positions pattern reverse? {})]
-      (local ch (char-at-pos pos {}))
-      (tset unique-chars ch (match (. unique-chars ch) nil pos _ false)))
+        [left-bound right-bound] (get-horizontal-bounds)
+        [curline curcol] (get-cursor-pos)
+        top (if reverse? (vim.fn.line "w0") curline)
+        bot (if reverse? curline (vim.fn.line "w$"))
+        lines (api.nvim_buf_get_lines 0 (dec top) bot true)]  ; expects 0-idx
+    (each [i line (ipairs lines)]
+      (let [line-offset (dec i)
+            on-curline? (= line-offset (- curline top))
+            startcol (if (and on-curline? (not reverse?)) (inc curcol) 1)
+            endcol (if (and on-curline? reverse?) (dec curcol) (length line))]
+        (for [col startcol endcol]
+          (when (or vim.wo.wrap (and (>= col left-bound) (<= col right-bound)))
+            (let [ch (line:sub col col)
+                  pos [(+ top line-offset) col]]  ; 1,1
+              (tset unique-chars ch (match (. unique-chars ch)
+                                      pos-already-there false
+                                      _ pos)))))))
     (each [ch pos (pairs unique-chars)]
-      (match pos
-        [line col]
-        (hl:set-extmark (dec line)
-                        (dec col)
-                        {:virt_text [[ch hl.group.unique-ch]]
-                         :virt_text_pos "overlay"})))))
+      (match pos  ; don't try to destructure `false` values above
+        [line col] 
+        (hl:add-hl hl.group.unique-ch (dec line) (dec col) col)))))
 
 
 (fn get-targets [ch1 reverse?]

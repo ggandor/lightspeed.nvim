@@ -40,15 +40,16 @@ features, that blur the boundary between one- and two-character search. It is
 all about processing the input incrementally - analyzing the available
 information after _each_ keystroke, to assist the user and offer shortcuts:
 
+* **jump based on partial input:** if the character is unique in the search
+  direction, you will automatically jump after the first input (these characters
+  are highlighted beforehand, so this is never too surprising)
+* **shortcut-labels:** for some matches, it is possible to use the target
+  label right after the first input, as if doing 1-character search
 * **ahead-of-time displayed target labels:** in any case, you will _see_ the
   label right after the first input, so once you need to type it, your brain
   will already have processed it
-* **shortcut-labels:** for some matches, it is possible to _use_ the target
-  label right after the first input, as if doing 1-character search
-* **jump based on partial input:** if the character is unique in the search
-  direction, you will automatically jump after the first input
 
-The first one is probably the biggest game-changer, eliminating the major
+The last one is probably the biggest game-changer, eliminating the major
 problem of all other general-purpose motion plugins - the frustrating momentary
 pause between entering your search pattern and selecting the target. Once you
 try it, you will never look back.
@@ -78,8 +79,6 @@ all situations when there is no obvious _atomic_ alternative - like `w`, `{`, or
 * skips repeated (3+) sequences of the same character, for preserving labels
   (opt-out)
 * greys out the search area, like EasyMotion does (opt-out)
-* unique characters in the search direction can be highlighted before entering
-  any input (opt-in)
 * the cursor stays visible all the time
 * uses extmarks, and does not mess with the Conceal group
 
@@ -273,9 +272,7 @@ are fine with the defaults.)
 require'lightspeed'.setup {
   jump_to_first_match = true,
   jump_on_partial_input_safety_timeout = 400,
-  -- This can get _really_ slow if the window has a lot of content,
-  -- turn it on only if your machine can always cope with it.
-  highlight_unique_chars = false,
+  highlight_unique_chars = true,
   grey_out_search_area = true,
   match_only_the_start_of_same_char_seqs = true,
   limit_ft_matches = 5,
@@ -421,19 +418,19 @@ only execute for certain ones, etc.
 ### Jump on partial input
 
 If you enter a character that is the only match in the search direction,
-Lightspeed jumps to it directly, without waiting for a second input. To mitigate
-accidents, a short timeout is set by default, until the second character in the
-pair (and only that) is "swallowed". In operator-pending mode, the operated area
-gets a temporary highlight until the next character is entered.
+Lightspeed jumps to it directly, without waiting for a second input. These
+unique characters are highlighted beforehand;
+[quick-scope](https://github.com/unblevable/quick-scope) is based on a similar
+idea, but the intent here is not a "choose me!"-kind of preliminary orientation
+(the assumpiton is that you _know_ where you want to go), more like giving
+feedback for your brain _while_ you type.
 
 ![jumping to unique characters](../media/intro_img1_jump_to_unique.gif?raw=true)
 
-As an opt-int feature, these unique characters in the search direction can be
-highlighted beforehand;
-[quick-scope](https://github.com/unblevable/quick-scope) is based on a similar
-idea, but the intent here is not a "choose me!"-kind of preliminary
-orientation (the assumpiton is that you _know_ where you want to go), more
-like giving feedback for your brain _while_ you type.
+To further mitigate accidents, a short timeout is set by default, until the
+second character in the pair (and only that) is "swallowed". In operator-pending
+mode, the operated area gets a temporary highlight until the next character is
+entered.
 
 ### Ahead-of-time labeling
 

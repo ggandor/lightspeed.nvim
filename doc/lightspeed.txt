@@ -1,4 +1,4 @@
-*lightspeed.txt*       For Neovim version 0.5       Last change: 2021 October 05
+*lightspeed.txt*       For Neovim version 0.5       Last change: 2021 October 24
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -154,12 +154,10 @@ Available options~
     "swallowed", when jumping to a unique character right after the first
     input (see |lightspeed-jump-on-partial-input|).
 
-`highlight_unique_chars = false`
+`highlight_unique_chars = true`
 
     Highlight unique characters in the search direction, before entering the
-    first input. This might cause a very noticeable (on slower machines
-    untolerable) lag when the search area is big, so this is an opt-in
-    feature.
+    first input.
 
 `grey_out_search_area = true`
 
