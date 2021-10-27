@@ -80,6 +80,12 @@ character instead."
   wincol)
 
 
+(fn get-fold-edge [lnum reverse?]
+  (match ((if reverse? vim.fn.foldclosed vim.fn.foldclosedend) lnum)
+    -1 nil
+    fold-edge fold-edge))
+
+
 ; Glossary ///1
 
 ; Instant-repeat (1-char search)
@@ -344,6 +350,20 @@ types properly."
                     (vim.cmd restore-virtualedit-autocmd#)))))
      (when (not op-mode?#)
        (force-matchparen-refresh))))
+
+
+(fn get-onscreen-lines [{: reverse? : skip-folds?}]
+  (let [lines {}  ; {lnum : line-str}
+        wintop (vim.fn.line "w0")
+        winbot (vim.fn.line "w$")]
+    (var lnum (vim.fn.line "."))
+    (while (if reverse? (>= lnum wintop) (<= lnum winbot))
+      (local fold-edge (get-fold-edge lnum reverse?))
+      (if (and skip-folds? fold-edge)
+          (set lnum ((if reverse? dec inc) fold-edge))
+          (do (tset lines lnum (vim.fn.getline lnum))
+              (set lnum ((if reverse? dec inc) lnum)))))
+    lines))
 
 
 (fn get-horizontal-bounds [{: match-width}]
@@ -681,26 +701,22 @@ interrupted change-operation."
 (fn highlight-unique-chars [reverse?]
   (let [unique-chars {}
         [left-bound right-bound] (get-horizontal-bounds {:match-width 2})
-        [curline curcol] (get-cursor-pos)
-        top (if reverse? (vim.fn.line "w0") curline)
-        bot (if reverse? curline (vim.fn.line "w$"))
-        lines (api.nvim_buf_get_lines 0 (dec top) bot true)]  ; expects 0-idx
-    (each [i line (ipairs lines)]
-      (let [line-offset (dec i)
-            on-curline? (= line-offset (- curline top))
+        [curline curcol] (get-cursor-pos)]
+    (each [lnum line (pairs (get-onscreen-lines {: reverse? :skip-folds? true}))]
+      (let [on-curline? (= lnum curline)
             startcol (if (and on-curline? (not reverse?)) (inc curcol) 1)
             endcol (if (and on-curline? reverse?) (dec curcol) (length line))]
         (for [col startcol endcol]
           (when (or vim.wo.wrap (and (>= col left-bound) (<= col right-bound)))
-            (let [ch (line:sub col col)
-                  pos [(+ top line-offset) col]]  ; 1,1
+            ; TODO: multibyte?
+            (let [ch (line:sub col col)]
               (tset unique-chars ch (match (. unique-chars ch)
                                       pos-already-there false
-                                      _ pos)))))))
+                                      _ [lnum col])))))))
     (each [ch pos (pairs unique-chars)]
       (match pos  ; don't try to destructure `false` values above
-        [line col] 
-        (hl:add-hl hl.group.unique-ch (dec line) (dec col) col)))))
+        [lnum col] 
+        (hl:add-hl hl.group.unique-ch (dec lnum) (dec col) col)))))
 
 
 (fn get-targets [ch1 reverse?]
