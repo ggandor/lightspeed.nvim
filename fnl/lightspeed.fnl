@@ -346,18 +346,16 @@ types properly."
        (force-matchparen-refresh))))
 
 
-(fn get-horizontal-bounds []
-  (let [non-editable-width (dec (leftmost-editable-wincol))  ; sign/number/foldcolumn
-        col-in-edit-area (- (vim.fn.wincol) non-editable-width)
-        left-bound (- (vim.fn.col ".") (dec col-in-edit-area))
+(fn get-horizontal-bounds [{: match-width}]
+  (let [gutter-width (dec (leftmost-editable-wincol))  ; sign/number/foldcolumn
+        offset-in-win (vim.fn.wincol)  ; including gutter
+        offset-in-editable-win (- offset-in-win gutter-width)
+        ; I.e., screen-column of the first visible column in the editable area.
+        left-bound (- (vim.fn.virtcol ".") (dec offset-in-editable-win))
         window-width (api.nvim_win_get_width 0)
-        ; -1, as both chars of the match should be visible (2-char search).
-        ; NOTE: Should we change our minds and allow f/t to skip folds
-        ;       and offscreen segments, then this has to be incremented
-        ;       at the proper place(s)!
-        ; TODO: Uhm, what about matching before EOL for 2-char search?
-        right-bound (+ left-bound (dec (- window-width non-editable-width 1)))]
-    [left-bound right-bound]))
+        right-edge (+ left-bound (dec (- window-width gutter-width)))
+        right-bound (- right-edge (dec match-width))]  ; the whole match should be visible
+    [left-bound right-bound]))  ; screen columns (TODO: multibyte?)
 
 
 (fn onscreen-match-positions [pattern reverse? {: ft-search? : limit}]
@@ -372,7 +370,8 @@ early termination in loops."
         opts (if reverse? "b" "")
         stopline (vim.fn.line (if reverse? "w0" "w$"))  ; top/bottom of window
         cleanup #(do (vim.fn.winrestview view) (set vim.o.cpo cpo) nil)
-        [left-bound right-bound] (get-horizontal-bounds)]
+        [left-bound right-bound] (get-horizontal-bounds
+                                   {:match-width (if ft-search? 1 2)})]
 
     (fn skip-to-fold-edge! []
       (match ((if reverse? vim.fn.foldclosed vim.fn.foldclosedend)
@@ -681,7 +680,7 @@ interrupted change-operation."
 
 (fn highlight-unique-chars [reverse?]
   (let [unique-chars {}
-        [left-bound right-bound] (get-horizontal-bounds)
+        [left-bound right-bound] (get-horizontal-bounds {:match-width 2})
         [curline curcol] (get-cursor-pos)
         top (if reverse? (vim.fn.line "w0") curline)
         bot (if reverse? curline (vim.fn.line "w$"))
