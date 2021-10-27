@@ -18,25 +18,44 @@ aware of the type or the surroundings of the target; (2) for that, the most
 adequate basis is unidirectional 1- and 2-character search; (3) the interface
 should be _optimized for the common case_.
 
+#### (Don't) always be composing
+
+Everyone has been taught that the "Vim way" of reaching a distant point in the
+window is using combinations of primitive motions: `8ggfx;`. The composing
+instinct is so ingrained in our Vim-infected mindsets - sometimes reaching the
+level of a cargo-cult - that many just maintain the notion that this is some
+divinely decreed, ultimate way of doing things, regardless of context. Make no
+mistake: this approach evolved merely as a consequence of the limitations of the
+interface; while the ["controls as
+language"](https://mkremins.github.io/blog/controls-as-language/) philosophy is
+an ingenious aspect of Vim in general, "compund sentences" - that is, the Unix
+way - makes no sense for arbitrary jumps between A and B, that should ideally be
+atomic. We don't want to compose pipelines in our heads, but instead keep
+focusing on the editing task that waits for us at the destination.
+
 #### Railways versus jetpacks
 
-[EasyMotion](https://github.com/easymotion/vim-easymotion) and its derivatives
-([Hop](https://github.com/phaazon/hop.nvim), or
-[Avy](https://github.com/abo-abo/avy) for Emacs) are like a bunch of different -
-however sophisticated - railway networks, with pre-built stations: you have to
-think about which train to take, which exit point is the closest to your goal,
-etc.
+[EasyMotion](https://github.com/easymotion/vim-easymotion) solved this problem
+by introducing many new "atoms" - direct routes to a lot of specific targets.
+That plugin and its derivatives ([Hop](https://github.com/phaazon/hop.nvim), or
+[Avy](https://github.com/abo-abo/avy) for Emacs) are a bit like convoluted
+railway networks, with pre-built stations: each time you have to think about
+which train to take, which exit point is the closest to your goal, etc. In
+short, they buy speed for cognitive load - a questionable trade-off.
 
-A user of Sneak, on the other hand, embraces a different philosophy: you barely
-need to think about motions anymore - label-mode "sneaking" gets you everywhere
-you need to be, with maximal precision. It is like having a _jetpack_ on you all
-the time.
+Sneak's approach, however, with its sole focus on using 2-character search
+patterns for targeting, and later combining that with the labeling method
+inspired by EasyMotion, felt close to perfect at its time. It embodies just the
+opposite philosophy than the above: you barely need to think about motions
+anymore - "sneaking" gets you everywhere you need to be, with maximal precision.
+It is like having a _jetpack_ on you all the time.
 
 #### Always a step ahead of you
 
 Lightspeed, in particular, is like having a jetpack _with a GPS_. While
 preserving the minimalist approach of Sneak, it has a bunch of brand-new
-features, that blur the boundary between one- and two-character search. It is
+features, that blur the boundary between one- and two-character search,
+eliminating any remaining cognitive overhead or unnecessary keystrokes. It is
 all about processing the input incrementally - analyzing the available
 information after _each_ keystroke, to assist the user and offer shortcuts:
 
@@ -49,14 +68,14 @@ information after _each_ keystroke, to assist the user and offer shortcuts:
   label right after the first input, so once you need to type it, your brain
   will already have processed it
 
-The last one is probably the biggest game-changer, eliminating the major
-problem of all other general-purpose motion plugins - the frustrating momentary
-pause between entering your search pattern and selecting the target. Once you
-try it, you will never look back.
+The last one is probably the biggest game-changer, beating the major problem of
+all other general-purpose motion plugins - the frustrating momentary pause
+between entering your search pattern and selecting the target. Once you try it,
+you will never look back.
 
 To see these features in action, check the [screen
-recordings](#-an-in-depth-introduction-of-the-key-features)
-in the in-depth introduction below.
+recordings](#-an-in-depth-introduction-of-the-key-features) in the in-depth
+introduction below.
 
 #### Universal motions
 
@@ -98,6 +117,8 @@ all situations when there is no obvious _atomic_ alternative - like `w`, `{`, or
 
 * [Using ;/, to repeat f/t](#1-character-search-ft)
 * [Multi-line f/t motions VS macros and :normal](#notes)
+* [Guidelines for colorscheme
+  integrations](#guidelines-for-colorscheme-integrations)
 * [Enforce the default highlighting if a colorscheme messes up
 things](#enforce-the-default-highlighting)
 
@@ -466,11 +487,11 @@ if there are lots of `<Plug>` forms in a section of a Vim config file).
 
 When there is a large number of matches, we cycle through groups instead of
 trying to label everything at once (just like Sneak does it). However, the
-immediate next group is always shown ahead of time too, with a different
-color, so your brain has a bit of time to process the label, even in case of a
-distant group. If the target is right in the second group, you don't even have
-to think about "switching groups" - a blue label just means it's
-`{group-switch-key}{label-key}`. That means we have `2 * number-of-labels`
+immediate next group is always shown ahead of time too, with a different color,
+so your brain has a bit of time to process the label, even in case of a distant
+group. If the target is right in the second group, you don't even have to think
+in terms of "switching groups" - a blue label should rather be thought of as a
+`<tab>`-prefixed 2-character label. That means we have `2 * number-of-labels`
 targets right away that are in the efficiently-reachable/low-cognitive-load
 range.
 
