@@ -20,44 +20,44 @@ should be _optimized for the common case_.
 
 #### (Don't) always be composing
 
-Everyone has been taught that the "Vim way" of reaching a distant point in the
-window is using combinations of primitive motions: `8ggfx;`. The composing
-instinct is so ingrained in our Vim-infected mindsets - sometimes reaching the
-level of a cargo-cult - that many just maintain the notion that this is some
-divinely decreed, ultimate way of doing things, regardless of context. Make no
-mistake: this approach evolved merely as a consequence of the limitations of the
-interface; while the ["controls as
+Everyone has been taught that the "Vim way" of reaching distant points in the
+window is using combinations of primitive motions: `8jfx;;`. The composing
+instinct is so deeply ingrained in our Vim-infected mindsets, that many of us
+tend to forget that this approach has evolved merely as a consequence of the
+limitations of the interface, and is not some divinely decreed, superior way of
+doing things; while the ["controls as
 language"](https://mkremins.github.io/blog/controls-as-language/) philosophy is
-an ingenious aspect of Vim in general, "compund sentences" - that is, the Unix
-way - makes no sense for arbitrary jumps between A and B, that should ideally be
-atomic. We don't want to compose pipelines in our heads, but instead keep
-focusing on the editing task that waits for us at the destination.
+an ingenious aspect of Vim in general, "compound sentences" make no sense in the
+context of doing arbitrary jumps between A and B, that should ideally be
+_atomic_.  We don't want to build pipelines in our heads, just magically be
+there, and keep focusing on the editing task that waits for us at the
+destination.
 
 #### Railways versus jetpacks
 
-[EasyMotion](https://github.com/easymotion/vim-easymotion) solved this problem
-by introducing many new "atoms" - direct routes to a lot of specific targets.
-That plugin and its derivatives ([Hop](https://github.com/phaazon/hop.nvim), or
+[EasyMotion](https://github.com/easymotion/vim-easymotion) attempted to improve
+the situation by introducing many new "atoms" - direct routes to a lot of
+specific targets. That plugin and its derivatives
+([Hop](https://github.com/phaazon/hop.nvim), or
 [Avy](https://github.com/abo-abo/avy) for Emacs) are a bit like convoluted
 railway networks, with pre-built stations: each time you have to think about
 which train to take, which exit point is the closest to your goal, etc. In
-short, they buy speed for cognitive load - a questionable trade-off.
+short, they buy speed for cognitive load - a questionable bargain.
 
 Sneak's approach, however, with its sole focus on using 2-character search
 patterns for targeting, and later combining that with the labeling method
-inspired by EasyMotion, felt close to perfect at its time. It embodies just the
-opposite philosophy than the above: you barely need to think about motions
-anymore - "sneaking" gets you everywhere you need to be, with maximal precision.
-It is like having a _jetpack_ on you all the time.
+inspired by EasyMotion, felt close to perfect at its time. A user of Sneak
+embraces a philosophy that is just the opposite than the above one: you barely
+need to think about motions anymore - "sneaking" gets you everywhere you need to
+be, with maximal precision. It is like having a _jetpack_ on you all the time.
 
 #### Always a step ahead of you
 
-Lightspeed, in particular, is like having a jetpack _with a GPS_. While
-preserving the minimalist approach of Sneak, it has a bunch of brand-new
-features, that blur the boundary between one- and two-character search,
-eliminating any remaining cognitive overhead or unnecessary keystrokes. It is
-all about processing the input incrementally - analyzing the available
-information after _each_ keystroke, to assist the user and offer shortcuts:
+Lightspeed adds the ability of "clairvoyance" to this: its brand-new features
+blur the boundary between one- and two-character search, and eliminate yet more
+cognitive overhead, unnecessary keystrokes or interruptions. The idea is to
+process the input incrementally - analyzing the available information after
+_each_ keystroke, to assist the user and offer shortcuts:
 
 * **jump based on partial input:** if the character is unique in the search
   direction, you will automatically jump after the first input (these characters
@@ -85,7 +85,7 @@ to [clever-f](https://github.com/rhysd/clever-f.vim) or Sneak's "clever" modes),
 and a so-called "X-mode" providing **exclusive/inclusive variations for
 2-character search**. Together the four (bi-directional) motions make it
 possible to reach and operate on the whole window area with high efficiency in
-all situations when there is no obvious _atomic_ alternative - like `w`, `{`, or
+all situations when there is no obvious atomic alternative - like `w`, `{`, or
 `%` - available.
 
 #### Other quality-of-life features
