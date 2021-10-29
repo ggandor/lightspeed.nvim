@@ -912,6 +912,8 @@ sub-table containing label-target k-v pairs for these targets."
 (local sx {:state {:dot {:in1 nil
                          :in2 nil
                          :in3 nil
+                         ; Note: we don't need `reverse?`, since we
+                         ; hardcode it into the dot-repeat command.
                          :x-mode? nil}
                    ; Enter-repeat uses these inputs too.
                    :cold {:in1 nil
@@ -982,16 +984,17 @@ sub-table containing label-target k-v pairs for these targets."
     ; No need to pass in `in1` every time once we have it, so let's curry this.
     (fn save-state-for-repeat* [in1]
       (fn [{: cold : dot}]
-        (when new-search?
+        (when new-search?  ; not dot-repeat? / cold-repeat? / enter-repeat?
           (when cold
             (set self.state.cold (doto cold
                                    (tset :in1 in1)
                                    (tset :x-mode? x-mode?)
                                    (tset :reverse? reverse?))))
-          (when (and dot-repeatable-op? dot)
-            (set self.state.dot (doto dot
-                                  (tset :in1 in1)
-                                  (tset :x-mode? x-mode?)))))))
+          (when dot
+            (when dot-repeatable-op?
+              (set self.state.dot (doto dot
+                                    (tset :in1 in1)
+                                    (tset :x-mode? x-mode?))))))))
 
     (local jump-wrapped!
       ; `first-jump?` should only be persisted inside `to` (i.e. the
@@ -1159,11 +1162,7 @@ sub-table containing label-target k-v pairs for these targets."
                       (jump-wrapped! pos))
                 _
                 (do
-                  (save-state-for-repeat
-                    {:cold {: in2}  ; endnote #1
-                     ; For the moment, set the first match as the target.
-                     ; (We might jump to the only match automatically.)
-                     :dot {: in2 :in3 (. labels 1)}})
+                  (save-state-for-repeat {:cold {: in2}})  ; endnote #1
                   (match (or (. targets.sublists in2)
                              (exit-early (echo-not-found (.. in1 in2))))
                     sublist
@@ -1171,6 +1170,7 @@ sub-table containing label-target k-v pairs for these targets."
                           target-list (if jump-to-first? rest sublist)]
                       (when (and first  ; the list might be completely empty if we've skipped one above
                                  (or (empty? rest) cold-repeat? jump-to-first?))
+                        (save-state-for-repeat {:dot {: in2 :in3 (. labels 1)}})
                         (jump-wrapped! (. first :pos)))
                           ; Successful exit #3
                           ; Jumping to the only match automatically.
@@ -1178,22 +1178,20 @@ sub-table containing label-target k-v pairs for these targets."
                           ; Special exit point - highlight the rest, then do the
                           ; cleanup, and exit unconditionally on the next input. 
                           cold-repeat? (after-cold-repeat rest)
-                          (match (or (and dot-repeat? self.state.dot.in3 [self.state.dot.in3])  ; endnote #3
+                          (match (or (and dot-repeat? self.state.dot.in3 [self.state.dot.in3 0])  ; endnote #3
                                      (select-match-group target-list)
                                      (exit-early))
-                            [in3 ?group-offset]
-                            (do (when (and (not dot-repeat?) dot-repeatable-op?)
-                                  ; Reminder: above we have already set this to
-                                  ; the character of the first label, as a default.
-                                  (set self.state.dot.in3 (if (> ?group-offset 0) nil in3)))  ; endnote #3
-                                (match (get-target-with-active-primary-label target-list in3)
-                                  ; Successful exit #4
-                                  ; Selecting an active label.
-                                  {: pos} (exit (jump-wrapped! pos))
-                                        ; Successful exit #5
-                                        ; Falling through with any non-label key in "autojump" mode.
-                                  _ (if jump-to-first? (exit (vim.fn.feedkeys in3 :i))
-                                        (exit-early)))))))))))))))))
+                            [in3 group-offset]
+                            (match (get-target-with-active-primary-label target-list in3)
+                              ; Successful exit #4
+                              ; Selecting an active label.
+                              {: pos} (exit (save-state-for-repeat
+                                              {:dot {: in2 :in3 (if (> group-offset 0) nil in3)}})  ; endnote #3
+                                            (jump-wrapped! pos))
+                                    ; Successful exit #5
+                                    ; Falling through with any non-label key in "autojump" mode.
+                              _ (if jump-to-first? (exit (vim.fn.feedkeys in3 :i))
+                                    (exit-early))))))))))))))))
 
 
 ; Handling editor options ///1
@@ -1343,8 +1341,8 @@ sub-table containing label-target k-v pairs for these targets."
 
 ; Endnotes ///1
 
-; (1) These should be saved right here, because the repeated search
-;     might have a match anyway.
+; (1) This should be saved right here, because the repeated search might
+;     have a match anyway.
 
 ; (2) This is in fact coupled with `onscreen-match-positions`, so it's
 ;     _much_ cleaner to implement the logic here than in `count`. In
