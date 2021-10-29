@@ -650,11 +650,11 @@ interrupted change-operation."
                       in2
                       (let [mode (if (= (vim.fn.mode) :n) :n :x)  ; vim-cutlass compat (#28)
                             repeat? (or (= in2 repeat-key)
-                                        (string.match (vim.fn.maparg in2 mode)
-                                                      (get-plug-key :ft false t-mode?)))
+                                        (= (vim.fn.maparg in2 mode)
+                                           (get-plug-key :ft false t-mode?)))
                             revert? (or (= in2 revert-key)
-                                        (string.match (vim.fn.maparg in2 mode)
-                                                      (get-plug-key :ft true t-mode?)))
+                                        (= (vim.fn.maparg in2 mode)
+                                           (get-plug-key :ft true t-mode?)))
                             do-instant-repeat? (or repeat? revert?)]
                         (if do-instant-repeat?
                             (do
