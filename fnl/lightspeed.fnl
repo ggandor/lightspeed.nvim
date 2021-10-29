@@ -540,8 +540,8 @@ interrupted change-operation."
         [:ft false true ] "t"
         [:ft true  true ] "T"
         [:sx false false] "s"
-        [:sx false true ] "S"
-        [:sx true  false] "x"
+        [:sx true  false] "S"
+        [:sx false true ] "x"
         [:sx true  true ] "X")))
 
 
