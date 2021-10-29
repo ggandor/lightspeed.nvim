@@ -3,7 +3,7 @@ local empty_3f = vim.tbl_isempty
 local map = vim.tbl_map
 local min = math.min
 local max = math.max
-local floor = math.floor
+local ceil = math.ceil
 local function inc(x)
   return (x + 1)
 end
@@ -1470,6 +1470,8 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
     end
   end
   local function select_match_group(target_list)
+    local num_of_groups = ceil((#target_list / #labels))
+    local max_offset = dec(num_of_groups)
     local function rec(group_offset)
       set_beacons(target_list, {["repeat?"] = enter_repeat_3f})
       do
@@ -1486,7 +1488,6 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
       if (nil ~= _344_) then
         local input = _344_
         if ((input == cycle_fwd_key) or (input == cycle_bwd_key)) then
-          local _7cgroups_7c = floor((#target_list / #labels))
           local group_offset_2a
           local _346_
           do
@@ -1498,7 +1499,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
               _346_ = dec
             end
           end
-          group_offset_2a = clamp(_346_(group_offset), 0, _7cgroups_7c)
+          group_offset_2a = clamp(_346_(group_offset), 0, max_offset)
           set_label_states_for_sublist(target_list, {["group-offset"] = group_offset_2a, ["jump-to-first?"] = false})
           return rec(group_offset_2a)
         else
@@ -1646,11 +1647,11 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
             local first = _let_374_[1]
             local rest = _let_374_[2]
             local sublist0 = _let_374_[3]
-            local target_list
+            local labeled_targets
             if jump_to_first_3f then
-              target_list = rest
+              labeled_targets = rest
             else
-              target_list = sublist0
+              labeled_targets = sublist0
             end
             if (first and (empty_3f(rest) or cold_repeat_3f or jump_to_first_3f)) then
               save_state_for_repeat({dot = {in2 = in2, in3 = labels[1]}})
@@ -1676,11 +1677,11 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
                 doau_when_exists("LightspeedLeave")
                 return nil
               end
-              _377_ = ((dot_repeat_3f and self.state.dot.in3 and {self.state.dot.in3, 0}) or select_match_group(target_list) or _378_())
+              _377_ = ((dot_repeat_3f and self.state.dot.in3 and {self.state.dot.in3, 0}) or select_match_group(labeled_targets) or _378_())
               if ((type(_377_) == "table") and (nil ~= (_377_)[1]) and (nil ~= (_377_)[2])) then
                 local in3 = (_377_)[1]
                 local group_offset = (_377_)[2]
-                local _380_ = get_target_with_active_primary_label(target_list, in3)
+                local _380_ = get_target_with_active_primary_label(labeled_targets, in3)
                 if ((type(_380_) == "table") and (nil ~= (_380_).pos)) then
                   local pos = (_380_).pos
                   do

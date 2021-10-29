@@ -5,7 +5,7 @@
 (local map vim.tbl_map)
 (local min math.min)
 (local max math.max)
-(local floor math.floor)
+(local ceil math.ceil)
 
 
 ; Fennel utils ///1
@@ -1093,22 +1093,23 @@ sub-table containing label-target k-v pairs for these targets."
                   (vim.fn.feedkeys :i)))))
 
     (fn select-match-group [target-list]
-      ((fn rec [group-offset]
-         (set-beacons target-list {:repeat? enter-repeat?})
-         (with-highlight-chores (light-up-beacons target-list))
-         (match (get-input-and-clean-up)
-           input
-           (if (one-of? input cycle-fwd-key cycle-bwd-key)
-               (let [|groups| (floor (/ (length target-list) (length labels)))
-                     group-offset* (-> group-offset
-                                       ((match input cycle-fwd-key inc _ dec))
-                                       (clamp 0 |groups|))]
-                 (set-label-states-for-sublist target-list 
-                                               {:jump-to-first? false
-                                                :group-offset group-offset*})
-                 (rec group-offset*))
-               [input group-offset])))
-       0))
+      (let [num-of-groups (ceil (/ (length target-list) (length labels)))
+            max-offset (dec num-of-groups)]
+        ((fn rec [group-offset]
+           (set-beacons target-list {:repeat? enter-repeat?})
+           (with-highlight-chores (light-up-beacons target-list))
+           (match (get-input-and-clean-up)
+             input
+             (if (one-of? input cycle-fwd-key cycle-bwd-key)
+                 (let [group-offset* (-> group-offset
+                                         ((match input cycle-fwd-key inc _ dec))
+                                         (clamp 0 max-offset))]
+                   (set-label-states-for-sublist target-list 
+                                                 {:jump-to-first? false
+                                                  :group-offset group-offset*})
+                   (rec group-offset*))
+                 [input group-offset])))
+         0)))
 
     ; //> Helpers
 
@@ -1167,7 +1168,7 @@ sub-table containing label-target k-v pairs for these targets."
                              (exit-early (echo-not-found (.. in1 in2))))
                     sublist
                     (let [[first rest sublist] (handle-cold-repeating-X sublist)
-                          target-list (if jump-to-first? rest sublist)]
+                          labeled-targets (if jump-to-first? rest sublist)]
                       (when (and first  ; the list might be completely empty if we've skipped one above
                                  (or (empty? rest) cold-repeat? jump-to-first?))
                         (save-state-for-repeat {:dot {: in2 :in3 (. labels 1)}})
@@ -1179,10 +1180,10 @@ sub-table containing label-target k-v pairs for these targets."
                           ; cleanup, and exit unconditionally on the next input. 
                           cold-repeat? (after-cold-repeat rest)
                           (match (or (and dot-repeat? self.state.dot.in3 [self.state.dot.in3 0])  ; endnote #3
-                                     (select-match-group target-list)
+                                     (select-match-group labeled-targets)
                                      (exit-early))
                             [in3 group-offset]
-                            (match (get-target-with-active-primary-label target-list in3)
+                            (match (get-target-with-active-primary-label labeled-targets in3)
                               ; Successful exit #4
                               ; Selecting an active label.
                               {: pos} (exit (save-state-for-repeat
