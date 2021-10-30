@@ -1173,30 +1173,32 @@ sub-table containing label-target k-v pairs for these targets."
                     sublist
                     (let [[first rest sublist] (handle-cold-repeating-X sublist)
                           labeled-targets (if autojump-to-first? rest sublist)]
-                      (when (and first  ; the list might be completely empty if we've skipped one above
-                                 (or (empty? rest) cold-repeat? autojump-to-first?))
-                        (update-state {:dot {: in2 :in3 (. labels 1)}})
-                        (jump-to! (. first :pos)))
+                      (when first  ; the list might be completely empty if we've skipped one above
+                        (when (or (empty? rest) cold-repeat? autojump-to-first?)
+                          (update-state {:dot {: in2 :in3 (. labels 1)}})
+                          (jump-to! (. first :pos))))
                           ; Successful exit #3
                           ; Jumping to the only match automatically.
                       (if (empty? rest) (exit)
                           ; Special exit point - highlight the rest, then do the
                           ; cleanup, and exit unconditionally on the next input. 
                           cold-repeat? (after-cold-repeat rest)
-                          (match (or (and dot-repeat? self.state.dot.in3 [self.state.dot.in3 0])  ; endnote #3
+                          (match (or (when (and dot-repeat? self.state.dot.in3)  ; endnote #3
+                                       [self.state.dot.in3 0])
                                      (select-match-group labeled-targets)
                                      (exit-early))
                             [in3 group-offset]
-                            (match (get-target-with-active-primary-label labeled-targets in3)
-                              ; Successful exit #4
+                            (match (or (get-target-with-active-primary-label labeled-targets in3)
+                                       ; Successful exit #4
+                                       ; Falling through with any non-label key in "autojump" mode.
+                                       (if autojump-to-first? (exit (vim.fn.feedkeys in3 :i))
+                                           (exit-early)))
+                              ; Successful exit #5
                               ; Selecting an active label.
-                              {: pos} (exit (update-state
-                                              {:dot {: in2 :in3 (if (> group-offset 0) nil in3)}})  ; endnote #3
-                                            (jump-to! pos))
-                                    ; Successful exit #5
-                                    ; Falling through with any non-label key in "autojump" mode.
-                              _ (if autojump-to-first? (exit (vim.fn.feedkeys in3 :i))
-                                    (exit-early))))))))))))))))
+                              {: pos}
+                              (exit (update-state
+                                      {:dot {: in2 :in3 (if (> group-offset 0) nil in3)}})  ; endnote #3
+                                    (jump-to! pos))))))))))))))))
 
 
 ; Handling editor options ///1
