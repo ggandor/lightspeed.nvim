@@ -298,7 +298,7 @@ types properly."
   (vim.cmd "silent! doautocmd matchup_matchparen CursorMoved"))
 
 
-(macro jump-to! [target
+(macro jump-to!* [target
                  {: add-to-jumplist? : after : reverse? : inclusive-motion?}]
   `(let [op-mode?# (operator-pending-mode?)
          ; Needs to be here, inside the returned form, as we need to get
@@ -416,7 +416,7 @@ early termination in loops."
 
     (set vim.o.cpo (cpo:gsub "c" ""))  ; do not skip overlapping matches
     (var match-count 0)
-    (fn rec [match-at-curpos?]
+    (fn recur [match-at-curpos?]
       (if (and limit (>= match-count limit)) (cleanup)
           (match (vim.fn.searchpos
                    pattern (.. opts (if match-at-curpos? "c" "")) stopline)
@@ -424,12 +424,12 @@ early termination in loops."
             [line col &as pos]
             (if ft-search? (do (++ match-count) pos)
                 (match (skip-to-fold-edge!)
-                  :moved-the-cursor (rec false)
+                  :moved-the-cursor (recur false)
                   :not-in-fold
                   (if (or vim.wo.wrap (<= left-bound col right-bound))  ; = on-screen
                     (do (++ match-count) pos)
                     (match (skip-to-next-in-window-pos!)
-                      :moved-the-cursor (rec true)  ; true, as we might be _on_ a match
+                      :moved-the-cursor (recur true)  ; true, as we might be _on_ a match
                       _ (cleanup))))))))))
 
 
@@ -631,12 +631,12 @@ interrupted change-operation."
               (echo-not-found in1))
             (do
               (when-not reverted-instant-repeat?
-                (jump-to! match-pos
-                          {:add-to-jumplist? (not instant-repeat?)
-                           :after (when t-mode?
-                                    (push-cursor! (if reverse? :fwd :bwd)))
-                           : reverse?
-                           :inclusive-motion? true}))  ; like the native f/t
+                (jump-to!* match-pos
+                           {:add-to-jumplist? (not instant-repeat?)
+                            :after (when t-mode?
+                                     (push-cursor! (if reverse? :fwd :bwd)))
+                            : reverse?
+                            :inclusive-motion? true}))  ; like the native f/t
               (if op-mode?  ; note: no highlight to clean up
                   (exit
                     (when dot-repeatable-op?
@@ -772,7 +772,7 @@ char separately."
     (table.insert (. targets :sublists ch2) target)))
 
 
-(fn set-labels [targets jump-to-first?]
+(fn set-labels [targets autojump-to-first?]
   "Assign label characters to targets. Note: `label` is a fixed,
 implicit attribute of the target - whether and how it should actually be
 displayed depends on `label-state`."
@@ -780,20 +780,22 @@ displayed depends on `label-state`."
     (each [_ sublist (pairs targets.sublists)]
       (when (> (length sublist) 1)  ; else we'll jump automatically anyway
         (each [i target (ipairs sublist)]
-          (->> (when-not (and jump-to-first? (= i 1))
-                 ; In case of `jump-to-first?`, the i-th label is assigned
+          (->> (when-not (and autojump-to-first? (= i 1))
+                 ; In case of `autojump-to-first?`, the i-th label is assigned
                  ; to the i+1th position (we skipped the first one).
-                 (match (% (if jump-to-first? (dec i) i) (length labels))
+                 (match (% (if autojump-to-first? (dec i) i) (length labels))
                    ; 1-indexing is not a great match for modulo arithmetic...
                    0 (last labels)
                    n (. labels n)))
                (tset target :label)))))))
 
 
-(fn set-label-states-for-sublist [target-list {: jump-to-first? : group-offset}]
+(fn set-label-states-for-sublist [target-list
+                                  {: autojump-to-first?
+                                   : group-offset}]
   (let [labels (get-labels)
         |labels| (length labels)
-        base (if jump-to-first? 2 1)
+        base (if autojump-to-first? 2 1)
         offset (* group-offset |labels|)
         primary-start (+ base offset)
         primary-end (+ primary-start (dec |labels|))
@@ -806,9 +808,11 @@ displayed depends on `label-state`."
            (tset target :label-state)))))
 
 
-(fn set-label-states [targets jump-to-first?]
+(fn set-label-states [targets autojump-to-first?]
   (each [_ sublist (pairs targets.sublists)]
-    (set-label-states-for-sublist sublist {: jump-to-first? :group-offset 0})))
+    (set-label-states-for-sublist sublist
+                                  {: autojump-to-first?
+                                   :group-offset 0})))
 
 
 (fn set-shortcuts-and-populate-shortcuts-map [targets]
@@ -936,7 +940,7 @@ sub-table containing label-target k-v pairs for these targets."
         labels (get-labels)
         ; We _never_ want to autojump in OP mode, since that would execute
         ; the operation without allowing us to select a labeled target.
-        jump-to-first? (and opts.jump_to_first_match (not op-mode?))
+        autojump-to-first? (and opts.jump_to_first_match (not op-mode?))
         cmd-for-dot-repeat (replace-keycodes
                              (get-plug-key :sx reverse? invoked-in-x-mode? :dot))]
 
@@ -982,7 +986,7 @@ sub-table containing label-target k-v pairs for these targets."
                         res)))))
 
     ; No need to pass in `in1` every time once we have it, so let's curry this.
-    (fn save-state-for-repeat* [in1]
+    (fn update-state* [in1]
       (fn [{: cold : dot}]
         (when new-search?  ; not dot-repeat? / cold-repeat? / enter-repeat?
           (when cold
@@ -996,20 +1000,20 @@ sub-table containing label-target k-v pairs for these targets."
                                     (tset :in1 in1)
                                     (tset :x-mode? x-mode?))))))))
 
-    (local jump-wrapped!
+    (local jump-to!
       ; `first-jump?` should only be persisted inside `to` (i.e. the
       ; lifetime is one invocation) and should be managed by the
       ; function itself (it is error-prone if we have to set a flag
       ; manually), so setting up a closure here.
       (do (var first-jump? true)
           (fn [target]
-            (jump-to! target
-                      {:add-to-jumplist? first-jump?
-                       :after (when x-mode?
-                                (push-cursor! :fwd)
-                                (when reverse? (push-cursor! :fwd)))
-                       : reverse?
-                       :inclusive-motion? (and x-mode? (not reverse?))})
+            (jump-to!* target
+                       {:add-to-jumplist? first-jump?
+                        :after (when x-mode?
+                                 (push-cursor! :fwd)
+                                 (when reverse? (push-cursor! :fwd)))
+                        : reverse?
+                        :inclusive-motion? (and x-mode? (not reverse?))})
             (when dot-repeatable-op?
               (set-dot-repeat cmd-for-dot-repeat))
             (set first-jump? false))))
@@ -1018,7 +1022,7 @@ sub-table containing label-target k-v pairs for these targets."
       (local from-pos (map dec (get-cursor-pos)))  ; 1,1 -> 0,0
       ; Note to myself: what if `jump-to!` would return the final,
       ; adjusted position?
-      (jump-wrapped! [target-line target-col])  ; 1,1
+      (jump-to! [target-line target-col])  ; 1,1
       (when new-search?
         ; Highlight new cursor position & operated area (in OP-mode).
         ; Jumping based on partial input is nice, but it's annoying that we
@@ -1095,7 +1099,7 @@ sub-table containing label-target k-v pairs for these targets."
     (fn select-match-group [target-list]
       (let [num-of-groups (ceil (/ (length target-list) (length labels)))
             max-offset (dec num-of-groups)]
-        ((fn rec [group-offset]
+        ((fn recur [group-offset]
            (set-beacons target-list {:repeat? enter-repeat?})
            (with-highlight-chores (light-up-beacons target-list))
            (match (get-input-and-clean-up)
@@ -1105,9 +1109,9 @@ sub-table containing label-target k-v pairs for these targets."
                                          ((match input cycle-fwd-key inc _ dec))
                                          (clamp 0 max-offset))]
                    (set-label-states-for-sublist target-list 
-                                                 {:jump-to-first? false
+                                                 {:autojump-to-first? false
                                                   :group-offset group-offset*})
-                   (rec group-offset*))
+                   (recur group-offset*))
                  [input group-offset])))
          0)))
 
@@ -1125,7 +1129,7 @@ sub-table containing label-target k-v pairs for these targets."
 
     (match (get-first-input)
       in1
-      (let [save-state-for-repeat (save-state-for-repeat* in1)
+      (let [update-state (update-state* in1)
             prev-in2 (if (or cold-repeat? enter-repeat?) self.state.cold.in2
                          dot-repeat? self.state.dot.in2)]
         (match (or (get-targets in1 reverse?)
@@ -1134,8 +1138,8 @@ sub-table containing label-target k-v pairs for these targets."
           (if (or new-search? (= ch2 prev-in2))
               ; Successful exit #1
               ; Jumping to a unique character right after the first input.
-              (exit (save-state-for-repeat {:cold {:in2 ch2}
-                                            :dot {:in2 ch2 :in3 (. labels 1)}})
+              (exit (update-state {:cold {:in2 ch2}
+                                   :dot {:in2 ch2 :in3 (. labels 1)}})
                     (jump-and-ignore-ch2-until-timeout! pos ch2))
               (exit-early (echo-not-found (.. in1 prev-in2))))
 
@@ -1143,8 +1147,8 @@ sub-table containing label-target k-v pairs for these targets."
           (do
             (doto targets
               (populate-sublists)
-              (set-labels jump-to-first?)
-              (set-label-states jump-to-first?))
+              (set-labels autojump-to-first?)
+              (set-label-states autojump-to-first?))
             (when new-search?
               (doto targets
                 (set-shortcuts-and-populate-shortcuts-map)
@@ -1158,21 +1162,21 @@ sub-table containing label-target k-v pairs for these targets."
                 ; Successful exit #2
                 ; Selecting a shortcut-label.
                 {: pos :pair [_ ch2]} 
-                (exit (save-state-for-repeat {:cold {:in2 ch2}
-                                              :dot {:in2 ch2 :in3 in2}})
-                      (jump-wrapped! pos))
+                (exit (update-state {:cold {:in2 ch2}
+                                     :dot {:in2 ch2 :in3 in2}})
+                      (jump-to! pos))
                 _
                 (do
-                  (save-state-for-repeat {:cold {: in2}})  ; endnote #1
+                  (update-state {:cold {: in2}})  ; endnote #1
                   (match (or (. targets.sublists in2)
                              (exit-early (echo-not-found (.. in1 in2))))
                     sublist
                     (let [[first rest sublist] (handle-cold-repeating-X sublist)
-                          labeled-targets (if jump-to-first? rest sublist)]
+                          labeled-targets (if autojump-to-first? rest sublist)]
                       (when (and first  ; the list might be completely empty if we've skipped one above
-                                 (or (empty? rest) cold-repeat? jump-to-first?))
-                        (save-state-for-repeat {:dot {: in2 :in3 (. labels 1)}})
-                        (jump-wrapped! (. first :pos)))
+                                 (or (empty? rest) cold-repeat? autojump-to-first?))
+                        (update-state {:dot {: in2 :in3 (. labels 1)}})
+                        (jump-to! (. first :pos)))
                           ; Successful exit #3
                           ; Jumping to the only match automatically.
                       (if (empty? rest) (exit)
@@ -1186,12 +1190,12 @@ sub-table containing label-target k-v pairs for these targets."
                             (match (get-target-with-active-primary-label labeled-targets in3)
                               ; Successful exit #4
                               ; Selecting an active label.
-                              {: pos} (exit (save-state-for-repeat
+                              {: pos} (exit (update-state
                                               {:dot {: in2 :in3 (if (> group-offset 0) nil in3)}})  ; endnote #3
-                                            (jump-wrapped! pos))
+                                            (jump-to! pos))
                                     ; Successful exit #5
                                     ; Falling through with any non-label key in "autojump" mode.
-                              _ (if jump-to-first? (exit (vim.fn.feedkeys in3 :i))
+                              _ (if autojump-to-first? (exit (vim.fn.feedkeys in3 :i))
                                     (exit-early))))))))))))))))
 
 

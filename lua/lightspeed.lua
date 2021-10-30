@@ -470,7 +470,7 @@ local function onscreen_match_positions(pattern, reverse_3f, _97_)
   end
   vim.o.cpo = cpo:gsub("c", "")
   local match_count = 0
-  local function rec(match_at_curpos_3f)
+  local function recur(match_at_curpos_3f)
     if (limit and (match_count >= limit)) then
       return cleanup()
     else
@@ -495,7 +495,7 @@ local function onscreen_match_positions(pattern, reverse_3f, _97_)
         else
           local _122_ = skip_to_fold_edge_21()
           if (_122_ == "moved-the-cursor") then
-            return rec(false)
+            return recur(false)
           elseif (_122_ == "not-in-fold") then
             if (vim.wo.wrap or (function(_123_,_124_,_125_) return (_123_ <= _124_) and (_124_ <= _125_) end)(left_bound,col,right_bound)) then
               match_count = (match_count + 1)
@@ -503,7 +503,7 @@ local function onscreen_match_positions(pattern, reverse_3f, _97_)
             else
               local _126_ = skip_to_next_in_window_pos_21()
               if (_126_ == "moved-the-cursor") then
-                return rec(true)
+                return recur(true)
               else
                 local _ = _126_
                 return cleanup()
@@ -514,7 +514,7 @@ local function onscreen_match_positions(pattern, reverse_3f, _97_)
       end
     end
   end
-  return rec
+  return recur
 end
 local function highlight_cursor(_3fpos)
   local _let_133_ = (_3fpos or get_cursor_pos())
@@ -975,16 +975,16 @@ local function populate_sublists(targets)
   end
   return nil
 end
-local function set_labels(targets, jump_to_first_3f)
+local function set_labels(targets, autojump_to_first_3f)
   local labels = get_labels()
   for _, sublist in pairs(targets.sublists) do
     if (#sublist > 1) then
       for i, target in ipairs(sublist) do
         local _234_
-        if not (jump_to_first_3f and (i == 1)) then
+        if not (autojump_to_first_3f and (i == 1)) then
           local _235_
           local _237_
-          if jump_to_first_3f then
+          if autojump_to_first_3f then
             _237_ = dec(i)
           else
             _237_ = i
@@ -1009,12 +1009,12 @@ local function set_labels(targets, jump_to_first_3f)
 end
 local function set_label_states_for_sublist(target_list, _244_)
   local _arg_245_ = _244_
+  local autojump_to_first_3f = _arg_245_["autojump-to-first?"]
   local group_offset = _arg_245_["group-offset"]
-  local jump_to_first_3f = _arg_245_["jump-to-first?"]
   local labels = get_labels()
   local _7clabels_7c = #labels
   local base
-  if jump_to_first_3f then
+  if autojump_to_first_3f then
     base = 2
   else
     base = 1
@@ -1040,9 +1040,9 @@ local function set_label_states_for_sublist(target_list, _244_)
   end
   return nil
 end
-local function set_label_states(targets, jump_to_first_3f)
+local function set_label_states(targets, autojump_to_first_3f)
   for _, sublist in pairs(targets.sublists) do
-    set_label_states_for_sublist(sublist, {["group-offset"] = 0, ["jump-to-first?"] = jump_to_first_3f})
+    set_label_states_for_sublist(sublist, {["autojump-to-first?"] = autojump_to_first_3f, ["group-offset"] = 0})
   end
   return nil
 end
@@ -1202,7 +1202,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
   local cycle_fwd_key = _let_284_[1]
   local cycle_bwd_key = _let_284_[2]
   local labels = get_labels()
-  local jump_to_first_3f = (opts.jump_to_first_match and not op_mode_3f)
+  local autojump_to_first_3f = (opts.jump_to_first_match and not op_mode_3f)
   local cmd_for_dot_repeat = replace_keycodes(get_plug_key("sx", reverse_3f, invoked_in_x_mode_3f, "dot"))
   local x_mode_3f = invoked_in_x_mode_3f
   local enter_repeat_3f = nil
@@ -1277,7 +1277,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
       end
     end
   end
-  local function save_state_for_repeat_2a(in1)
+  local function update_state_2a(in1)
     local function _302_(_300_)
       local _arg_301_ = _300_
       local cold = _arg_301_["cold"]
@@ -1305,7 +1305,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
     end
     return _302_
   end
-  local jump_wrapped_21
+  local jump_to_21
   do
     local first_jump_3f = true
     local function _309_(target)
@@ -1346,14 +1346,14 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
       first_jump_3f = false
       return nil
     end
-    jump_wrapped_21 = _309_
+    jump_to_21 = _309_
   end
   local function jump_and_ignore_ch2_until_timeout_21(_319_, ch2)
     local _arg_320_ = _319_
     local target_line = _arg_320_[1]
     local target_col = _arg_320_[2]
     local from_pos = map(dec, get_cursor_pos())
-    jump_wrapped_21({target_line, target_col})
+    jump_to_21({target_line, target_col})
     if new_search_3f then
       local ctrl_v = replace_keycodes("<c-v>")
       local forward_x_3f = (x_mode_3f and not reverse_3f)
@@ -1472,7 +1472,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
   local function select_match_group(target_list)
     local num_of_groups = ceil((#target_list / #labels))
     local max_offset = dec(num_of_groups)
-    local function rec(group_offset)
+    local function recur(group_offset)
       set_beacons(target_list, {["repeat?"] = enter_repeat_3f})
       do
         if (opts.grey_out_search_area and not cold_repeat_3f) then
@@ -1500,14 +1500,14 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
             end
           end
           group_offset_2a = clamp(_346_(group_offset), 0, max_offset)
-          set_label_states_for_sublist(target_list, {["group-offset"] = group_offset_2a, ["jump-to-first?"] = false})
-          return rec(group_offset_2a)
+          set_label_states_for_sublist(target_list, {["autojump-to-first?"] = false, ["group-offset"] = group_offset_2a})
+          return recur(group_offset_2a)
         else
           return {input, group_offset}
         end
       end
     end
-    return rec(0)
+    return recur(0)
   end
   enter("sx")
   if not repeat_invoc then
@@ -1526,7 +1526,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
   local _355_ = get_first_input()
   if (nil ~= _355_) then
     local in1 = _355_
-    local save_state_for_repeat = save_state_for_repeat_2a(in1)
+    local update_state = update_state_2a(in1)
     local prev_in2
     if (cold_repeat_3f or enter_repeat_3f) then
       prev_in2 = self.state.cold.in2
@@ -1554,7 +1554,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
       local ch2 = (((_357_)[1]).pair)[2]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
-          save_state_for_repeat({cold = {in2 = ch2}, dot = {in2 = ch2, in3 = labels[1]}})
+          update_state({cold = {in2 = ch2}, dot = {in2 = ch2, in3 = labels[1]}})
           jump_and_ignore_ch2_until_timeout_21(pos, ch2)
         end
         doau_when_exists("LightspeedSxLeave")
@@ -1576,8 +1576,8 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
       do
         local _362_ = targets
         populate_sublists(_362_)
-        set_labels(_362_, jump_to_first_3f)
-        set_label_states(_362_, jump_to_first_3f)
+        set_labels(_362_, autojump_to_first_3f)
+        set_label_states(_362_, autojump_to_first_3f)
       end
       if new_search_3f then
         do
@@ -1619,15 +1619,15 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
           local _ = ((_369_).pair)[1]
           local ch2 = ((_369_).pair)[2]
           do
-            save_state_for_repeat({cold = {in2 = ch2}, dot = {in2 = ch2, in3 = in2}})
-            jump_wrapped_21(pos)
+            update_state({cold = {in2 = ch2}, dot = {in2 = ch2, in3 = in2}})
+            jump_to_21(pos)
           end
           doau_when_exists("LightspeedSxLeave")
           doau_when_exists("LightspeedLeave")
           return nil
         else
           local _ = _369_
-          save_state_for_repeat({cold = {in2 = in2}})
+          update_state({cold = {in2 = in2}})
           local _371_
           local function _372_()
             if change_operation_3f() then
@@ -1648,14 +1648,14 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
             local rest = _let_374_[2]
             local sublist0 = _let_374_[3]
             local labeled_targets
-            if jump_to_first_3f then
+            if autojump_to_first_3f then
               labeled_targets = rest
             else
               labeled_targets = sublist0
             end
-            if (first and (empty_3f(rest) or cold_repeat_3f or jump_to_first_3f)) then
-              save_state_for_repeat({dot = {in2 = in2, in3 = labels[1]}})
-              jump_wrapped_21(first.pos)
+            if (first and (empty_3f(rest) or cold_repeat_3f or autojump_to_first_3f)) then
+              update_state({dot = {in2 = in2, in3 = labels[1]}})
+              jump_to_21(first.pos)
             end
             if empty_3f(rest) then
               do
@@ -1691,15 +1691,15 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
                     else
                       _381_ = in3
                     end
-                    save_state_for_repeat({dot = {in2 = in2, in3 = _381_}})
-                    jump_wrapped_21(pos)
+                    update_state({dot = {in2 = in2, in3 = _381_}})
+                    jump_to_21(pos)
                   end
                   doau_when_exists("LightspeedSxLeave")
                   doau_when_exists("LightspeedLeave")
                   return nil
                 else
                   local _0 = _380_
-                  if jump_to_first_3f then
+                  if autojump_to_first_3f then
                     do
                       vim.fn.feedkeys(in3, "i")
                     end
