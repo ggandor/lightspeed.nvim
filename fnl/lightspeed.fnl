@@ -54,6 +54,8 @@
 
 (fn get-cursor-pos [] [(vim.fn.line ".") (vim.fn.col ".")])
 
+(fn same-pos? [[l1 c1] [l2 c2]] (and (= l1 l2) (= c1 c2)))
+
 
 (fn getchar-as-str []
   (local (ok? ch) (pcall vim.fn.getchar))  ; handling <C-c>
@@ -1068,22 +1070,21 @@ sub-table containing label-target k-v pairs for these targets."
           (when change-op? (echo ""))
           (hl:cleanup))))
 
-    (fn handle-cold-repeating-X [sublist]
-      (let [[{:pos [line col] &as first} & rest] sublist
-            cursor-right-before-first-target?
-            (let [[line* col*] (vim.fn.searchpos "\\_." :nWb)]
-              ; `(dec col*)` is an OK hack here, as
-              ; a match can only be on one line at once.
-              (= line line*) (= col (dec col*)))
-            ; Skipping is irrelevant in the forward direction, since in
-            ; OP-mode (when we would land right before the target) we
-            ; always have to choose a label.
-            skip-one-target? (and cold-repeat? x-mode? reverse?
-                                  cursor-right-before-first-target?)]
-        (if skip-one-target?
-            (let [[first-rest & rest-rest] rest]
-              [first-rest rest-rest rest])
-            [first rest sublist])))
+    (fn get-sublist [targets ch]
+      (match (. targets.sublists ch)  ; note: if not nil, a sublist is never []
+        sublist
+        ; Handling cold-repeating backward x-motion. (The same problem as with
+        ; instant-repeating t/T - we might have to skip the first target. In
+        ; case of x, this is irrelevant in the forward direction, since in
+        ; OP-mode - when we would land right before the target - we always have
+        ; to choose a label.)
+        (let [[{:pos [line col]} & rest] sublist
+              target-tail [line (inc col)]
+              prev-pos (vim.fn.searchpos "\\_." :nWb)
+              cursor-touches-first-target? (same-pos? target-tail prev-pos)]
+          (if (and cold-repeat? x-mode? reverse? cursor-touches-first-target?)
+              (when-not (empty? rest) rest)
+              sublist))))
 
     ; In case of "cold" repeat, we just wait for another input and
     ; unconditionally feed it, to be able to highlight the remaining
@@ -1093,8 +1094,7 @@ sub-table containing label-target k-v pairs for these targets."
         (with-highlight-chores
           (each [_ {:pos [line col]} (ipairs target-list)]
             (hl:add-hl hl.group.one-char-match (dec line) (dec col) (inc col))))
-        (exit (-> (or (get-input-and-clean-up) "")
-                  (vim.fn.feedkeys :i)))))
+        (vim.fn.feedkeys (or (get-input-and-clean-up) "") :i)))
 
     (fn select-match-group [target-list]
       (let [num-of-groups (ceil (/ (length target-list) (length labels)))
@@ -1108,7 +1108,7 @@ sub-table containing label-target k-v pairs for these targets."
                  (let [group-offset* (-> group-offset
                                          ((match input cycle-fwd-key inc _ dec))
                                          (clamp 0 max-offset))]
-                   (set-label-states-for-sublist target-list 
+                   (set-label-states-for-sublist target-list
                                                  {:autojump-to-first? false
                                                   :group-offset group-offset*})
                    (recur group-offset*))
@@ -1161,44 +1161,45 @@ sub-table containing label-target k-v pairs for these targets."
               (match (when new-search? (. targets.shortcuts in2))
                 ; Successful exit #2
                 ; Selecting a shortcut-label.
-                {: pos :pair [_ ch2]} 
-                (exit (update-state {:cold {:in2 ch2}
-                                     :dot {:in2 ch2 :in3 in2}})
+                {: pos :pair [_ ch2]}
+                (exit (update-state {:cold {:in2 ch2} :dot {:in2 ch2 :in3 in2}})
                       (jump-to! pos))
+
                 _
                 (do
                   (update-state {:cold {: in2}})  ; endnote #1
-                  (match (or (. targets.sublists in2)
+                  (match (or (get-sublist targets in2)
                              (exit-early (echo-not-found (.. in1 in2))))
+                    [only nil]
+                    ; Successful exit #3
+                    ; Jumping to the only match automatically.
+                    (exit (update-state {:dot {: in2 :in3 (. labels 1)}})
+                          (jump-to! only.pos))
+
                     sublist
-                    (let [[first rest sublist] (handle-cold-repeating-X sublist)
-                          labeled-targets (if autojump-to-first? rest sublist)]
-                      (when first  ; the list might be completely empty if we've skipped one above
-                        (when (or (empty? rest) cold-repeat? autojump-to-first?)
-                          (update-state {:dot {: in2 :in3 (. labels 1)}})
-                          (jump-to! (. first :pos))))
-                          ; Successful exit #3
-                          ; Jumping to the only match automatically.
-                      (if (empty? rest) (exit)
-                          ; Special exit point - highlight the rest, then do the
-                          ; cleanup, and exit unconditionally on the next input. 
-                          cold-repeat? (after-cold-repeat rest)
-                          (match (or (when (and dot-repeat? self.state.dot.in3)  ; endnote #3
-                                       [self.state.dot.in3 0])
-                                     (select-match-group labeled-targets)
-                                     (exit-early))
-                            [in3 group-offset]
-                            (match (or (get-target-with-active-primary-label labeled-targets in3)
-                                       ; Successful exit #4
-                                       ; Falling through with any non-label key in "autojump" mode.
-                                       (if autojump-to-first? (exit (vim.fn.feedkeys in3 :i))
-                                           (exit-early)))
-                              ; Successful exit #5
-                              ; Selecting an active label.
-                              {: pos}
-                              (exit (update-state
-                                      {:dot {: in2 :in3 (if (> group-offset 0) nil in3)}})  ; endnote #3
-                                    (jump-to! pos))))))))))))))))
+                    (let [[first & rest] sublist]
+                      (when (or autojump-to-first? cold-repeat?) (jump-to! first.pos))
+                      ; Succesful exit #4
+                      ; Highlight the rest of the matches, then clean up and
+                      ; exit unconditionally on the next input.
+                      (if cold-repeat? (exit (after-cold-repeat rest))
+                          (let [labeled-targets (if autojump-to-first? rest sublist)]
+                            (match (or (when (and dot-repeat? self.state.dot.in3)  ; endnote #3
+                                         [self.state.dot.in3 0])
+                                       (select-match-group labeled-targets)
+                                       (exit-early))
+                              [in3 group-offset]
+                              (match (or (get-target-with-active-primary-label labeled-targets in3)
+                                         ; Successful exit #5
+                                         ; Falling through with any non-label key in "autojump" mode.
+                                         (if autojump-to-first? (exit (vim.fn.feedkeys in3 :i))
+                                             (exit-early)))
+                                ; Successful exit #6
+                                ; Selecting an active label.
+                                target
+                                (exit (update-state
+                                        {:dot {: in2 :in3 (if (> group-offset 0) nil in3)}})  ; endnote #3
+                                      (jump-to! target.pos)))))))))))))))))
 
 
 ; Handling editor options ///1
