@@ -9,7 +9,7 @@ possible.
 
 ### A lightning pitch
 
-The plugin's closest ancestor is Justin M. Keyes' beloved
+The plugin's closest ancestor is Justin Keyes' beloved
 [vim-sneak](https://github.com/justinmk/vim-sneak), in that they share the same
 basic assumptions, namely: (1) to reach all kinds of distant targets, ideally we
 need a few _context-independent_ motions, that are flexible enough to do the job
@@ -26,12 +26,9 @@ instinct is so deeply ingrained in our Vim-infected mindsets, that many of us
 tend to forget that this approach has evolved merely as a consequence of the
 limitations of the interface, and is not some divinely decreed, superior way of
 doing things; while the ["controls as
-language"](https://mkremins.github.io/blog/controls-as-language/) philosophy is
-an ingenious aspect of Vim in general, "compound sentences" make no sense in the
-context of doing arbitrary jumps between A and B, that should ideally be
-_atomic_.  We don't want to build pipelines in our heads, just magically be
-there, and keep focusing on the editing task that waits for us at the
-destination.
+language"](https://mkremins.github.io/blog/controls-as-language/) paradigm is an
+ingenious aspect of Vim in general, "compound sentences" make no sense for doing
+arbitrary jumps between A and B, that should ideally be _atomic_.
 
 #### Railways versus jetpacks
 
@@ -53,11 +50,11 @@ be, with maximal precision. It is like having a _jetpack_ on you all the time.
 
 #### Always a step ahead of you
 
-Lightspeed adds the ability of "clairvoyance" to this: its brand-new features
-blur the boundary between one- and two-character search, and eliminate yet more
-cognitive overhead, unnecessary keystrokes or interruptions. The idea is to
-process the input incrementally - analyzing the available information after
-_each_ keystroke, to assist the user and offer shortcuts:
+Lightspeed adds the ability of "clairvoyance" to this: it blurs the boundary
+between one- and two-character search, and eliminate yet more cognitive
+overhead, unnecessary keystrokes or interruptions. The idea is to process the
+input incrementally - analyzing the available information after _each_
+keystroke, to assist the user and offer shortcuts:
 
 * **jump based on partial input:** if the character is unique in the search
   direction, you will automatically jump after the first input (these characters
@@ -79,14 +76,13 @@ introduction below.
 
 #### Universal motions
 
-To make the suite complete, Lightspeed also implements **enhanced f/t-like
-motions working over multiple lines**, with same-key repeat available (similar
-to [clever-f](https://github.com/rhysd/clever-f.vim) or Sneak's "clever" modes),
-and a so-called "X-mode" providing **exclusive/inclusive variations for
-2-character search**. Together the four (bi-directional) motions make it
-possible to reach and operate on the whole window area with high efficiency in
-all situations when there is no obvious atomic alternative - like `w`, `{`, or
-`%` - available.
+To make the suite complete, Lightspeed also implements [enhanced f/t-like
+motions working over multiple lines](#1-character-search-ft), with same-key
+repeat available, and a so-called [x-mode](#x-mode), providing
+exclusive/inclusive variations for 2-character search. Together the four
+bi-directional motions (`s`/`x`/`f`/`t`) make it possible to reach and operate
+on the whole window area with high efficiency in all situations when there is no
+obvious atomic alternative - like `w`, `{`, or `%` - available.
 
 #### Other quality-of-life features
 
@@ -100,6 +96,15 @@ all situations when there is no obvious atomic alternative - like `w`, `{`, or
 * greys out the search area, like EasyMotion does (opt-out)
 * the cursor stays visible all the time
 * uses extmarks, and does not mess with the Conceal group
+
+#### Guiding principles
+
+* [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
+  the plugin should feel a natural extension to the core, with an interplay as
+  seamless and intuitive as possible
+* [Design is making
+  decisions](https://www.infoq.com/presentations/Design-Composition-Performance/):
+  mitigate choice paralysis for the user, regarding both usage and configuration
 
 ## Sky chart
 
@@ -119,8 +124,8 @@ all situations when there is no obvious atomic alternative - like `w`, `{`, or
 * [Multi-line f/t motions VS macros and :normal](#notes)
 * [Guidelines for colorscheme
   integrations](#guidelines-for-colorscheme-integrations)
-* [Enforce the default highlighting if a colorscheme messes up
-things](#enforce-the-default-highlighting)
+* [Enforce the default highlighting if a colorscheme messes things
+  up](#enforce-the-default-highlighting)
 
 ## 🚀 Getting started
 
