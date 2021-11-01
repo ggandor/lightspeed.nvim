@@ -131,7 +131,7 @@ character instead."
            :highlight_unique_chars true
            :grey_out_search_area true
            :match_only_the_start_of_same_char_seqs true
-           :limit_ft_matches 5
+           :limit_ft_matches 4
            :x_mode_prefix_key "<c-x>"
            :substitute_chars {"\r" "¬"}  ; 0x00AC
            :instant_repeat_fwd_key nil
@@ -688,8 +688,8 @@ interrupted change-operation."
 (fn get-labels []
   (or opts.labels
       (if opts.jump_to_first_match
-          ["f" "s" "n" "u" "t" "/" "q" "F" "S" "G" "H" "L" "M" "N" "U" "R" "T" "Z" "?" "Q"]
-          ["f" "j" "d" "k" "s" "l" "a" ";" "e" "i" "w" "o" "g" "h" "v" "n" "c" "m" "z" "."])))
+          ["s" "f" "n" "u" "t" "/" "q" "F" "S" "G" "H" "L" "M" "N" "U" "R" "T" "Z" "?" "Q"]
+          ["f" "j" "d" "k" "s" "l" "e" "i" "w" "o" "g" "h" "v" "n" "c" "m" "a" ";" "z" "."])))
 
 
 (fn get-cycle-keys []

@@ -1,4 +1,4 @@
-*lightspeed.txt*       For Neovim version 0.5       Last change: 2021 October 24
+*lightspeed.txt*      For Neovim version 0.5       Last change: 2021 November 01
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -216,8 +216,8 @@ used right after a jump.)
            "H", "L", "M", "N", "?", "U", "R", "Z", "T", "Q"}
 <
     Otherwise: >
-          {"f", "j", "d", "k", "s", "l", "a", ";", "e", "i",
-           "w", "o", "g", "h", "v", "n", "c", "m", "z", "."}
+          {"f", "j", "d", "k", "s", "l", "e", "i", "w", "o",
+           "g", "h", "v", "n", "c", "m", "a", ";", "z", "."}
 <
 `cycle_group_fwd_key = nil`
 
