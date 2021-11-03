@@ -401,7 +401,8 @@ with the defaults.
   priority over aesthetics.
 
 * The highlight groups of overlapped beacons use slightly darker (dark themes)
-  or lighter (light themes) versions of the base colors.
+  or lighter (light themes) versions of the base colors. This is the only
+  difference among them and the non-overlapped versions.
 
 * Regular labels have _no_ background; shortcut-labels _do_ have a background,
   which is the same as the foreground color for the corresponding regular label
@@ -412,13 +413,16 @@ with the defaults.
 * `LightspeedMaskedChar` has no background, and has an empty attribute list; it
   can be of any color, but _should be unobtrusive_ - barely noticeable ideally -,
   being **much dimmer** and also less saturated than the labels, otherwise the
-  UI becomes too chaotic. (Keep in mind that the plugin is not used like "_I
-  have pressed the first key, now think about what should I press next... let's
-  check what character is displayed before the label..._" The masked character
-  is just a redundant reminder 99% of the time.)
+  UI becomes too chaotic. (This could not be emphasized enough. Keep in mind
+  that the plugin is not used like "_I have pressed the first key, now think
+  about what should I press next... let's check what character is displayed
+  before the label..._" The masked character is just a redundant reminder 99% of
+  the time.)
 
 * `LightspeedUnlabeledMatch` uses black or dark grey (light themes), or white or
-  light grey (dark themes), with no or minimal saturation.
+  light grey (dark themes), with no or minimal saturation - this is what
+  distinguishes them from the labeled beacons, and make them instantly
+  recognizable.
 
 * Even if a colorscheme does not aim to make any further modifications, it is
   suggested to link `LightspeedGreyWash` to `Comment`, provided that the latter
