@@ -502,11 +502,14 @@ interrupted change-operation."
      nil))
 
 
-(fn get-input-and-clean-up []
+(macro with-highlight-cleanup [...]
+  `(let [res# (do ,...)]
+     (hl:cleanup)
+     res#))
+
+
+(fn get-input []
   (let [(ok? res) (getchar-as-str)]
-    ; Cleaning up after every input religiously
-    ; (trying to work in a more or less stateless manner).
-    (hl:cleanup)
     ; <esc> should cleanly exit anytime.
     (when (and ok? (not= res (replace-keycodes "<esc>")))
       res)))
@@ -602,7 +605,7 @@ interrupted change-operation."
     (match (if instant-repeat? self.state.instant.in
                dot-repeat? self.state.dot.in
                cold-repeat? self.state.cold.in
-               (match (or (get-input-and-clean-up)
+               (match (or (with-highlight-cleanup (get-input))
                           (exit-early))
                  "\r" (or self.state.cold.in
                           (exit-early (echo-no-prev-search)))
@@ -655,7 +658,7 @@ interrupted change-operation."
                   (do
                     (highlight-cursor)
                     (vim.cmd :redraw)
-                    (match (or (get-input-and-clean-up)
+                    (match (or (with-highlight-cleanup (get-input))
                                (exit (reset-instant-state)))
                       in2
                       (let [mode (if (= (vim.fn.mode) :n) :n :x)  ; vim-cutlass compat (#28)
@@ -979,7 +982,7 @@ sub-table containing label-target k-v pairs for these targets."
       (if dot-repeat? (do (set x-mode? self.state.dot.x-mode?)
                           self.state.dot.in1)
           cold-repeat? self.state.cold.in1
-          (match (or (get-input-and-clean-up)
+          (match (or (with-highlight-cleanup (get-input))
                      (exit-early))
             ; Here we can handle any other modifier key as "zeroth" input,
             ; if the need arises (e.g. regex search).
@@ -989,7 +992,7 @@ sub-table containing label-target k-v pairs for these targets."
                     (var res in0)
                     (when (and x-mode? (not invoked-in-x-mode?))
                       ; Get the "true" first input then.
-                      (match (or (get-input-and-clean-up)
+                      (match (or (get-input)
                                  (exit-early))
                         "\r" (set enter-repeat? true)
                         in0* (set res in0*)))
@@ -1105,7 +1108,7 @@ sub-table containing label-target k-v pairs for these targets."
         (with-highlight-chores
           (each [_ {:pos [line col]} (ipairs target-list)]
             (hl:add-hl hl.group.one-char-match (dec line) (dec col) (inc col))))
-        (vim.fn.feedkeys (or (get-input-and-clean-up) "") :i)))
+        (vim.fn.feedkeys (or (with-highlight-cleanup (get-input)) "") :i)))
 
     (fn select-match-group [target-list]
       (let [num-of-groups (ceil (/ (length target-list) (length labels)))
@@ -1113,7 +1116,7 @@ sub-table containing label-target k-v pairs for these targets."
         ((fn recur [group-offset]
            (set-beacons target-list {:repeat? enter-repeat?})
            (with-highlight-chores (light-up-beacons target-list))
-           (match (get-input-and-clean-up)
+           (match (with-highlight-cleanup (get-input))
              input
              (if (one-of? input cycle-fwd-key cycle-bwd-key)
                  (let [group-offset* (-> group-offset
@@ -1166,7 +1169,7 @@ sub-table containing label-target k-v pairs for these targets."
                 (set-beacons {:repeat? false}))
               (with-highlight-chores (light-up-beacons targets)))
             (match (or prev-in2
-                       (get-input-and-clean-up)
+                       (with-highlight-cleanup (get-input))
                        (exit-early))
               in2
               (match (when new-search? (. targets.shortcuts in2))
