@@ -507,13 +507,13 @@ interrupted change-operation."
 
 (fn get-input [?timeout]
   (let [esc-keycode 27
-        (ok? ch) (if ?timeout
-                     (when (vim.fn.wait ?timeout
-                                        #(not= (vim.fn.getchar 1) 0)
-                                        100)
-                       (values true (vim.fn.getchar 0)))
-                     (pcall vim.fn.getchar))]  ; pcall for handling <C-c>
-    (when (and ok? (not= ch esc-keycode))  ; <esc> should cleanly exit anytime
+        char-available? #(not= 0 (vim.fn.getchar 1))
+        getchar-timeout #(when (vim.wait ?timeout char-available? 100)
+                           (vim.fn.getchar 0))
+        ; pcall for handling <C-c>.
+        (ok? ch) (pcall (if ?timeout getchar-timeout vim.fn.getchar))]
+    ; <esc> should cleanly exit anytime.
+    (when (and ok? (not= ch esc-keycode))
       (if (= (type ch) :number) (vim.fn.nr2char ch) ch))))
 
 
