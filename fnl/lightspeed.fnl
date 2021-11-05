@@ -597,10 +597,11 @@ interrupted change-operation."
     (macro exit [...] `(exit-template :ft false ,...))
     (macro exit-early [...] `(exit-template :ft true ,...))
 
-    (when-not instant-repeat?
-      (enter :ft))
+    (when-not instant-repeat? (enter :ft))
     (when-not repeat-invoc
-      (echo "") (highlight-cursor) (vim.cmd :redraw))
+      (echo "")
+      (highlight-cursor)
+      (vim.cmd :redraw))
 
     (match (if instant-repeat? self.state.instant.in
                dot-repeat? self.state.dot.in
@@ -662,12 +663,12 @@ interrupted change-operation."
                                (exit (reset-instant-state)))
                       in2
                       (let [mode (if (= (vim.fn.mode) :n) :n :x)  ; vim-cutlass compat (#28)
-                            repeat? (or (= in2 repeat-key)
-                                        (= (vim.fn.maparg in2 mode)
-                                           (get-plug-key :ft false t-mode?)))
-                            revert? (or (= in2 revert-key)
-                                        (= (vim.fn.maparg in2 mode)
-                                           (get-plug-key :ft true t-mode?)))
+                            repeat? (or (= (vim.fn.maparg in2 mode)
+                                           (get-plug-key :ft false t-mode?))
+                                        (= in2 repeat-key))
+                            revert? (or (= (vim.fn.maparg in2 mode)
+                                           (get-plug-key :ft true t-mode?))
+                                        (= in2 revert-key))
                             do-instant-repeat? (or repeat? revert?)]
                         (if do-instant-repeat?
                             (do
@@ -1016,23 +1017,22 @@ sub-table containing label-target k-v pairs for these targets."
                                     (tset :in1 in1)
                                     (tset :x-mode? x-mode?))))))))
 
+    ; `first-jump?` should only be persisted inside `to` (i.e. the
+    ; lifetime is one invocation), and better be managed by the function
+    ; itself, so setting up a closure here.
     (local jump-to!
-      ; `first-jump?` should only be persisted inside `to` (i.e. the
-      ; lifetime is one invocation) and should be managed by the
-      ; function itself (it is error-prone if we have to set a flag
-      ; manually), so setting up a closure here.
-      (do (var first-jump? true)
-          (fn [target]
-            (jump-to!* target
-                       {:add-to-jumplist? first-jump?
-                        :after (when x-mode?
-                                 (push-cursor! :fwd)
-                                 (when reverse? (push-cursor! :fwd)))
-                        : reverse?
-                        :inclusive-motion? (and x-mode? (not reverse?))})
-            (when dot-repeatable-op?
-              (set-dot-repeat cmd-for-dot-repeat))
-            (set first-jump? false))))
+           (do (var first-jump? true)
+               (fn [target]
+                 (jump-to!* target
+                            {:add-to-jumplist? first-jump?
+                             :after (when x-mode?
+                                      (push-cursor! :fwd)
+                                      (when reverse? (push-cursor! :fwd)))
+                             : reverse?
+                             :inclusive-motion? (and x-mode? (not reverse?))})
+                 (when dot-repeatable-op?
+                   (set-dot-repeat cmd-for-dot-repeat))
+                 (set first-jump? false))))
 
     (fn jump-and-ignore-ch2-until-timeout! [[target-line target-col] ch2]
       (local from-pos (map dec (get-cursor-pos)))  ; 1,1 -> 0,0

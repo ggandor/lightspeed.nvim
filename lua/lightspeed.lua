@@ -840,8 +840,8 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
           else
             mode = "x"
           end
-          local repeat_3f = ((in2 == repeat_key) or (vim.fn.maparg(in2, mode) == get_plug_key("ft", false, t_mode_3f)))
-          local revert_3f = ((in2 == revert_key) or (vim.fn.maparg(in2, mode) == get_plug_key("ft", true, t_mode_3f)))
+          local repeat_3f = ((vim.fn.maparg(in2, mode) == get_plug_key("ft", false, t_mode_3f)) or (in2 == repeat_key))
+          local revert_3f = ((vim.fn.maparg(in2, mode) == get_plug_key("ft", true, t_mode_3f)) or (in2 == revert_key))
           local do_instant_repeat_3f = (repeat_3f or revert_3f)
           if do_instant_repeat_3f then
             if not instant_repeat_3f then
