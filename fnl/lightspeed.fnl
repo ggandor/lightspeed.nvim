@@ -1063,16 +1063,16 @@ sub-table containing label-target k-v pairs for these targets."
               ; In OP-mode, the cursor always ends up at the beginning of the
               ; area, and that is _not_ necessarily our targeted position.
               ?highlight-cursor-at (when op-mode?
-                                     (->> (if (= forced-motion ctrl-v)
-                                              ; For blockwise mode, we need to
-                                              ; find the top/leftmost "corner".
-                                              [startline (min startcol endcol)]
-                                              ; Otherwise, in the forward direction,
-                                              ; we need to stay at the _start_
-                                              ; position with our virtual cursor.
-                                              (not reverse?)
-                                              from-pos)
-                                          (map inc)))]  ; 0,0 -> 1,1 (`highlight-cursor`)
+                                     (-?>> (if (= forced-motion ctrl-v)
+                                               ; For blockwise mode, we need to
+                                               ; find the top/leftmost "corner".
+                                               [startline (min startcol endcol)]
+                                               ; Otherwise, in the forward direction,
+                                               ; we need to stay at the _start_
+                                               ; position with our virtual cursor.
+                                               (not reverse?)
+                                               from-pos)
+                                           (map inc)))]  ; 0,0 -> 1,1 (`highlight-cursor`)
           (when-not change-op?  ; then we're entering insert mode anyway (cannot move away)
             (highlight-cursor ?highlight-cursor-at))  ; nil = at the actual position
           (when op-mode?
