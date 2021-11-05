@@ -1,4 +1,4 @@
-*lightspeed.txt*      For Neovim version 0.5       Last change: 2021 November 01
+*lightspeed.txt*      For Neovim version 0.5       Last change: 2021 November 05
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -152,7 +152,13 @@ Available options~
 
     Timeout value, in milliseconds, until the follow-up character is
     "swallowed", when jumping to a unique character right after the first
-    input (see |lightspeed-jump-on-partial-input|).
+    input of s/x (see |lightspeed-jump-on-partial-input|).
+
+`exit_after_idle_msecs = { labeled = 1500, unlabeled = 1000 }`
+
+    Timeout value, in milliseconds, after which the plugin should exit
+    unconditionally. (`unlabeled` refers to f/t-mode, and "cold-repeating" s/x
+    searches.) The feature can be disabled by setting the given value to `nil`.
 
 `highlight_unique_chars = true`
 

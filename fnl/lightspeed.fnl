@@ -57,11 +57,6 @@
 (fn same-pos? [[l1 c1] [l2 c2]] (and (= l1 l2) (= c1 c2)))
 
 
-(fn getchar-as-str []
-  (local (ok? ch) (pcall vim.fn.getchar))  ; handling <C-c>
-  (values ok? (if (= (type ch) :number) (vim.fn.nr2char ch) ch)))
-
-
 (fn char-at-pos [[line byte-col] {: char-offset}]  ; expects (1,1)-indexed input
   "Get character at the given position in a multibyte-aware manner.
 An optional offset argument can be given to get the nth-next screen
@@ -128,6 +123,8 @@ character instead."
 
 (var opts {:jump_to_first_match true
            :jump_on_partial_input_safety_timeout 400
+           :exit_after_idle_msecs {:labeled 1500
+                                   :unlabeled 1000}
            :highlight_unique_chars true
            :grey_out_search_area true
            :match_only_the_start_of_same_char_seqs true
@@ -508,11 +505,16 @@ interrupted change-operation."
      res#))
 
 
-(fn get-input []
-  (let [(ok? res) (getchar-as-str)]
-    ; <esc> should cleanly exit anytime.
-    (when (and ok? (not= res (replace-keycodes "<esc>")))
-      res)))
+(fn get-input [?timeout]
+  (let [esc-keycode 27
+        (ok? ch) (if ?timeout
+                     (when (vim.fn.wait ?timeout
+                                        #(not= (vim.fn.getchar 1) 0)
+                                        100)
+                       (values true (vim.fn.getchar 0)))
+                     (pcall vim.fn.getchar))]  ; pcall for handling <C-c>
+    (when (and ok? (not= ch esc-keycode))  ; <esc> should cleanly exit anytime
+      (if (= (type ch) :number) (vim.fn.nr2char ch) ch))))
 
 
 ; repeat.vim support
@@ -659,7 +661,8 @@ interrupted change-operation."
                   (do
                     (highlight-cursor)
                     (vim.cmd :redraw)
-                    (match (or (with-highlight-cleanup (get-input))
+                    (match (or (with-highlight-cleanup
+                                 (get-input opts.exit_after_idle_msecs.unlabeled))
                                (exit (reset-instant-state)))
                       in2
                       (let [mode (if (= (vim.fn.mode) :n) :n :x)  ; vim-cutlass compat (#28)
@@ -920,12 +923,10 @@ sub-table containing label-target k-v pairs for these targets."
 
 
 (fn ignore-char-until-timeout [char-to-ignore]
-  (let [start (os.clock)
-        timeout-secs (/ opts.jump_on_partial_input_safety_timeout 1000)
-        (ok? input) (getchar-as-str)]
-    (when-not (and (= input char-to-ignore)
-                   (< (os.clock) (+ start timeout-secs)))
-      (when ok? (vim.fn.feedkeys input :i)))))
+  (match (get-input opts.jump_on_partial_input_safety_timeout)
+    input (when (not= input char-to-ignore)
+            (vim.fn.feedkeys input :i))))
+
 
 ; //> Helpers
 
@@ -1108,15 +1109,20 @@ sub-table containing label-target k-v pairs for these targets."
         (with-highlight-chores
           (each [_ {:pos [line col]} (ipairs target-list)]
             (hl:add-hl hl.group.one-char-match (dec line) (dec col) (inc col))))
-        (vim.fn.feedkeys (or (with-highlight-cleanup (get-input)) "") :i)))
+        (-> (or (with-highlight-cleanup 
+                  (get-input opts.exit_after_idle_msecs.unlabeled))
+                "")
+            (vim.fn.feedkeys :i))))
 
     (fn select-match-group [target-list]
       (let [num-of-groups (ceil (/ (length target-list) (length labels)))
             max-offset (dec num-of-groups)]
-        ((fn recur [group-offset]
+        ((fn recur [group-offset initial-invoc?]
            (set-beacons target-list {:repeat? enter-repeat?})
            (with-highlight-chores (light-up-beacons target-list))
-           (match (with-highlight-cleanup (get-input))
+           (match (with-highlight-cleanup
+                    (get-input (when initial-invoc?
+                                 opts.exit_after_idle_msecs.labeled)))
              input
              (if (one-of? input cycle-fwd-key cycle-bwd-key)
                  (let [group-offset* (-> group-offset
@@ -1127,7 +1133,7 @@ sub-table containing label-target k-v pairs for these targets."
                                                   :group-offset group-offset*})
                    (recur group-offset*))
                  [input group-offset])))
-         0)))
+         0 true)))
 
     ; //> Helpers
 

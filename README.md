@@ -298,6 +298,7 @@ are fine with the defaults.)
 require'lightspeed'.setup {
   jump_to_first_match = true,
   jump_on_partial_input_safety_timeout = 400,
+  exit_after_idle_msecs = { labeled = 1500, unlabeled = 1000 },
   highlight_unique_chars = true,
   grey_out_search_area = true,
   match_only_the_start_of_same_char_seqs = true,
@@ -314,13 +315,13 @@ require'lightspeed'.setup {
 }
 ```
 
+For a detailed description of the available options, see the docs: `:h
+lightspeed-config`.
+
 You can also set options individually from the command line:
 ```Lua
 lua require'lightspeed'.opts.jump_to_first_match = false
 ```
-
-For a detailed description of the available options, see the docs: `:h
-lightspeed-config`.
 
 ### Keymaps
 
