@@ -1176,7 +1176,7 @@ sub-table containing label-target k-v pairs for these targets."
                        (with-highlight-cleanup (get-input))
                        (exit-early))
               in2
-              (match (when new-search? (. targets.shortcuts in2))
+              (match (?. targets.shortcuts in2)
                 {:pair [_ ch2] &as shortcut}
                 (exit (update-state {:cold {:in2 ch2} :dot {:in2 ch2 :in3 in2}})
                       (jump-to! shortcut.pos))
@@ -1192,7 +1192,8 @@ sub-table containing label-target k-v pairs for these targets."
 
                     sublist
                     (let [[first & rest] sublist]
-                      (when (or autojump-to-first? cold-repeat?) (jump-to! first.pos))
+                      (when (or autojump-to-first? cold-repeat?)
+                        (jump-to! first.pos))
                       (if cold-repeat? (exit (after-cold-repeat rest))
                           (let [labeled-targets (if autojump-to-first? rest sublist)]
                             (match (or (when (and dot-repeat? self.state.dot.in3)  ; endnote #3
