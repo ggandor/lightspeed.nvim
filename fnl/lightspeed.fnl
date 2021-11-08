@@ -1154,13 +1154,11 @@ sub-table containing label-target k-v pairs for these targets."
                          dot-repeat? self.state.dot.in2)]
         (match (or (get-targets in1 reverse?)
                    (exit-early (echo-not-found (.. in1 (or prev-in2 "")))))
-          [{: pos :pair [_ ch2]} nil]  ; only target
+          [{:pair [_ ch2] &as only} nil]
           (if (or new-search? (= ch2 prev-in2))
-              ; Successful exit #1
-              ; Jumping to a unique character right after the first input.
               (exit (update-state {:cold {:in2 ch2}
                                    :dot {:in2 ch2 :in3 (. labels 1)}})
-                    (jump-and-ignore-ch2-until-timeout! pos ch2))
+                    (jump-and-ignore-ch2-until-timeout! only.pos ch2))
               (exit-early (echo-not-found (.. in1 prev-in2))))
 
           targets
@@ -1179,11 +1177,9 @@ sub-table containing label-target k-v pairs for these targets."
                        (exit-early))
               in2
               (match (when new-search? (. targets.shortcuts in2))
-                ; Successful exit #2
-                ; Selecting a shortcut-label.
-                {: pos :pair [_ ch2]}
+                {:pair [_ ch2] &as shortcut}
                 (exit (update-state {:cold {:in2 ch2} :dot {:in2 ch2 :in3 in2}})
-                      (jump-to! pos))
+                      (jump-to! shortcut.pos))
 
                 _
                 (do
@@ -1191,17 +1187,12 @@ sub-table containing label-target k-v pairs for these targets."
                   (match (or (get-sublist targets in2)
                              (exit-early (echo-not-found (.. in1 in2))))
                     [only nil]
-                    ; Successful exit #3
-                    ; Jumping to the only match automatically.
                     (exit (update-state {:dot {: in2 :in3 (. labels 1)}})
                           (jump-to! only.pos))
 
                     sublist
                     (let [[first & rest] sublist]
                       (when (or autojump-to-first? cold-repeat?) (jump-to! first.pos))
-                      ; Succesful exit #4
-                      ; Highlight the rest of the matches, then clean up and
-                      ; exit unconditionally on the next input.
                       (if cold-repeat? (exit (after-cold-repeat rest))
                           (let [labeled-targets (if autojump-to-first? rest sublist)]
                             (match (or (when (and dot-repeat? self.state.dot.in3)  ; endnote #3
@@ -1210,12 +1201,9 @@ sub-table containing label-target k-v pairs for these targets."
                                        (exit-early))
                               [in3 group-offset]
                               (match (or (get-target-with-active-primary-label labeled-targets in3)
-                                         ; Successful exit #5
-                                         ; Falling through with any non-label key in "autojump" mode.
-                                         (if autojump-to-first? (exit (vim.fn.feedkeys in3 :i))
+                                         (if autojump-to-first?
+                                             (exit (vim.fn.feedkeys in3 :i))
                                              (exit-early)))
-                                ; Successful exit #6
-                                ; Selecting an active label.
                                 target
                                 (exit (update-state
                                         {:dot {: in2 :in3 (if (> group-offset 0) nil in3)}})  ; endnote #3

@@ -1633,14 +1633,14 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
       return nil
     end
     _375_ = (get_targets(in1, reverse_3f) or _376_())
-    if ((type(_375_) == "table") and ((type((_375_)[1]) == "table") and (nil ~= ((_375_)[1]).pos) and ((type(((_375_)[1]).pair) == "table") and true and (nil ~= (((_375_)[1]).pair)[2]))) and ((_375_)[2] == nil)) then
-      local pos = ((_375_)[1]).pos
+    if ((type(_375_) == "table") and ((type((_375_)[1]) == "table") and ((type(((_375_)[1]).pair) == "table") and true and (nil ~= (((_375_)[1]).pair)[2]))) and ((_375_)[2] == nil)) then
       local _ = (((_375_)[1]).pair)[1]
       local ch2 = (((_375_)[1]).pair)[2]
+      local only = (_375_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           update_state({cold = {in2 = ch2}, dot = {in2 = ch2, in3 = labels[1]}})
-          jump_and_ignore_ch2_until_timeout_21(pos, ch2)
+          jump_and_ignore_ch2_until_timeout_21(only.pos, ch2)
         end
         doau_when_exists("LightspeedSxLeave")
         doau_when_exists("LightspeedLeave")
@@ -1707,13 +1707,13 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
         else
         _388_ = nil
         end
-        if ((type(_388_) == "table") and (nil ~= (_388_).pos) and ((type((_388_).pair) == "table") and true and (nil ~= ((_388_).pair)[2]))) then
-          local pos = (_388_).pos
+        if ((type(_388_) == "table") and ((type((_388_).pair) == "table") and true and (nil ~= ((_388_).pair)[2]))) then
           local _ = ((_388_).pair)[1]
           local ch2 = ((_388_).pair)[2]
+          local shortcut = _388_
           do
             update_state({cold = {in2 = ch2}, dot = {in2 = ch2, in3 = in2}})
-            jump_to_21(pos)
+            jump_to_21(shortcut.pos)
           end
           doau_when_exists("LightspeedSxLeave")
           doau_when_exists("LightspeedLeave")
