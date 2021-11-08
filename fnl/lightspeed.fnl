@@ -922,7 +922,7 @@ sub-table containing label-target k-v pairs for these targets."
   res)
 
 
-(fn ignore-char-until-timeout [char-to-ignore]
+(fn ignore-input-until-timeout [char-to-ignore]
   (match (get-input opts.jump_on_partial_input_safety_timeout)
     input (when (not= input char-to-ignore)
             (vim.fn.feedkeys input :i))))
@@ -1035,55 +1035,47 @@ sub-table containing label-target k-v pairs for these targets."
                    (set-dot-repeat cmd-for-dot-repeat))
                  (set first-jump? false))))
 
-    (fn jump-and-ignore-ch2-until-timeout! [[target-line target-col] ch2]
-      (local from-pos (map dec (get-cursor-pos)))  ; 1,1 -> 0,0
-      ; Note to myself: what if `jump-to!` would return the final,
-      ; adjusted position?
-      (jump-to! [target-line target-col])  ; 1,1
-      (when new-search?
-        ; Highlight new cursor position & operated area (in OP-mode).
-        ; Jumping based on partial input is nice, but it's annoying that we
-        ; don't see the actual changes right away (we are waiting for another
-        ; input, so that we can introduce a safety timespan to ignore the
-        ; character in the next column). Therefore we need to provide visual
-        ; feedback, to tell the user that the target has been found, and they
-        ; can continue editing.
-        (let [ctrl-v (replace-keycodes "<c-v>")
-              forward-x? (and x-mode? (not reverse?))
-              backward-x? (and x-mode? reverse?)
-              forced-motion (string.sub (vim.fn.mode :t) -1)
-              to-col (if backward-x? (inc (inc target-col))
-                         forward-x? (inc target-col)
-                         target-col)
-              to-pos (map dec [target-line to-col])  ; 1,1 -> 0,0
-              ; Preliminary boundaries of the highlighted - operated - area
-              ; (forced-motion might affect these).
-              [startline startcol &as start] (if reverse? to-pos from-pos)
-              [_ endcol &as end] (if reverse? from-pos to-pos)
-              ; In OP-mode, the cursor always ends up at the beginning of the
-              ; area, and that is _not_ necessarily our targeted position.
-              ?highlight-cursor-at (when op-mode?
-                                     (-?>> (if (= forced-motion ctrl-v)
-                                               ; For blockwise mode, we need to
-                                               ; find the top/leftmost "corner".
-                                               [startline (min startcol endcol)]
-                                               ; Otherwise, in the forward direction,
-                                               ; we need to stay at the _start_
-                                               ; position with our virtual cursor.
-                                               (not reverse?)
-                                               from-pos)
-                                           (map inc)))]  ; 0,0 -> 1,1 (`highlight-cursor`)
-          (when-not change-op?  ; then we're entering insert mode anyway (cannot move away)
-            (highlight-cursor ?highlight-cursor-at))  ; nil = at the actual position
-          (when op-mode?
-            (highlight-range hl.group.pending-op-area start end
-                             {: forced-motion :inclusive-motion? forward-x?}))
-          (vim.cmd :redraw)
-          (ignore-char-until-timeout ch2)
-          ; Mitigate blink on the command line
-          ; (see also `handle-interrupted-change-op!`).
-          (when change-op? (echo ""))
-          (hl:cleanup))))
+    ; Note to myself: what if `jump-to!` would return the final,
+    ; adjusted position? This might become cleaner.
+    (fn highlight-new-curpos-and-op-area [from-pos [target-line target-col]]
+      ; Jumping based on partial input is nice, but it's annoying that we
+      ; don't see the actual changes right away (we are waiting for another
+      ; input, so that we can introduce a safety timespan to ignore the
+      ; character in the next column). Therefore we need to provide visual
+      ; feedback, to tell the user that the target has been found, and they
+      ; can continue editing.
+      (let [ctrl-v (replace-keycodes "<c-v>")
+            forward-x? (and x-mode? (not reverse?))
+            backward-x? (and x-mode? reverse?)
+            forced-motion (string.sub (vim.fn.mode :t) -1)
+            from-pos (map dec from-pos)  ; 1,1 -> 0,0
+            to-col (if backward-x? (inc (inc target-col))
+                       forward-x? (inc target-col)
+                       target-col)
+            to-pos (map dec [target-line to-col])  ; 1,1 -> 0,0
+            ; Preliminary boundaries of the highlighted - operated - area
+            ; (forced-motion might affect these).
+            [startline startcol &as start] (if reverse? to-pos from-pos)
+            [_ endcol &as end] (if reverse? from-pos to-pos)
+            ; In OP-mode, the cursor always ends up at the beginning of the
+            ; area, and that is _not_ necessarily our targeted position.
+            ?highlight-cursor-at (when op-mode?
+                                   (-?>> (if (= forced-motion ctrl-v)
+                                             ; For blockwise mode, we need to
+                                             ; find the top/leftmost "corner".
+                                             [startline (min startcol endcol)]
+                                             ; Otherwise, in the forward direction,
+                                             ; we need to stay at the _start_
+                                             ; position with our virtual cursor.
+                                             (not reverse?)
+                                             from-pos)
+                                         (map inc)))]  ; 0,0 -> 1,1 (`highlight-cursor`)
+        (when-not change-op?  ; then we're entering insert mode anyway (cannot move away)
+          (highlight-cursor ?highlight-cursor-at))  ; nil = at the actual position
+        (when op-mode?
+          (highlight-range hl.group.pending-op-area start end
+                           {: forced-motion :inclusive-motion? forward-x?}))
+        (vim.cmd :redraw)))
 
     (fn get-sublist [targets ch]
       (match (. targets.sublists ch)  ; note: if not nil, a sublist is never []
@@ -1149,7 +1141,8 @@ sub-table containing label-target k-v pairs for these targets."
 
     (match (get-first-input)
       in1
-      (let [update-state (update-state* in1)
+      (let [from-pos (get-cursor-pos)
+            update-state (update-state* in1)
             prev-in2 (if (or cold-repeat? enter-repeat?) self.state.cold.in2
                          dot-repeat? self.state.dot.in2)]
         (match (or (get-targets in1 reverse?)
@@ -1158,7 +1151,11 @@ sub-table containing label-target k-v pairs for these targets."
           (if (or new-search? (= ch2 prev-in2))
               (exit (update-state {:cold {:in2 ch2}
                                    :dot {:in2 ch2 :in3 (. labels 1)}})
-                    (jump-and-ignore-ch2-until-timeout! only.pos ch2))
+                    (jump-to! only.pos)
+                    (when new-search?  ; i.e. user is actually typing the pattern
+                      (with-highlight-cleanup
+                        (highlight-new-curpos-and-op-area from-pos only.pos)
+                        (ignore-input-until-timeout ch2))))
               (exit-early (echo-not-found (.. in1 prev-in2))))
 
           targets
