@@ -1185,7 +1185,7 @@ local function set_beacon(_268_, repeat_3f)
       elseif overlapped_3f then
         target.beacon = {inc(col), {label, hl.group["label-distant-overlapped"]}}
       else
-        target.beacon = {col, {ch20, hl.group["masked-ch"]}, {label, hl.group["label-distant-overlapped"]}}
+        target.beacon = {col, {ch20, hl.group["masked-ch"]}, {label, hl.group["label-distant"]}}
       end
     elseif (_274_ == "inactive") then
       target.beacon = nil

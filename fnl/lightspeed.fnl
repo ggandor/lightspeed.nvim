@@ -893,7 +893,7 @@ sub-table containing label-target k-v pairs for these targets."
            :active-secondary
            (if repeat? [(inc col) [label hl.group.label-distant]]
                overlapped? [(inc col) [label hl.group.label-distant-overlapped]]
-               [col [ch2 hl.group.masked-ch] [label hl.group.label-distant-overlapped]])
+               [col [ch2 hl.group.masked-ch] [label hl.group.label-distant]])
 
            :inactive nil))))
 
