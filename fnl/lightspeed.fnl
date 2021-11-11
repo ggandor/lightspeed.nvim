@@ -970,7 +970,12 @@ sub-table containing label-target k-v pairs for these targets."
 
     ; Helpers ///
 
-    (macro exit [...] `(exit-template :sx false ,...))
+    (macro exit [...]
+      `(exit-template :sx false
+                      (do (when dot-repeatable-op?
+                            (set-dot-repeat cmd-for-dot-repeat))
+                          ,...)))
+
     (macro exit-early [...] `(exit-template :sx true ,...))
 
     (macro with-highlight-chores [...]
@@ -1031,8 +1036,6 @@ sub-table containing label-target k-v pairs for these targets."
                                       (when reverse? (push-cursor! :fwd)))
                              : reverse?
                              :inclusive-motion? (and x-mode? (not reverse?))})
-                 (when dot-repeatable-op?
-                   (set-dot-repeat cmd-for-dot-repeat))
                  (set first-jump? false))))
 
     ; Jumping based on partial input is nice, but it's annoying that we
