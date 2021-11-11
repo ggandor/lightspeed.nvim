@@ -1412,6 +1412,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
   end
   local function highlight_new_curpos_and_op_area(from_pos)
     local forced_motion = string.sub(vim.fn.mode("t"), -1)
+    local blockwise_3f = (forced_motion == replace_keycodes("<c-v>"))
     local to_pos = get_cursor_pos()
     local function _330_()
       if reverse_3f then
@@ -1435,19 +1436,18 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
     local _ = _let_331_[1]
     local endcol = _let_331_[2]
     local _end = _let_331_
-    if not change_op_3f then
-      local function _334_()
-        if op_mode_3f then
-          if (forced_motion == replace_keycodes("<c-v>")) then
-            return {startline, min(startcol, endcol)}
-          else
-            return start
-          end
-        else
-          return to_pos
-        end
+    local new_curpos
+    if op_mode_3f then
+      if blockwise_3f then
+        new_curpos = {startline, min(startcol, endcol)}
+      else
+        new_curpos = start
       end
-      highlight_cursor(_334_())
+    else
+      new_curpos = to_pos
+    end
+    if not change_op_3f then
+      highlight_cursor(new_curpos)
     end
     if op_mode_3f then
       highlight_range(hl.group["pending-op-area"], map(dec, start), map(dec, _end), {["forced-motion"] = forced_motion, ["inclusive-motion?"] = (x_mode_3f and not reverse_3f)})
@@ -1599,9 +1599,9 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
     end
     _365_ = (get_targets(in1, reverse_3f) or _366_())
     if ((type(_365_) == "table") and ((type((_365_)[1]) == "table") and ((type(((_365_)[1]).pair) == "table") and true and (nil ~= (((_365_)[1]).pair)[2]))) and ((_365_)[2] == nil)) then
-      local only = (_365_)[1]
       local _ = (((_365_)[1]).pair)[1]
       local ch2 = (((_365_)[1]).pair)[2]
+      local only = (_365_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           update_state({cold = {in2 = ch2}, dot = {in2 = ch2, in3 = labels[1]}})
@@ -1683,9 +1683,9 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
           _379_ = t_380_
         end
         if ((type(_379_) == "table") and ((type((_379_).pair) == "table") and true and (nil ~= ((_379_).pair)[2]))) then
-          local shortcut = _379_
           local _ = ((_379_).pair)[1]
           local ch2 = ((_379_).pair)[2]
+          local shortcut = _379_
           do
             update_state({cold = {in2 = ch2}, dot = {in2 = ch2, in3 = in2}})
             jump_to_21(shortcut.pos)

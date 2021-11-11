@@ -1041,25 +1041,23 @@ sub-table containing label-target k-v pairs for these targets."
     ; timespan to ignore the character in the next column).
     ; Therefore we need to provide visual feedback, to tell the user that the
     ; target has been found, and they can continue editing.
-    (fn highlight-new-curpos-and-op-area [from-pos]
+    (fn highlight-new-curpos-and-op-area [from-pos]  ; 1,1
       (let [forced-motion (string.sub (vim.fn.mode :t) -1)
+            blockwise? (= forced-motion (replace-keycodes "<c-v>"))
             to-pos (get-cursor-pos)  ; 1,1
             ; Preliminary boundaries of the highlighted - operated - area
             ; (forced-motion might affect these).
             [startline startcol &as start] (if reverse? to-pos from-pos)
-            [_ endcol &as end] (if reverse? from-pos to-pos)]
-        (when-not change-op?  ; then we're entering insert mode anyway (cannot move away)
-          (highlight-cursor
-            ; In OP-mode, the cursor might end up at places different than our
-            ; targeted position
-            ; - blockwise: at the top/leftmost corner of the operated area
-            ; - linewise: at the beginning of the area as if it would have
-            ;             been non-linewise motion
-            ; - by default: at the beginning of the area
-            (if op-mode? (if (= forced-motion (replace-keycodes "<c-v>"))
-                             [startline (min startcol endcol)]
-                             start)
-                to-pos)))
+            [_ endcol &as end] (if reverse? from-pos to-pos)
+            ; In OP-mode, the cursor always ends up at the beginning of the
+            ; operated area, that might differ from the targeted position.
+            ; (Caveat: linewise works as if there would be no forcing modifier.)
+            new-curpos (if op-mode? (if blockwise?  ; get the top/leftmost corner
+                                        [startline (min startcol endcol)]
+                                        start)
+                           to-pos)]
+        (when-not change-op?  ; then we're entering insert mode anyway (couldn't move away)
+          (highlight-cursor new-curpos))
         (when op-mode?
           (highlight-range hl.group.pending-op-area (map dec start) (map dec end)
                            {: forced-motion
