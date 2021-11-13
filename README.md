@@ -388,9 +388,10 @@ behaviours are fixed yet._
 ```
 
 It is considered an exceptional request if one would like to revert to the
-native behaviour of certain keys, that is, would not like to use some features
-of the plugin at all; but in that case, all they have to do is to `unmap` the
-relevant keys after the plugin has been sourced (e.g. `unmap t | unmap T`).
+native behaviour of certain keys, that is, would not like to use some search
+mode of the plugin at all; but in that case, all they have to do is to unmap the
+relevant keys after the plugin has been sourced (`nnoremap f f` or `silent!
+unmap f` for each).
 
 ### User events
 
