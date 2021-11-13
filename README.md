@@ -120,6 +120,8 @@ obvious atomic alternative - like `w`, `{`, or `%` - available.
 
 ### Quick links (FAQ)
 
+* [A tip for using the plugin
+  effectively](#a-tip-for-using-the-plugin-effectively)
 * [Using ;/, to repeat f/t](#1-character-search-ft)
 * [Multi-line f/t motions VS macros and :normal](#notes)
 * [Guidelines for colorscheme
@@ -151,6 +153,22 @@ Plug 'ggandor/lightspeed.nvim'
 ```
 
 ## 🏹 Usage
+
+### A tip for using the plugin effectively
+
+"Just relax and let your mind go blank" - Lightspeed thinks for you. It always
+presents information before it is actually needed. 
+
+After entering the first input, do not start to observe the beacons and the
+possibly noisy situation - once you are finished with typing the second
+character, your brain will have absorbed the label _subconsciously_. If you're
+targeting `xy`, then simply type `xy` in one go, focusing your eyes all the
+while on `y` and the red or blue "stuff" than may or may not have appeared on
+top of that, and _nothing else_; try to eliminate the immediate context, and
+just let the beacon guide your next keystroke.
+
+After making this mind shift, using the plugin becomes pure enjoyment, getting
+you into a zen-like state for a fleeting second.
 
 ### 2-character search (s/x)
 
