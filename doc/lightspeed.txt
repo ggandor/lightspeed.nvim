@@ -351,8 +351,10 @@ own liking:
 
     *LightspeedLabel*
         The character needed to be pressed to jump to the match position,
-        after the whole search pattern has been given. It appears top of the
-        second character of the pair, after the first input has been given.
+        after the whole search pattern has been given. It appears once the
+        first input has been entered, right after the pair (by default), or on
+        top of the second character (when the beacon should be squeezed into
+        the 2-column box of the match).
 
     *LightspeedLabelOverlapped*
         When matches overlap, labels get next to each other - in that case
@@ -375,11 +377,8 @@ own liking:
 
     *LightspeedMaskedChar*
         The second character of the match, that is shown on top of the first
-        one, as a reminder.
-
-        NOTE: These should be unobtrusive - barely noticeable ideally -, and
-        _much_ dimmer than the labels and shortcuts, otherwise the UI becomes
-        too chaotic. Colorscheme authors, please do follow this advice.
+        one, as a reminder, when the beacon is squeezed into the 2-column box
+        of the match.
 
     *LightspeedGreyWash*
         Foreground color of the "washed out" area for 2-character search.

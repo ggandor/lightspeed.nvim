@@ -244,7 +244,7 @@ search pattern.
 A character before EOL can be targeted by pressing `<enter>` after it (indicated
 by `¬` in the highlighted match).
 
-#### A note on the highlighting strategy
+#### A primer on the highlighting strategy
 
 Let's say you would like to jump to an `A` `B` pair, and you have entered `A`,
 the first character of the search pattern.
@@ -256,14 +256,18 @@ The directly reachable ones among the `A` `?` matches will be highlighted as the
 are (with white/black for dark/light themes, respectively). For those, it is
 enough to finish the pattern, i.e., type `?`, to land on the target.
 
-All other beacons on top of `A` `?` matches look like:
+Otherwise, in the usual case, a label will appear right next to the second
+character. These labels can also be [shortcuts](#shortcuts), with a filled
+background (the inverse of a regular label), that allow for reaching the target
+right after the first input.
 
-`?` `label`
-
-where the first field (the place of `?`, showing the character masked by the
-label) might be overlapped by the label of another match, and `label` itself
-might be a [shortcut](#shortcuts), with a filled background (the inverse of a
-regular label).
+If a match is too close to the next one, the beacon should be "squeezed" into
+the original 2-column box of the match; that is, on top of an `A` `?` match, a
+`?` `label` pair will appear, where the first field shows the character masked
+by the label (it is shifted left by a column). In the most extreme case, the `?`
+field can even be overlapped by the label of another match, but only until the
+second input has not been entered - after that, all overlapped matches are
+guaranteed to become uncovered.
 
 ### 1-character search (f/t)
 
@@ -408,7 +412,7 @@ For customizing the highlight colors, see `:h lightspeed-highlight`.
 #### Guidelines for colorscheme integrations
 
 Dear fellow plugin authors, while letting your creativity fly, keep the
-following in mind: Lightspeed's highlighting scheme is very complex, and it is
+following in mind: Lightspeed's highlighting scheme is pretty complex, and it is
 important to guarantee at least some level of consistency across themes, in
 order to not confuse users that switch between multiple ones regularly.
 
@@ -433,13 +437,8 @@ with the defaults.
 * All labels, including shortcuts, have an `underline` attribute.
 
 * `LightspeedMaskedChar` has no background, and has an empty attribute list; it
-  can be of any color, but _should be unobtrusive_ - barely noticeable ideally -,
-  being **much dimmer** and also less saturated than the labels, otherwise the
-  UI becomes too chaotic. (This could not be emphasized enough. Keep in mind
-  that the plugin is not used like "_I have pressed the first key, now think
-  about what should I press next... let's check what character is displayed
-  before the label..._" The masked character is just a redundant reminder 99% of
-  the time.)
+  can be of any color, but should be unobtrusive - being dimmer and also less
+  saturated than the labels, otherwise the UI becomes too chaotic. 
 
 * `LightspeedUnlabeledMatch` uses black or dark grey (light themes), or white or
   light grey (dark themes), with no or minimal saturation - this is what

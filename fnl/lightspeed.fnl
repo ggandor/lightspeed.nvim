@@ -749,6 +749,7 @@ ones might be set by subsequent functions):
 
    pos         : [line col]
    pair        : [char char]
+  ?squeezed?   : bool
   ?overlapped? : bool
   ?label       : char
   ?label-state : 'active-primary' | 'active-secondary' | 'inactive'
@@ -763,6 +764,7 @@ ones might be set by subsequent functions):
     (each [[line col &as pos] (onscreen-match-positions pattern reverse? {})]
       (let [ch2 (or (char-at-pos pos {:char-offset 1})
                     "\r")  ; <enter> is the expected input for line breaks
+            before-eol? (= ch2 "\r")
             overlaps-prev-match? (and (= line prev-match.line)
                                       (= col ((if reverse? dec inc) prev-match.col)))
             same-char-triplet? (and overlaps-prev-match? (= ch2 prev-match.ch2))
@@ -772,10 +774,29 @@ ones might be set by subsequent functions):
                  (or added-prev-match?  ; the 2nd 'xx' in 'xxx' is _always_ skipped
                      opts.match_only_the_start_of_same_char_seqs))
             (set added-prev-match? false)
-            (let [target {: pos :pair [ch1 ch2]}]
+            (let [target {: pos :pair [ch1 ch2]}
+                  prev-target (last targets)
+                  ; A 4-column delta as a condition (arbitrary/aesthetic choice
+                  ; instead of 3) forces a gap between the beacons when the
+                  ; first one is not "squeezed" back into its 2-column box,
+                  ; i.e., when the label is displayed over position 'c':
+                  ; [a][b][label][_][e][f]
+                  min-delta-to-prevent-squeezing 4
+                  close-to-prev-target?
+                  (match prev-target
+                    {:pos [prev-line prev-col]}
+                    (and (= line prev-line)
+                         (let [col-delta (if reverse?
+                                             (- prev-col col)
+                                             (- col prev-col))]
+                           (< col-delta min-delta-to-prevent-squeezing))))]
+              (when before-eol? (tset target :squeezed? true))
+              (when close-to-prev-target?
+                (tset (if reverse? target prev-target) :squeezed? true))
               (when overlaps-prev-target?
-                ; The _label_ should remain visible in any case.
-                (tset (if reverse? (last targets) target) :overlapped? true))
+                ; Just the opposite: the _label_ should remain visible
+                ; in any case.
+                (tset (if reverse? prev-target target) :overlapped? true))
               (table.insert targets target)
               (set added-prev-match? true)))))
     (when (next targets) targets)))
@@ -867,7 +888,7 @@ sub-table containing label-target k-v pairs for these targets."
 ; only changes with group switching, when its active/passive or
 ; primary/secondary state changes.
 (fn set-beacon [{:pos [_ col] :pair [ch1 ch2]
-                 : label : label-state : overlapped? : shortcut?
+                 : label : label-state : squeezed? : overlapped? : shortcut?
                  &as target}
                 repeat?]
   (let [[ch1 ch2] (map #(or (. opts.substitute_chars $) $) [ch1 ch2])]
@@ -883,17 +904,21 @@ sub-table containing label-target k-v pairs for these targets."
            ; Note: `repeat?` is also mutually exclusive with both `overlapped?`
            ; and `shortcut?`.
            :active-primary
-           (if repeat? [(inc col) [label hl.group.label]]
+           (if repeat? [(+ col (if squeezed? 1 2)) [label hl.group.label]]
                shortcut? (if overlapped?
                              [(inc col) [label hl.group.shortcut-overlapped]]
-                             [col [ch2 hl.group.masked-ch] [label hl.group.shortcut]])
+                             (if squeezed?
+                                 [col [ch2 hl.group.masked-ch] [label hl.group.shortcut]]
+                                 [(+ col 2) [label hl.group.shortcut]]))
                overlapped? [(inc col) [label hl.group.label-overlapped]]
-               [col [ch2 hl.group.masked-ch] [label hl.group.label]])
+               squeezed? [col [ch2 hl.group.masked-ch] [label hl.group.label]]
+               [(+ col 2) [label hl.group.label]])
 
            :active-secondary
-           (if repeat? [(inc col) [label hl.group.label-distant]]
+           (if repeat? [(+ col (if squeezed? 1 2)) [label hl.group.label-distant]]
                overlapped? [(inc col) [label hl.group.label-distant-overlapped]]
-               [col [ch2 hl.group.masked-ch] [label hl.group.label-distant]])
+               squeezed? [col [ch2 hl.group.masked-ch] [label hl.group.label-distant]]
+               [(+ col 2) [label hl.group.label-distant]])
 
            :inactive nil))))
 
