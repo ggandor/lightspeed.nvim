@@ -7,6 +7,8 @@ maximize speed while minimizing mental effort and breaks in the flow, providing
 an intuitive, distractionless experience, that should feel as "native" as
 possible.
 
+[A 6-minute introductory video by DevOnDuty](https://youtu.be/ESyld9NCl1w)
+
 ### A lightning pitch
 
 The plugin's closest ancestor is Justin Keyes' beloved
