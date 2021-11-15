@@ -9,7 +9,30 @@ possible.
 
 [A 6-minute introductory video by DevOnDuty](https://youtu.be/ESyld9NCl1w)
 
-### A lightning pitch
+## Sky chart
+
+* [A lightning pitch](#-a-lightning-pitch)
+* [An in-depth introduction of the key features](#-an-in-depth-introduction-of-the-key-features)
+* [Getting started](#-getting-started)
+* [Usage](#-usage)
+* [Configuration](#-configuration)
+* [Coming sooner or later](#-coming-sooner-or-later)
+* [Why is there no feature X or Y?](#-why-is-there-no-feature-x-or-y)
+* [Goals and non-goals](#-goals-and-non-goals)
+* [Contributing](#-contributing)
+* [Inspired by](#-inspired-by)
+
+### Quick links (FAQ)
+
+* [A primer on the highlighting strategy](#a-primer-on-the-highlighting-strategy)
+* [Using ;/, to repeat f/t](#1-character-search-ft)
+* [Multi-line f/t motions VS macros and :normal](#notes)
+* [Guidelines for colorscheme
+  integrations](#guidelines-for-colorscheme-integrations)
+* [Enforce the default highlighting if a colorscheme messes things
+  up](#enforce-the-default-highlighting)
+
+## ⚡ A lightning pitch
 
 The plugin's closest ancestor is Justin Keyes' beloved
 [vim-sneak](https://github.com/justinmk/vim-sneak), in that they share the same
@@ -20,7 +43,7 @@ aware of the type or the surroundings of the target; (2) for that, the most
 adequate basis is unidirectional 1- and 2-character search; (3) the interface
 should be _optimized for the common case_.
 
-#### (Don't) always be composing
+### (Don't) always be composing
 
 Everyone has been taught that the "Vim way" of reaching distant points in the
 window is using combinations of primitive motions: `8jfx;;`. The composing
@@ -32,7 +55,7 @@ language"](https://mkremins.github.io/blog/controls-as-language/) paradigm is an
 ingenious aspect of Vim in general, "compound sentences" make no sense for doing
 arbitrary jumps between A and B, that should ideally be _atomic_.
 
-#### Railways versus jetpacks
+### Railways versus jetpacks
 
 [EasyMotion](https://github.com/easymotion/vim-easymotion) attempted to improve
 the situation by introducing many new "atoms" - direct routes to a lot of
@@ -50,7 +73,7 @@ embraces a philosophy that is just the opposite than the above one: you barely
 need to think about motions anymore - "sneaking" gets you everywhere you need to
 be, with maximal precision. It is like having a _jetpack_ on you all the time.
 
-#### Always a step ahead of you
+### Always a step ahead of you
 
 Lightspeed adds the ability of "clairvoyance" to this: it blurs the boundary
 between one- and two-character search, and eliminate yet more cognitive
@@ -76,7 +99,7 @@ To see these features in action, check the [screen
 recordings](#-an-in-depth-introduction-of-the-key-features) in the in-depth
 introduction below.
 
-#### Universal motions
+### Universal motions
 
 To make the suite complete, Lightspeed also implements [enhanced f/t-like
 motions working over multiple lines](#1-character-search-ft), with same-key
@@ -86,7 +109,7 @@ bi-directional motions (`s`/`x`/`f`/`t`) make it possible to reach and operate
 on the whole window area with high efficiency in all situations when there is no
 obvious atomic alternative - like `w`, `{`, or `%` - available.
 
-#### Other quality-of-life features
+### Other quality-of-life features
 
 * having a choice between automatically jumping to the first match (Sneak-like -
   default) or allowing for more comfortable target labels (EasyMotion-like)
@@ -99,7 +122,7 @@ obvious atomic alternative - like `w`, `{`, or `%` - available.
 * the cursor stays visible all the time
 * uses extmarks, and does not mess with the Conceal group
 
-#### Guiding principles
+### Guiding principles
 
 * [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
   the plugin should feel a natural extension to the core, with an interplay as
@@ -108,28 +131,73 @@ obvious atomic alternative - like `w`, `{`, or `%` - available.
   decisions](https://www.infoq.com/presentations/Design-Composition-Performance/):
   mitigate choice paralysis for the user, regarding both usage and configuration
 
-## Sky chart
+## 📚 An in-depth introduction of the key features
 
-* [Getting started](#-getting-started)
-* [Usage](#-usage)
-* [Configuration](#-configuration)
-* [An in-depth introduction of the key features](#-an-in-depth-introduction-of-the-key-features)
-* [Coming sooner or later](#-coming-sooner-or-later)
-* [Why is there no feature X or Y?](#-why-is-there-no-feature-x-or-y)
-* [Goals and non-goals](#-goals-and-non-goals)
-* [Contributing](#-contributing)
-* [Inspired by](#-inspired-by)
+### Jump on partial input
 
-### Quick links (FAQ)
+If you enter a character that is the only match in the search direction,
+Lightspeed jumps to it directly, without waiting for a second input. These
+unique characters are highlighted beforehand;
+[quick-scope](https://github.com/unblevable/quick-scope) is based on a similar
+idea, but the intent here is not a "choose me!"-kind of preliminary orientation
+(the assumpiton is that you _know_ where you want to go), more like giving
+feedback for your brain _while_ you type.
 
-* [A tip for using the plugin
-  effectively](#a-tip-for-using-the-plugin-effectively)
-* [Using ;/, to repeat f/t](#1-character-search-ft)
-* [Multi-line f/t motions VS macros and :normal](#notes)
-* [Guidelines for colorscheme
-  integrations](#guidelines-for-colorscheme-integrations)
-* [Enforce the default highlighting if a colorscheme messes things
-  up](#enforce-the-default-highlighting)
+![jumping to unique characters](../media/intro_img1_jump_to_unique.gif?raw=true)
+
+To further mitigate accidents, a short timeout is set by default, until the
+second character in the pair (and only that) is "swallowed". In operator-pending
+mode, the operated area gets a temporary highlight until the next character is
+entered.
+
+### Ahead-of-time labeling
+
+Target labels are shown ahead of time, _right after typing the first input
+character_. This means you can often type without any serious break in the
+flow, almost as if using 3-character search. It is a micro-optimisation, but
+can mean the world - Lightspeed simply _feels_ different because of this.
+
+![incremental labeling](../media/intro_img2_incremental_labeling.gif?raw=true)
+
+### Shortcuts
+
+Made possible by the above, Lightspeed has the concept of "shortcutable"
+positions, where the assigned label itself is enough to determine the target:
+those you can reach via typing the label character right after the first
+input, bypassing the second one. This case is suprisingly frequent in
+practice, and in case of harder-to-type sequences, when you're not rushing
+with 200+ CPM, can work really well.
+
+You can see that "shortcuts" are highlighted differently (with a background
+color):
+
+![shortcuts](../media/intro_img3_shortcuts.gif?raw=true)
+
+Note that this is just an alternative: you do not _have to_ watch out for
+these, and nothing bad happens if you type the second input as normal, and
+then type the label to reach the target. But in my experience, you can often
+guess whether the targeted position will be shortcutable, e.g. if there is a
+character that seems to be consistently followed by the same other character
+in the window (simple examples: a comment leader, e.g. `-` in Lua, or an `<`
+if there are lots of `<Plug>` forms in a section of a Vim config file).
+
+### Grouping matches by distance
+
+When there is a large number of matches, we cycle through groups instead of
+trying to label everything at once (just like Sneak does it). However, the
+immediate next group is always shown ahead of time too, with a different color,
+so your brain has a bit of time to process the label, even in case of a distant
+group. If the target is right in the second group, you don't even have to think
+in terms of "switching groups" - a blue label should rather be thought of as a
+`<tab>`-prefixed 2-character label. That means we have `2 * number-of-labels`
+targets right away that are in the efficiently-reachable/low-cognitive-load
+range.
+
+![groups](../media/intro_img4_groups.gif?raw=true)
+
+Note that Lightspeed keeps the invariant that a label consists of _exactly one
+character_, that should _always stay in the same position_, once appeared. (No
+rolling/flashing sequence of labels, like in case of Hop/EasyMotion.)
 
 ## 🚀 Getting started
 
@@ -156,21 +224,8 @@ Plug 'ggandor/lightspeed.nvim'
 
 ## 🏹 Usage
 
-### A tip for using the plugin effectively
-
 "Just relax and let your mind go blank" - Lightspeed thinks for you. It always
 presents information before it is actually needed. 
-
-After entering the first input, do not start to observe the beacons and the
-possibly noisy situation - once you are finished with typing the second
-character, your brain will have absorbed the label _subconsciously_. If you're
-targeting `xy`, then simply type `xy` in one go, focusing your eyes all the
-while on `y` and the red or blue "stuff" than may or may not have appeared on
-top of that, and _nothing else_; try to eliminate the immediate context, and
-just let the beacon guide your next keystroke.
-
-After making this mind shift, using the plugin becomes pure enjoyment, getting
-you into a zen-like state for a fleeting second.
 
 ### 2-character search (s/x)
 
@@ -252,22 +307,22 @@ the first character of the search pattern.
 At that moment, all `A` `?` matches will be highlighted, in different manners
 according to the next step needed to be taken to reach them.
 
-The directly reachable ones among the `A` `?` matches will be highlighted as they
-are (with white/black for dark/light themes, respectively). For those, it is
-enough to finish the pattern, i.e., type `?`, to land on the target.
+- The directly reachable ones among the `A` `?` matches will be highlighted as
+  they are (with white/black for dark/light themes, respectively). For those, it
+  is enough to finish the pattern, i.e., type `?`, to land on the target.
 
-Otherwise, in the usual case, a label will appear right next to the second
-character. These labels can also be [shortcuts](#shortcuts), with a filled
-background (the inverse of a regular label), that allow for reaching the target
-right after the first input.
+- Otherwise, in the usual case, a label will appear right next to the second
+  character. These labels can also be [shortcuts](#shortcuts), with a filled
+  background (the inverse of a regular label), that allow for reaching the
+  target right after the first input.
 
-If a match is too close to the next one, the beacon should be "squeezed" into
-the original 2-column box of the match; that is, on top of an `A` `?` match, a
-`?` `label` pair will appear, where the first field shows the character masked
-by the label (it is shifted left by a column). In the most extreme case, the `?`
-field can even be overlapped by the label of another match, but only until the
-second input has not been entered - after that, all overlapped matches are
-guaranteed to become uncovered.
+- If a match is too close to the next one, the beacon should be "squeezed" into
+  the original 2-column box of the match; that is, on top of an `A` `?` match, a
+  `?` `label` pair will appear, where the first field shows the character masked
+  by the label (it is shifted left by a column). In the most extreme case, the
+  `?` field can even be overlapped by the label of another match, but only until
+  the second input has not been entered - after that, all overlapped matches are
+  guaranteed to become uncovered.
 
 ### 1-character search (f/t)
 
@@ -484,73 +539,6 @@ only execute for certain ones, etc.
   ```
   For `:normal`, you could use the bang-version `:normal!`, although that disables
   all custom mappings, so that is only a half-measure.
-
-## 📚 An in-depth introduction of the key features
-
-### Jump on partial input
-
-If you enter a character that is the only match in the search direction,
-Lightspeed jumps to it directly, without waiting for a second input. These
-unique characters are highlighted beforehand;
-[quick-scope](https://github.com/unblevable/quick-scope) is based on a similar
-idea, but the intent here is not a "choose me!"-kind of preliminary orientation
-(the assumpiton is that you _know_ where you want to go), more like giving
-feedback for your brain _while_ you type.
-
-![jumping to unique characters](../media/intro_img1_jump_to_unique.gif?raw=true)
-
-To further mitigate accidents, a short timeout is set by default, until the
-second character in the pair (and only that) is "swallowed". In operator-pending
-mode, the operated area gets a temporary highlight until the next character is
-entered.
-
-### Ahead-of-time labeling
-
-Target labels are shown ahead of time, _right after typing the first input
-character_. This means you can often type without any serious break in the
-flow, almost as if using 3-character search. It is a micro-optimisation, but
-can mean the world - Lightspeed simply _feels_ different because of this.
-
-![incremental labeling](../media/intro_img2_incremental_labeling.gif?raw=true)
-
-### Shortcuts
-
-Made possible by the above, Lightspeed has the concept of _shortcutable_
-positions, where the assigned label itself is enough to determine the target:
-those you can reach via typing the label character right after the first
-input, bypassing the second one. This case is suprisingly frequent in
-practice, and in case of harder-to-type sequences, when you're not rushing
-with 200+ CPM, can work really well.
-
-You can see that "shortcuts" are highlighted differently:
-
-![shortcuts](../media/intro_img3_shortcuts.gif?raw=true)
-
-Note that this is just an alternative: you do not _have to_ watch out for
-these, and nothing bad happens if you type the second input as normal, and
-then type the label to reach the target. But in my experience, you can often
-guess whether the targeted position will be shortcutable, e.g. if there is a
-character that seems to be consistently followed by the same other character
-in the window (simple examples: a comment leader, e.g. `-` in Lua, or an `<`
-if there are lots of `<Plug>` forms in a section of a Vim config file).
-
-### Grouping matches by distance
-
-When there is a large number of matches, we cycle through groups instead of
-trying to label everything at once (just like Sneak does it). However, the
-immediate next group is always shown ahead of time too, with a different color,
-so your brain has a bit of time to process the label, even in case of a distant
-group. If the target is right in the second group, you don't even have to think
-in terms of "switching groups" - a blue label should rather be thought of as a
-`<tab>`-prefixed 2-character label. That means we have `2 * number-of-labels`
-targets right away that are in the efficiently-reachable/low-cognitive-load
-range.
-
-![groups](../media/intro_img4_groups.gif?raw=true)
-
-Note that Lightspeed keeps the invariant that a label consists of _exactly one
-character_, that should _always stay in the same position_, once appeared. (No
-rolling/flashing sequence of labels, like in case of Hop/EasyMotion.)
 
 ## 👀 Coming sooner or later
 
