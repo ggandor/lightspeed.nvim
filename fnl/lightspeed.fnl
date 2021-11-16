@@ -121,25 +121,37 @@ character instead."
 
 ; Setup ///1
 
-(var opts {:jump_to_first_match true
-           :jump_on_partial_input_safety_timeout 400
-           :exit_after_idle_msecs {:labeled 1500
-                                   :unlabeled 1000}
-           :highlight_unique_chars true
-           :grey_out_search_area true
-           :match_only_the_start_of_same_char_seqs true
-           :limit_ft_matches 4
-           :x_mode_prefix_key "<c-x>"
-           :substitute_chars {"\r" "¬"}  ; 0x00AC
-           :instant_repeat_fwd_key nil
-           :instant_repeat_bwd_key nil
-           :cycle_group_fwd_key nil
-           :cycle_group_bwd_key nil
-           :labels nil
-
-           ; deprecated (still valid)
-           ; :full_incusive_prefix_key "<c-x>"
-           })
+(var opts 
+     (do
+       (local safe-labels 
+              ["s" "f" "n"
+               "u" "t"
+               "/" "S" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
+       (local labels
+              ["s" "f" "n"
+               "j" "k" "l" "o" "i" "w" "e" "h" "g"
+               "u" "t"
+               "m" "v" "c" ";" "a" "." "z"
+               "/" "S" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
+       {:exit_after_idle_msecs {:labeled 1500 :unlabeled 1000}
+        ; s/x
+        :grey_out_search_area true
+        :highlight_unique_chars true
+        :match_only_the_start_of_same_char_seqs true
+        :jump_on_partial_input_safety_timeout 400
+        :substitute_chars {"\r" "¬"}  ; 0x00AC
+        :safe_labels safe-labels
+        :labels labels
+        :cycle_group_fwd_key "<space>"
+        :cycle_group_bwd_key "<tab>"
+        :x_mode_prefix_key "<c-x>"
+        ; f/t
+        :limit_ft_matches 4
+        :instant_repeat_fwd_key nil
+        :instant_repeat_bwd_key nil
+        ; deprecated (still valid)
+        ; :full_incusive_prefix_key "<c-x>"
+        }))
 
 (fn setup [user-opts]
   (set opts (setmetatable user-opts {:__index opts})))
@@ -703,21 +715,6 @@ interrupted change-operation."
 
 ; Helpers ///
 
-(fn get-labels []
-  (or opts.labels
-      (if opts.jump_to_first_match
-          ["s" "f" "n" "u" "t" "/" "q" "F" "S" "G" "H" "L" "M" "N" "U" "R" "T" "Z" "?" "Q"]
-          ["f" "j" "d" "k" "s" "l" "e" "i" "w" "o" "g" "h" "v" "n" "c" "m" "a" ";" "z" "."])))
-
-
-(fn get-cycle-keys []
-  (->> [(or opts.cycle_group_fwd_key
-            (if opts.jump_to_first_match "<tab>" "<space>"))
-        (or opts.cycle_group_bwd_key
-            (if opts.jump_to_first_match "<s-tab>" "<tab>"))]
-       (map replace-keycodes)))
-
-
 (fn highlight-unique-chars [reverse?]
   (let [unique-chars {}
         [left-bound right-bound] (get-horizontal-bounds {:match-width 2})
@@ -813,47 +810,67 @@ char separately."
     (table.insert (. targets :sublists ch2) target)))
 
 
-(fn set-labels [targets autojump-to-first?]
+(fn get-labels [sublist]
+  (if (or (not opts.labels) (empty? opts.labels))
+      (do (when (= sublist.autojump? nil) (tset sublist :autojump? true))
+          opts.safe_labels)
+
+      (or (not opts.safe_labels) (empty? opts.safe_labels))
+      (do (when (= sublist.autojump? nil) (tset sublist :autojump? false))
+          opts.labels)
+
+      (match sublist.autojump?
+        true opts.safe_labels
+        false opts.labels
+        nil (do (tset sublist
+                      :autojump?
+                      ; We _never_ want to autojump in OP mode, since
+                      ; that would execute the operation without
+                      ; allowing us to select a labeled target.
+                      (and (not (operator-pending-mode?))
+                           (<= (dec (length sublist))
+                               (length opts.safe_labels))))
+                (get-labels sublist)))))
+
+
+(fn set-labels [targets]
   "Assign label characters to targets. Note: `label` is a fixed,
 implicit attribute of the target - whether and how it should actually be
 displayed depends on `label-state`."
-  (let [labels (get-labels)]
-    (each [_ sublist (pairs targets.sublists)]
-      (when (> (length sublist) 1)  ; else we'll jump automatically anyway
+  (each [_ sublist (pairs targets.sublists)]
+    (when (> (length sublist) 1)  ; else we'll jump automatically anyway
+      (let [labels (get-labels sublist)]
         (each [i target (ipairs sublist)]
-          (->> (when-not (and autojump-to-first? (= i 1))
-                 ; In case of `autojump-to-first?`, the i-th label is assigned
-                 ; to the i+1th position (we skipped the first one).
-                 (match (% (if autojump-to-first? (dec i) i) (length labels))
-                   ; 1-indexing is not a great match for modulo arithmetic...
-                   0 (last labels)
-                   n (. labels n)))
-               (tset target :label)))))))
+          (tset target
+                :label
+                (when-not (and sublist.autojump? (= i 1))
+                  ; In case of `autojump?`, the i-th label is assigned
+                  ; to the i+1th position (we skipped the first one).
+                  (match (% (if sublist.autojump? (dec i) i) (length labels))
+                    ; 1-indexing is not a great match for modulo arithmetic.
+                    0 (last labels)
+                    n (. labels n)))))))))
 
 
-(fn set-label-states-for-sublist [target-list
-                                  {: autojump-to-first?
-                                   : group-offset}]
-  (let [labels (get-labels)
+(fn set-label-states-for-sublist [sublist {: group-offset}]
+  (let [labels (get-labels sublist)
         |labels| (length labels)
-        base (if autojump-to-first? 2 1)
         offset (* group-offset |labels|)
-        primary-start (+ base offset)
+        primary-start (+ offset (if sublist.autojump? 2 1))
         primary-end (+ primary-start (dec |labels|))
         secondary-end (+ primary-end |labels|)]
-    (each [i target (ipairs target-list)]
-      (->> (when (. target :label)
-             (if (or (< i primary-start) (> i secondary-end)) :inactive
-                 (<= i primary-end) :active-primary
-                 :active-secondary))
-           (tset target :label-state)))))
+    (each [i target (ipairs sublist)]
+      (tset target
+            :label-state
+            (when (. target :label)
+              (if (or (< i primary-start) (> i secondary-end)) :inactive
+                  (<= i primary-end) :active-primary
+                  :active-secondary))))))
 
 
-(fn set-label-states [targets autojump-to-first?]
+(fn set-label-states [targets]
   (each [_ sublist (pairs targets.sublists)]
-    (set-label-states-for-sublist sublist
-                                  {: autojump-to-first?
-                                   :group-offset 0})))
+    (set-label-states-for-sublist sublist {:group-offset 0})))
 
 
 (fn set-shortcuts-and-populate-shortcuts-map [targets]
@@ -979,11 +996,9 @@ sub-table containing label-target k-v pairs for these targets."
         x-mode-prefix-key (replace-keycodes
                             (or opts.x_mode_prefix_key
                                 opts.full_inclusive_prefix_key))  ; deprecated
-        [cycle-fwd-key cycle-bwd-key] (get-cycle-keys)
-        labels (get-labels)
-        ; We _never_ want to autojump in OP mode, since that would execute
-        ; the operation without allowing us to select a labeled target.
-        autojump-to-first? (and opts.jump_to_first_match (not op-mode?))
+        [cycle-fwd-key cycle-bwd-key] (->> [opts.cycle_group_fwd_key
+                                            opts.cycle_group_bwd_key]
+                                           (map replace-keycodes))
         cmd-for-dot-repeat (replace-keycodes
                              (get-plug-key :sx reverse? invoked-in-x-mode? :dot))]
 
@@ -1121,26 +1136,33 @@ sub-table containing label-target k-v pairs for these targets."
                 "")
             (vim.fn.feedkeys :i))))
 
-    (fn select-match-group [target-list]
-      (let [num-of-groups (ceil (/ (length target-list) (length labels)))
-            max-offset (dec num-of-groups)]
-        ((fn recur [group-offset initial-invoc?]
-           (set-beacons target-list {:repeat? enter-repeat?})
-           (with-highlight-chores (light-up-beacons target-list))
-           (match (with-highlight-cleanup
-                    (get-input (when initial-invoc?
-                                 opts.exit_after_idle_msecs.labeled)))
-             input
-             (if (one-of? input cycle-fwd-key cycle-bwd-key)
-                 (let [group-offset* (-> group-offset
-                                         ((match input cycle-fwd-key inc _ dec))
-                                         (clamp 0 max-offset))]
-                   (set-label-states-for-sublist target-list
-                                                 {:autojump-to-first? false
-                                                  :group-offset group-offset*})
-                   (recur group-offset*))
-                 [input group-offset])))
-         0 true)))
+    (fn get-last-input [sublist]
+      ((fn recur [group-offset initial-invoc?]
+         (set-beacons sublist {:repeat? enter-repeat?})
+         (with-highlight-chores (light-up-beacons sublist))
+         (match (with-highlight-cleanup
+                  (get-input (when initial-invoc?
+                               opts.exit_after_idle_msecs.labeled)))
+           input
+           (if (and sublist.autojump?
+                    ; That is, auto-jump has been set heuristically (not
+                    ; forced), implying that there are no subsequent groups.
+                    opts.labels (not (empty? opts.labels))) 
+               [input 0]
+
+               (one-of? input cycle-fwd-key cycle-bwd-key)
+               (let [labels (get-labels sublist)
+                     num-of-groups (ceil (/ (length sublist) (length labels)))
+                     max-offset (dec num-of-groups)
+                     group-offset* (-> group-offset
+                                       ((match input cycle-fwd-key inc _ dec))
+                                       (clamp 0 max-offset))]
+                 (set-label-states-for-sublist
+                   sublist {:group-offset group-offset*})
+                 (recur group-offset*))
+
+               [input group-offset])))
+       0 true))
 
     ; //> Helpers
 
@@ -1164,8 +1186,13 @@ sub-table containing label-target k-v pairs for these targets."
                    (exit-early (echo-not-found (.. in1 (or prev-in2 "")))))
           [{:pair [_ ch2] &as only} nil]
           (if (or new-search? (= ch2 prev-in2))
-              (exit (update-state {:cold {:in2 ch2}
-                                   :dot {:in2 ch2 :in3 (. labels 1)}})
+              (exit (update-state
+                      ; Note: In OP mode, we _always_ use `opts.labels` (no
+                      ; autojump), so the problem of non-deterministic label
+                      ; assignment does not arise - that is, for dot-repeat, we
+                      ; can safely save either an item from `opts.labels` or the
+                      ; actual user input from here on.
+                      {:cold {:in2 ch2} :dot {:in2 ch2 :in3 (. opts.labels 1)}})
                     (jump-to! only.pos)
                     (when new-search?  ; i.e. user is actually typing the pattern
                       (with-highlight-cleanup
@@ -1177,8 +1204,8 @@ sub-table containing label-target k-v pairs for these targets."
           (do
             (doto targets
               (populate-sublists)
-              (set-labels autojump-to-first?)
-              (set-label-states autojump-to-first?))
+              (set-labels)
+              (set-label-states))
             (when new-search?
               (doto targets
                 (set-shortcuts-and-populate-shortcuts-map)
@@ -1199,28 +1226,28 @@ sub-table containing label-target k-v pairs for these targets."
                   (match (or (get-sublist targets in2)
                              (exit-early (echo-not-found (.. in1 in2))))
                     [only nil]
-                    (exit (update-state {:dot {: in2 :in3 (. labels 1)}})
+                    (exit (update-state {:dot {: in2 :in3 (. opts.labels 1)}})
                           (jump-to! only.pos))
 
                     sublist
-                    (let [[first & rest] sublist]
-                      (when (or autojump-to-first? cold-repeat?)
+                    (let [[first & rest] sublist
+                          autojump? sublist.autojump?]
+                      (when (or autojump? cold-repeat?)
                         (jump-to! first.pos))
                       (if cold-repeat? (exit (after-cold-repeat rest))
-                          (let [labeled-targets (if autojump-to-first? rest sublist)]
-                            (match (or (when (and dot-repeat? self.state.dot.in3)  ; endnote #3
-                                         [self.state.dot.in3 0])
-                                       (select-match-group labeled-targets)
-                                       (exit-early))
-                              [in3 group-offset]
-                              (match (or (get-target-with-active-primary-label labeled-targets in3)
-                                         (if autojump-to-first?
-                                             (exit (vim.fn.feedkeys in3 :i))
-                                             (exit-early)))
-                                target
-                                (exit (update-state
-                                        {:dot {: in2 :in3 (if (> group-offset 0) nil in3)}})  ; endnote #3
-                                      (jump-to! target.pos)))))))))))))))))
+                          (match (or (when (and dot-repeat? self.state.dot.in3)  ; endnote #3
+                                       [self.state.dot.in3 0])
+                                     (get-last-input sublist)
+                                     (exit-early))
+                            [in3 group-offset]
+                            (match (or (get-target-with-active-primary-label sublist in3)
+                                       (if autojump?
+                                           (exit (vim.fn.feedkeys in3 :i))
+                                           (exit-early)))
+                              target
+                              (exit (update-state
+                                      {:dot {: in2 :in3 (if (> group-offset 0) nil in3)}})  ; endnote #3
+                                    (jump-to! target.pos))))))))))))))))
 
 
 ; Handling editor options ///1

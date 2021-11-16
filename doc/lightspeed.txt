@@ -1,4 +1,4 @@
-*lightspeed.txt*      For Neovim version 0.5       Last change: 2021 November 05
+*lightspeed.txt*      For Neovim version 0.5       Last change: 2021 November 16
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -35,7 +35,7 @@ USAGE                                                         *lightspeed-usage*
 Command sequence for 2-character search in Normal mode, with the default
 settings:
 
-`s|S <c-x>? char1 (char2|label)? (<tab>|<s-tab>)* label?`
+`s|S <c-x>? char1 (char2|label)? (<space>|<tab>)* label?`
 
 That is, 
 - invoke in the forward (`s`) or backward (`S`) direction
@@ -125,34 +125,19 @@ CONFIGURATION                                                *lightspeed-config*
 
 Setting an individual option via the `opts` table directly:
 
-`   require'lightspeed'.opts.jump_to_first_match = false`
+`   require'lightspeed'.opts.highlight_unique_chars = false`
 
 Setting multiple options via the `setup` function: >
 
     require'lightspeed'.setup { 
-        jump_to_first_match = false,
-        x_mode_prefix_key = '<tab>',
-        limit_ft_matches = 3,
+        grey_out_search_area = false,
+        highlight_unique_chars = false,
     }
 <
     Note: These will be merged with the current/default settings. (Settings
           not mentioned here are not disturbed.)
 
-Available options~
-
-`jump_to_first_match = true`
-
-    Jump to the first match automatically, without having to select a label.
-    Basically chooses between Sneak-like or EasyMotion-like behaviour.
-
-    Note: Operator-pending mode ignores this setting, all targets (if multiple
-          found) are labeled then.
-
-`jump_on_partial_input_safety_timeout = 400`
-
-    Timeout value, in milliseconds, until the follow-up character is
-    "swallowed", when jumping to a unique character right after the first
-    input of s/x (see |lightspeed-jump-on-partial-input|).
+Common options~
 
 `exit_after_idle_msecs = { labeled = 1500, unlabeled = 1000 }`
 
@@ -160,18 +145,19 @@ Available options~
     unconditionally. (`unlabeled` refers to f/t-mode, and "cold-repeating" s/x
     searches.) The feature can be disabled by setting the given value to `nil`.
 
+s/x-specific options~
+
+`grey_out_search_area = true`
+
+    If turned on, all syntax highlighting is washed out to a uniform, neutral
+    grey in the search direction, so that the various marks of Lightspeed are
+    clearly visible. If you decide to turn this off, make sure to configure
+    your custom |lightspeed-highlighting| to fit the colorscheme being used.
+
 `highlight_unique_chars = true`
 
     Highlight unique characters in the search direction, before entering the
     first input.
-
-`grey_out_search_area = true`
-
-    If turned on, for 2-character search, all syntax highlighting is washed
-    out to a uniform, neutral grey in the search direction, so that
-    the various marks of Lightspeed are clearly visible. If you decide to turn
-    this off, make sure to configure your custom |lightspeed-highlighting| to
-    fit the colorscheme being used.
 
 `match_only_the_start_of_same_char_seqs = true`
 
@@ -179,25 +165,73 @@ Available options~
     available labels when you want to jump to a `==` or `--` beyond that. Also
     convenient for working with hex color codes.
 
-`x_mode_prefix_key = '<c-x>'`
+`jump_on_partial_input_safety_timeout = 400`
 
-    Key to switch on |lightspeed-x-mode| for 2-character search. For this, you
-    will probably want to use some special - non-searchable - key (|keycodes|
-    are supported).
-
-`limit_ft_matches = 5`
-    
-    For 1-character search, only the next 'n' matches will be highlighted
-    after [count]. This might be useful either for performance purposes or for
-    reducing visual noise. (Highlighting matches can be turned off altogether
-    by setting the value to 0, but that is not recommended, since this is also
-    a visual signal about whether |lightspeed-instant-repeat| is active.)
+    Timeout value, in milliseconds, until the follow-up character is
+    "swallowed", when jumping to a unique character right after the first
+    input (see |lightspeed-jump-on-partial-input|).
 
 `substitute_chars = { ['\r'] = '¬' }`
 
     The keys in this table will be substituted in the highlighted matches by
     the given characters. This way whitespace characters can be made visible,
     and pairs containing them more easily targetable.
+
+`safe_labels` >
+    {"s", "f", "n"
+     "u", "t"
+     "/", "S", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
+<
+    When the number of matches does not exceed the number of these "safe"
+    labels plus one, the plugin jumps to the first match automatically after
+    entering the pattern. Obviously, for this purpose you should choose keys
+    that are unlikely to be used right after a jump!
+    Leaving the list empty (or setting it to `nil`) effectively disables the
+    auto-jump feature.
+
+    Note: Operator-pending mode ignores this, all targets (if multiple found)
+          are labeled then (using the `labels` list, if not empty).
+
+`labels` >
+    {"s", "f", "n"
+     "j", "k", "l", "o", "i", "w", "e", "h", "g"
+     "u", "t"
+     "m", "v", "c", ";", "a" ".", "z",
+     "/", "S", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
+<
+    Target labels to be used when there are more matches than the number of
+    safe labels plus one.
+    Leaving the list empty (or setting it to `nil`) forces auto-jump to always
+    be on, except for Operator-pending mode. In this case, do not forget to
+    set `cycle_group_fwd_key` to something "safe" too.
+
+Heuristics behind the defaults: 
+- At least the first few labels should be the same on the two lists, since
+  those become muscle memory, and might be used automatically, a bit like
+  [count] values.
+- Since the commands invoking the motions are mapped to left-hand keys
+  (`s`, `z`, `x`), we tend to prioritize right-hand keys to get a better
+  balance for the whole sequence on average.
+
+`cycle_group_fwd_key = '<space>'`
+`cycle_group_bwd_key = '<tab>'`
+
+    These keys switch to the next/previous group of matches, when there are
+    more matches than labels available.
+
+`x_mode_prefix_key = '<c-x>'`
+
+    Key to switch on |lightspeed-x-mode| for 2-character search. For this, you
+    will probably want to use some special - non-searchable - key (|keycodes|
+    are supported).
+
+f/t-specific options~
+
+`limit_ft_matches = 4`
+
+    For 1-character search, the next 'n' matches will be highlighted after
+    [count]. Highlighting matches can be turned off altogether by setting the
+    value to 0 or `nil`.
 
 `instant_repeat_fwd_key = nil`
 `instant_repeat_bwd_key = nil`
@@ -209,32 +243,7 @@ Available options~
     Note: If you would like to keep using `;` and `,` to trigger repeat
           at any time, even after `ft:go` has finished executing, see
           |lightspeed-custom-mappings|.
-
-If the following attributes are not specified by the user, Lightspeed will
-decide their values at runtime, based on whether `jump_to_first_match` is
-active. (In that case we should use only such keys that are unlikely to be
-used right after a jump.)
-
-`labels = nil`
-
-    If `jump_to_first_match` is on: >
-          {"s", "f", "n", "/", "u", "t", "q", "S", "F", "G",
-           "H", "L", "M", "N", "?", "U", "R", "Z", "T", "Q"}
 <
-    Otherwise: >
-          {"f", "j", "d", "k", "s", "l", "e", "i", "w", "o",
-           "g", "h", "v", "n", "c", "m", "a", ";", "z", "."}
-<
-`cycle_group_fwd_key = nil`
-
-    If `jump_to_first_match` is on: <tab>
-    Otherwise: <space>
-
-`cycle_group_bwd_key = nil`
-
-    If `jump_to_first_match` is on: <s-tab>
-    Otherwise: <tab>
-
 ==============================================================================
 DEFAULT MAPPINGS                                   *lightspeed-default-mappings*
 

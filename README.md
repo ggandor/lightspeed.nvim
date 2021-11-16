@@ -111,8 +111,10 @@ obvious atomic alternative - like `w`, `{`, or `%` - available.
 
 ### Other quality-of-life features
 
-* having a choice between automatically jumping to the first match (Sneak-like -
-  default) or allowing for more comfortable target labels (EasyMotion-like)
+* **smart shifting between Sneak/EasyMotion mode** - the plugin automatically
+  jumps to the first match if the remaining matches can be covered by a limited
+  set of "safe" target labels, but stays in place, and switches to an extended,
+  more comfortable label set otherwise
 * flawless **dot-repeat support** for operators (with
   [repeat.vim](https://github.com/tpope/vim-repeat) installed)
 * skips folds
@@ -232,7 +234,7 @@ presents information before it is actually needed.
 Command sequence for 2-character search in Normal and Visual mode, with the
 default settings:
 
-`s|S char1 (char2|shortcut)? (<tab>|<s-tab>)* label?`
+`s|S char1 (char2|shortcut)? (<space>|<tab>)* label?`
 
 That is, 
 - invoke in the forward (`s`) or backward (`S`) direction
@@ -244,8 +246,9 @@ That is,
   there is only one match), or the label character, if the target is
   [shortcutable](#shortcuts).
 - _certain beacons are extinguished; only char1 + char2 matches remain_
-- _the cursor automatically jumps to the first match by default; pressing any
-  other key than a group-switch or a target label exits the plugin now_
+- _the cursor automatically jumps to the first match if there are enough "safe"
+  labels; pressing any other key than a group-switch or a target label exits the
+  plugin now_
 - optionally [cycle through the groups of
   matches](#grouping-matches-by-distance) that can be labeled at once
 - choose a labeled target to jump to (in the current group)
@@ -370,27 +373,31 @@ introduction](#-an-in-depth-introduction-of-the-key-features) below.
 
 Lightspeed exposes a configuration table (`opts`), that can be set directly, or
 via a `setup` function that updates the current settings with the values given
-in its argument table. (Note: There is no need to call `setup` at all, if you
-are fine with the defaults.)
+in its argument table. 
+(Note: There is no need to call `setup` at all, if you are fine with the
+defaults.)
 
 ```Lua
 require'lightspeed'.setup {
-  jump_to_first_match = true,
-  jump_on_partial_input_safety_timeout = 400,
   exit_after_idle_msecs = { labeled = 1500, unlabeled = 1000 },
-  highlight_unique_chars = true,
+
+  -- s/x
   grey_out_search_area = true,
+  highlight_unique_chars = true,
   match_only_the_start_of_same_char_seqs = true,
-  limit_ft_matches = 4,
-  x_mode_prefix_key = '<c-x>',
+  jump_on_partial_input_safety_timeout = 400,
   substitute_chars = { ['\r'] = '¬' },
+  -- Leaving the appropriate list empty forces auto-jump to be on or off.
+  safe_labels = { ... },
+  labels = { ... },
+  cycle_group_fwd_key = '<space>',
+  cycle_group_bwd_key = '<tab>',
+  x_mode_prefix_key = '<c-x>',
+
+  -- f/t
+  limit_ft_matches = 4,
   instant_repeat_fwd_key = nil,
   instant_repeat_bwd_key = nil,
-  -- If no values are given, these will be set at runtime,
-  -- based on `jump_to_first_match`.
-  labels = nil,
-  cycle_group_fwd_key = nil,
-  cycle_group_bwd_key = nil,
 }
 ```
 
@@ -399,7 +406,7 @@ lightspeed-config`.
 
 You can also set options individually from the command line:
 ```Lua
-lua require'lightspeed'.opts.jump_to_first_match = false
+lua require'lightspeed'.opts.highlight_unique_chars = false
 ```
 
 ### Keymaps
@@ -582,9 +589,8 @@ That is practically labeling `/?` matches, right? It is overkill for our
 purposes, IMO. Again, we are optimizing for the common case. A 2-character
 pattern, with the secondary group of matches displayed ahead of time, should be
 enough for making an on-screen jump efficiently 99% of the time; in that
-remaining 1%, please use `H`/`M`/`L`/`{`/`}` first, or just live with having to
-press `Tab`/`Space` multiple times. (What the heck are you editing, on what size
-of display, by the way?)
+remaining 1%, just live with having to press `Space` multiple times. (What the
+heck are you editing, on what size of display, by the way?)
 
 ### Labeled matches for 1-character search?
 
