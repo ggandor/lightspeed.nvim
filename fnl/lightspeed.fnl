@@ -1256,7 +1256,8 @@ sub-table containing label-target k-v pairs for these targets."
 
 ; We will probably expose this table in the future, as an `opts` field.
 (local temporary-editor-opts {:vim.wo.conceallevel 0
-                              :vim.wo.scrolloff 0})
+                              :vim.wo.scrolloff 0
+                              :vim.bo.modeline false})  ; #81
 
 (local saved-editor-opts {})
 

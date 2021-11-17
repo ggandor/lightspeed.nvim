@@ -1654,9 +1654,9 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
     end
     _380_ = (get_targets(in1, reverse_3f) or _381_())
     if ((type(_380_) == "table") and ((type((_380_)[1]) == "table") and ((type(((_380_)[1]).pair) == "table") and true and (nil ~= (((_380_)[1]).pair)[2]))) and ((_380_)[2] == nil)) then
+      local only = (_380_)[1]
       local _ = (((_380_)[1]).pair)[1]
       local ch2 = (((_380_)[1]).pair)[2]
-      local only = (_380_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           if dot_repeatable_op_3f then
@@ -1741,9 +1741,9 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
           _395_ = t_396_
         end
         if ((type(_395_) == "table") and ((type((_395_).pair) == "table") and true and (nil ~= ((_395_).pair)[2]))) then
+          local shortcut = _395_
           local _ = ((_395_).pair)[1]
           local ch2 = ((_395_).pair)[2]
-          local shortcut = _395_
           do
             if dot_repeatable_op_3f then
               set_dot_repeat(cmd_for_dot_repeat)
@@ -1873,7 +1873,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
     end
   end
 end
-local temporary_editor_opts = {["vim.wo.conceallevel"] = 0, ["vim.wo.scrolloff"] = 0}
+local temporary_editor_opts = {["vim.bo.modeline"] = false, ["vim.wo.conceallevel"] = 0, ["vim.wo.scrolloff"] = 0}
 local saved_editor_opts = {}
 local function save_editor_opts()
   for opt, _ in pairs(temporary_editor_opts) do
