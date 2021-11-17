@@ -9,19 +9,20 @@ possible.
 
 ## The gist in 30 secs
 
-Lightspeed allows for targeting any positions in the visible window area by
+With Lightspeed you can jump to any positions in the visible window area by
 entering a 2-character search pattern, and then optionally a "label" character
-for choosing among multiple matches. The plugin's aim is to substitute _all_
-native commands used for this purpose (`/`, `?`, `gg`, `f`, etc.) with a
-minimal, uniform set of multi-axis motions, that result in one atomic,
-composable jump.
+for choosing among multiple matches. The plugin aims to substitute _all_ native
+commands for in-window navigation (`/`, `?`, `gg`, `f`, etc.) with a uniform,
+_minimal_ set of atomic (repeatable), multi-axis motions.
 
-The game-changing idea of Lightspeed, making it unique among similar plugins, is
-its "clairvoyant" ability: it maps possible futures, and tells you which key you
-need to press _before_ you actually need to do that.
+So far this sounds similar to what
+[vim-sneak](https://github.com/justinmk/vim-sneak) does. The game-changing idea
+that takes Lightspeed to the next level, is its "clairvoyant" ability: it maps
+possible futures, and tells you which keys you need to press _before_ you
+actually need to do that.
 
-To find out more, read on, or watch this [6-minute introductory video by
-DevOnDuty](https://youtu.be/ESyld9NCl1w) first.
+If this sounds magical enough, read on, or watch this [6-minute introductory
+video by DevOnDuty](https://youtu.be/ESyld9NCl1w) first.
 
 ## Sky chart
 
@@ -57,7 +58,7 @@ aware of the type or the surroundings of the target; (2) for that, the most
 adequate basis is unidirectional 1- and 2-character search; (3) the interface
 should be _optimized for the common case_.
 
-### Sequencing is not composing
+### Composite motions do not compose
 
 Everyone has been taught that the "Vim way" of reaching distant points in the
 window is using combinations of primitive motions: `8jfx;;`. The pipelining
@@ -83,9 +84,9 @@ short, they buy speed for cognitive load - a questionable bargain.
 Sneak's approach, however, with its sole focus on using 2-character search
 patterns for targeting, and later combining that with the labeling method
 inspired by EasyMotion, felt close to perfect at its time. A user of Sneak
-embraces a philosophy that is just the opposite than the above one: you barely
-need to think about motions anymore - "sneaking" gets you everywhere you need to
-be, with maximal precision. It is like having a _jetpack_ on you all the time.
+embraces a philosophy that is just the opposite of above: you barely need to
+think about motions anymore - "sneaking" gets you everywhere you need to be,
+with maximal precision. It is like having a _jetpack_ on you all the time.
 
 ### Always a step ahead of you
 
@@ -139,6 +140,11 @@ obvious atomic alternative - like `w`, `{`, or `%` - available.
 * uses extmarks, and does not mess with the Conceal group
 
 ### Guiding principles
+
+_"Some people . . . like tons of features, but experienced users really care
+about cohesion, conceptual integrity, and reliability. I think of [the latter]
+as the @tpope school."_
+([justinmk](https://github.com/justinmk/vim-sneak/issues/62#issuecomment-34044380))
 
 * [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
   the plugin should feel a natural extension to the core, with an interplay as
@@ -381,7 +387,7 @@ special cases, see `:h lightspeed-dot-repeat`.
 
 For more details, see the docs (`:h lightspeed-usage`, `:h
 lightspeed-default-mappings`), and the [in-depth
-introduction](#-an-in-depth-introduction-of-the-key-features) below.
+introduction](#-an-in-depth-introduction-of-the-key-features).
 
 ## 🔧 Configuration
 
