@@ -7,7 +7,21 @@ maximize speed while minimizing mental effort and breaks in the flow, providing
 an intuitive, distractionless experience, that should feel as "native" as
 possible.
 
-[A 6-minute introductory video by DevOnDuty](https://youtu.be/ESyld9NCl1w)
+## The gist in 30 secs
+
+Lightspeed allows for targeting any positions in the visible window area by
+entering a 2-character search pattern, and then optionally a "label" character
+for choosing among multiple matches. The plugin's aim is to substitute _all_
+native commands used for this purpose (`/`, `?`, `gg`, `f`, etc.) with a
+minimal, uniform set of multi-axis motions, that result in one atomic,
+composable jump.
+
+The game-changing idea of Lightspeed, making it unique among similar plugins, is
+its "clairvoyant" ability: it maps possible futures, and tells you which key you
+need to press _before_ you actually need to do that.
+
+To find out more, read on, or watch this [6-minute introductory video by
+DevOnDuty](https://youtu.be/ESyld9NCl1w) first.
 
 ## Sky chart
 
@@ -25,12 +39,12 @@ possible.
 ### Quick links (FAQ)
 
 * [A primer on the highlighting strategy](#a-primer-on-the-highlighting-strategy)
-* [Using ;/, to repeat f/t](#1-character-search-ft)
-* [Multi-line f/t motions VS macros and :normal](#notes)
 * [Guidelines for colorscheme
   integrations](#guidelines-for-colorscheme-integrations)
 * [Enforce the default highlighting if a colorscheme messes things
   up](#enforce-the-default-highlighting)
+* [Using ;/, to repeat f/t](#1-character-search-ft)
+* [Multi-line f/t motions VS macros and :normal](#notes)
 
 ## ⚡ A lightning pitch
 
@@ -43,10 +57,10 @@ aware of the type or the surroundings of the target; (2) for that, the most
 adequate basis is unidirectional 1- and 2-character search; (3) the interface
 should be _optimized for the common case_.
 
-### (Don't) always be composing
+### Sequencing is not composing
 
 Everyone has been taught that the "Vim way" of reaching distant points in the
-window is using combinations of primitive motions: `8jfx;;`. The composing
+window is using combinations of primitive motions: `8jfx;;`. The pipelining
 instinct is so deeply ingrained in our Vim-infected mindsets, that many of us
 tend to forget that this approach has evolved merely as a consequence of the
 limitations of the interface, and is not some divinely decreed, superior way of
@@ -75,11 +89,11 @@ be, with maximal precision. It is like having a _jetpack_ on you all the time.
 
 ### Always a step ahead of you
 
-Lightspeed adds the ability of "clairvoyance" to this: it blurs the boundary
-between one- and two-character search, and eliminate yet more cognitive
-overhead, unnecessary keystrokes or interruptions. The idea is to process the
-input incrementally - analyzing the available information after _each_
-keystroke, to assist the user and offer shortcuts:
+Lightspeed takes the next logical step, and eliminates yet more cognitive
+overhead, unnecessary keystrokes or interruptions, by blurring the boundary
+between one- and two-character search. The idea is to process the input
+incrementally - analyzing the available information after _each_ keystroke, to
+assist the user and offer shortcuts:
 
 * **jump based on partial input:** if the character is unique in the search
   direction, you will automatically jump after the first input (these characters
@@ -387,7 +401,8 @@ require'lightspeed'.setup {
   match_only_the_start_of_same_char_seqs = true,
   jump_on_partial_input_safety_timeout = 400,
   substitute_chars = { ['\r'] = '¬' },
-  -- Leaving the appropriate list empty forces auto-jump to be on or off.
+  -- Leaving the appropriate list empty effectively disables
+  -- "smart" mode, and forces auto-jump to be on or off.
   safe_labels = { ... },
   labels = { ... },
   cycle_group_fwd_key = '<space>',
