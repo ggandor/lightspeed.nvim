@@ -46,6 +46,8 @@ video by DevOnDuty](https://youtu.be/ESyld9NCl1w) first.
   up](#enforce-the-default-highlighting)
 * [Using ;/, to repeat f/t](#1-character-search-ft)
 * [Multi-line f/t motions VS macros and :normal](#notes)
+* [Using the plugin together with
+  vim-surround](https://github.com/ggandor/lightspeed.nvim/discussions/83)
 
 ## ⚡ A lightning pitch
 
@@ -558,7 +560,10 @@ only execute for certain ones, etc.
   recording macros or executing `:normal`. This is [being worked
   on](https://github.com/ggandor/lightspeed.nvim/issues/14), but as an API
   change, it should be thought through carefully. In the meantime, here is a
-  rather elegant workaround for macros by [rktjmp](https://github.com/rktjmp):
+  rather elegant workaround for macros by [rktjmp](https://github.com/rktjmp)
+  (caveat: [this causes a problem for same-key
+  repeat](https://github.com/ggandor/lightspeed.nvim/discussions/84#discussioncomment-1666026)):
+
   ```Vim
   nmap <expr> f reg_recording() . reg_executing() == "" ? "<Plug>Lightspeed_f" : "f"
   nmap <expr> F reg_recording() . reg_executing() == "" ? "<Plug>Lightspeed_F" : "F"
