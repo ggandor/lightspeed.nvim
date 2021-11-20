@@ -802,22 +802,24 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
           end
           push_cursor_21(_192_())
         end
-        if (op_mode_3f_4_auto and not reverse_3f and true) then
-          local _194_ = string.sub(vim.fn.mode("t"), -1)
-          if (_194_ == "v") then
-            push_cursor_21("bwd")
-          elseif (_194_ == "o") then
-            if not cursor_before_eof_3f() then
-              push_cursor_21("fwd")
-            else
-              vim.cmd("set virtualedit=onemore")
-              vim.cmd("norm! l")
-              vim.cmd(restore_virtualedit_autocmd_5_auto)
-            end
-          end
-        end
+        local adjusted_pos_6_auto = get_cursor_pos()
         if not op_mode_3f_4_auto then
           force_matchparen_refresh()
+        else
+          if (not reverse_3f and true) then
+            local _194_ = string.sub(vim.fn.mode("t"), -1)
+            if (_194_ == "v") then
+              push_cursor_21("bwd")
+            elseif (_194_ == "o") then
+              if not cursor_before_eof_3f() then
+                push_cursor_21("fwd")
+              else
+                vim.cmd("set virtualedit=onemore")
+                vim.cmd("norm! l")
+                vim.cmd(restore_virtualedit_autocmd_5_auto)
+              end
+            end
+          end
         end
       end
       if op_mode_3f then
@@ -1422,6 +1424,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
   do
     local first_jump_3f = true
     local function _334_(target)
+      local adjusted_pos
       do
         local op_mode_3f_4_auto = operator_pending_mode_3f()
         local restore_virtualedit_autocmd_5_auto = ("autocmd CursorMoved,WinLeave,BufLeave" .. ",InsertEnter,CmdlineEnter,CmdwinEnter" .. " * ++once set virtualedit=" .. vim.o.virtualedit)
@@ -1435,33 +1438,35 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
             push_cursor_21("fwd")
           end
         end
-        if (op_mode_3f_4_auto and not reverse_3f and (x_mode_3f and not reverse_3f)) then
-          local _338_ = string.sub(vim.fn.mode("t"), -1)
-          if (_338_ == "v") then
-            push_cursor_21("bwd")
-          elseif (_338_ == "o") then
-            if not cursor_before_eof_3f() then
-              push_cursor_21("fwd")
-            else
-              vim.cmd("set virtualedit=onemore")
-              vim.cmd("norm! l")
-              vim.cmd(restore_virtualedit_autocmd_5_auto)
+        local adjusted_pos_6_auto = get_cursor_pos()
+        if not op_mode_3f_4_auto then
+          force_matchparen_refresh()
+        else
+          if (not reverse_3f and (x_mode_3f and not reverse_3f)) then
+            local _338_ = string.sub(vim.fn.mode("t"), -1)
+            if (_338_ == "v") then
+              push_cursor_21("bwd")
+            elseif (_338_ == "o") then
+              if not cursor_before_eof_3f() then
+                push_cursor_21("fwd")
+              else
+                vim.cmd("set virtualedit=onemore")
+                vim.cmd("norm! l")
+                vim.cmd(restore_virtualedit_autocmd_5_auto)
+              end
             end
           end
         end
-        if not op_mode_3f_4_auto then
-          force_matchparen_refresh()
-        end
+        adjusted_pos = adjusted_pos_6_auto
       end
       first_jump_3f = false
-      return nil
+      return adjusted_pos
     end
     jump_to_21 = _334_
   end
-  local function highlight_new_curpos_and_op_area(from_pos)
+  local function highlight_new_curpos_and_op_area(from_pos, to_pos)
     local forced_motion = string.sub(vim.fn.mode("t"), -1)
     local blockwise_3f = (forced_motion == replace_keycodes("<c-v>"))
-    local to_pos = get_cursor_pos()
     local function _344_()
       if reverse_3f then
         return to_pos
@@ -1654,20 +1659,20 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
     end
     _380_ = (get_targets(in1, reverse_3f) or _381_())
     if ((type(_380_) == "table") and ((type((_380_)[1]) == "table") and ((type(((_380_)[1]).pair) == "table") and true and (nil ~= (((_380_)[1]).pair)[2]))) and ((_380_)[2] == nil)) then
-      local only = (_380_)[1]
       local _ = (((_380_)[1]).pair)[1]
       local ch2 = (((_380_)[1]).pair)[2]
+      local only = (_380_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           if dot_repeatable_op_3f then
             set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f, x_mode_3f, "dot")))
           end
           update_state({cold = {in2 = ch2}, dot = {in2 = ch2, in3 = opts.labels[1]}})
-          jump_to_21(only.pos)
+          local to_pos = jump_to_21(only.pos)
           if new_search_3f then
             local res_2_auto
             do
-              highlight_new_curpos_and_op_area(from_pos)
+              highlight_new_curpos_and_op_area(from_pos, to_pos)
               res_2_auto = ignore_input_until_timeout(ch2)
             end
             hl:cleanup()
@@ -1741,9 +1746,9 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
           _395_ = t_396_
         end
         if ((type(_395_) == "table") and ((type((_395_).pair) == "table") and true and (nil ~= ((_395_).pair)[2]))) then
-          local shortcut = _395_
           local _ = ((_395_).pair)[1]
           local ch2 = ((_395_).pair)[2]
+          local shortcut = _395_
           do
             if dot_repeatable_op_3f then
               set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f, x_mode_3f, "dot")))

@@ -309,8 +309,7 @@ types properly."
   (vim.cmd "silent! doautocmd matchup_matchparen CursorMoved"))
 
 
-(macro jump-to!* [target
-                 {: add-to-jumplist? : after : reverse? : inclusive-motion?}]
+(macro jump-to!* [target {: add-to-jumplist? : reverse? : inclusive-motion? : adjust}]
   `(let [op-mode?# (operator-pending-mode?)
          ; Needs to be here, inside the returned form, as we need to get
          ; `vim.o.virtualedit` at runtime.
@@ -324,43 +323,44 @@ types properly."
      (when ,add-to-jumplist? (vim.cmd "norm! m`"))
      (vim.fn.cursor ,target)
      ; Adjust position after the jump (for t-motion or x-mode).
-     ,after
+     ,adjust
+     ; We should get this before the (possible) hacks below.
+     (local adjusted-pos# (get-cursor-pos))
 
-     ; Simulating inclusive/exclusive behaviour for operator-pending mode by
-     ; adjusting the cursor position.
+     (if (not op-mode?#) (force-matchparen-refresh)
+         ; Simulating inclusive/exclusive behaviour for operator-pending mode by
+         ; adjusting the cursor position.
+         ; For operators, our jump is always interpreted by Vim as an exclusive
+         ; motion, so whenever we'd like to behave as an inclusive one, an
+         ; additional push is needed to even that out (:h inclusive).
+         ; (This is only relevant in the forward direction.)
+         (when (and (not ,reverse?) ,inclusive-motion?)
+           ; Check for modifiers forcing motion types. (:h forced-motion)
+           (match (string.sub (vim.fn.mode :t) -1)
+             ; Note that we should _never_ push the cursor in the linewise case,
+             ; as we might push it beyond EOL, and that would add another line
+             ; to the selection.
 
-     ; For operators, our jump is always interpreted by Vim as an exclusive
-     ; motion, so whenever we'd like to behave as an inclusive one, an
-     ; additional push is needed to even that out (:h inclusive).
-     ; (This is only relevant in the forward direction.)
-     (when (and op-mode?# (not ,reverse?) ,inclusive-motion?)
-       ; Check for modifiers forcing motion types. (:h forced-motion)
-       (match (string.sub (vim.fn.mode :t) -1)
-         ; Note that we should _never_ push the cursor in the linewise case,
-         ; as we might push it beyond EOL, and that would add another line
-         ; to the selection.
+             ; Blockwise (<c-v>) itself makes the motion inclusive, we're done.
 
-         ; Blockwise (<c-v>) itself makes the motion inclusive, we're done.
+             ; We want the `v` modifier to behave in the native way, that is, to
+             ; toggle between inclusive/exclusive if applied to a charwise
+             ; motion (:h o_v). As our jump is technically - i.e., from Vim's
+             ; perspective - an exclusive motion, `v` will change it to
+             ; _inclusive_, so we should push the cursor back to "undo" that.
+             ; (Previous column as inclusive = target column as exclusive.)
+             :v (push-cursor! :bwd)
 
-         ; We want the `v` modifier to behave in the native way, that is, to
-         ; toggle between inclusive/exclusive if applied to a charwise
-         ; motion (:h o_v). As our jump is technically - i.e., from Vim's
-         ; perspective - an exclusive motion, `v` will change it to
-         ; _inclusive_, so we should push the cursor back to "undo" that.
-         ; (Previous column as inclusive = target column as exclusive.)
-         :v (push-cursor! :bwd)
-
-         ; Else, in the normal case (no modifier), we should push the cursor
-         ; forward (next column as exclusive = target column as inclusive).
-         :o (if (not (cursor-before-eof?)) (push-cursor! :fwd)
-                ; The EOF edge case requires some hackery.
-                ; (Note: The cursor will be moved to the end of the operated
-                ; area anyway, no need to undo the `l` afterwards.)
-                (do (vim.cmd "set virtualedit=onemore")
-                    (vim.cmd "norm! l")
-                    (vim.cmd restore-virtualedit-autocmd#)))))
-     (when (not op-mode?#)
-       (force-matchparen-refresh))))
+             ; Else, in the normal case (no modifier), we should push the cursor
+             ; forward (next column as exclusive = target column as inclusive).
+             :o (if (not (cursor-before-eof?)) (push-cursor! :fwd)
+                    ; The EOF edge case requires some hackery.
+                    ; (Note: The cursor will be moved to the end of the operated
+                    ; area anyway, no need to undo the `l` afterwards.)
+                    (do (vim.cmd "set virtualedit=onemore")
+                        (vim.cmd "norm! l")
+                        (vim.cmd restore-virtualedit-autocmd#))))))
+     adjusted-pos#))
 
 
 (fn get-onscreen-lines [{: reverse? : skip-folds?}]
@@ -663,10 +663,10 @@ interrupted change-operation."
               (when-not reverted-instant-repeat?
                 (jump-to!* jump-pos
                            {:add-to-jumplist? (not instant-repeat?)
-                            :after (when t-mode?
-                                     (push-cursor! (if reverse? :fwd :bwd)))
                             : reverse?
-                            :inclusive-motion? true}))  ; like the native f/t
+                            :inclusive-motion? true  ; just like the native f/t
+                            :adjust (when t-mode?
+                                      (push-cursor! (if reverse? :fwd :bwd)))}))
               (if op-mode? (exit (when dot-repeatable-op?
                                    (set self.state.dot {:in in1})
                                    (set-dot-repeat cmd-for-dot-repeat count)))
@@ -1071,14 +1071,16 @@ sub-table containing label-target k-v pairs for these targets."
     (local jump-to!
            (do (var first-jump? true)
                (fn [target]
-                 (jump-to!* target
-                            {:add-to-jumplist? first-jump?
-                             :after (when x-mode?
-                                      (push-cursor! :fwd)
-                                      (when reverse? (push-cursor! :fwd)))
-                             : reverse?
-                             :inclusive-motion? (and x-mode? (not reverse?))})
-                 (set first-jump? false))))
+                 (let [adjusted-pos
+                       (jump-to!* target
+                                  {:add-to-jumplist? first-jump?
+                                   : reverse?
+                                   :inclusive-motion? (and x-mode? (not reverse?))
+                                   :adjust (when x-mode?
+                                             (push-cursor! :fwd)
+                                             (when reverse? (push-cursor! :fwd)))})]
+                 (set first-jump? false)
+                 adjusted-pos))))
 
     ; Jumping based on partial input is nice, but it's annoying that we
     ; don't see the actual changes right away (we are staying in the main
@@ -1086,10 +1088,9 @@ sub-table containing label-target k-v pairs for these targets."
     ; timespan to ignore the character in the next column). Therefore we need
     ; to provide visual feedback, to tell the user that the target has been
     ; found, and they can continue editing.
-    (fn highlight-new-curpos-and-op-area [from-pos]  ; 1,1
+    (fn highlight-new-curpos-and-op-area [from-pos to-pos]  ; 1,1
       (let [forced-motion (string.sub (vim.fn.mode :t) -1)
             blockwise? (= forced-motion (replace-keycodes "<c-v>"))
-            to-pos (get-cursor-pos)  ; 1,1
             ; Preliminary boundaries of the highlighted - operated - area
             ; (forced-motion might affect these).
             [startline startcol &as start] (if reverse? to-pos from-pos)
@@ -1200,10 +1201,10 @@ sub-table containing label-target k-v pairs for these targets."
                       ; can safely save either an item from `opts.labels` or the
                       ; actual user input from here on.
                       {:cold {:in2 ch2} :dot {:in2 ch2 :in3 (. opts.labels 1)}})
-                    (jump-to! only.pos)
+                    (local to-pos (jump-to! only.pos))
                     (when new-search?  ; i.e. user is actually typing the pattern
                       (with-highlight-cleanup
-                        (highlight-new-curpos-and-op-area from-pos)
+                        (highlight-new-curpos-and-op-area from-pos to-pos)
                         (ignore-input-until-timeout ch2))))
               (exit-early (echo-not-found (.. in1 prev-in2))))
 
