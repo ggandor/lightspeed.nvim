@@ -992,15 +992,7 @@ sub-table containing label-target k-v pairs for these targets."
         op-mode? (operator-pending-mode?)
         change-op? (change-operation?)
         delete-op? (delete-operation?)
-        dot-repeatable-op? (dot-repeatable-operation?)
-        x-mode-prefix-key (replace-keycodes
-                            (or opts.x_mode_prefix_key
-                                opts.full_inclusive_prefix_key))  ; deprecated
-        [cycle-fwd-key cycle-bwd-key] (->> [opts.cycle_group_fwd_key
-                                            opts.cycle_group_bwd_key]
-                                           (map replace-keycodes))
-        cmd-for-dot-repeat (replace-keycodes
-                             (get-plug-key :sx reverse? invoked-in-x-mode? :dot))]
+        dot-repeatable-op? (dot-repeatable-operation?)]
 
     ; Top-level vars
 
@@ -1012,9 +1004,12 @@ sub-table containing label-target k-v pairs for these targets."
 
     (macro exit [...]
       `(exit-template :sx false
-                      (do (when dot-repeatable-op?
-                            (set-dot-repeat cmd-for-dot-repeat))
-                          ,...)))
+                      (do
+                        (when dot-repeatable-op?
+                          (set-dot-repeat
+                            (replace-keycodes
+                              (get-plug-key :sx reverse? x-mode? :dot))))
+                        ,...)))
 
     (macro exit-early [...] `(exit-template :sx true ,...))
 
@@ -1033,20 +1028,23 @@ sub-table containing label-target k-v pairs for these targets."
                      (exit-early))
             ; Here we can handle any other modifier key as "zeroth" input,
             ; if the need arises (e.g. regex search).
-            in0 (do (match in0
+            in0 (let [x-mode-prefix-key (replace-keycodes
+                                          (or opts.x_mode_prefix_key
+                                              opts.full_inclusive_prefix_key))]  ; deprecated
+                  (match in0
+                    "\r" (set enter-repeat? true)
+                    x-mode-prefix-key (set x-mode? true))
+                  (var res in0)
+                  (when (and x-mode? (not invoked-in-x-mode?))
+                    ; Get the "true" first input then.
+                    (match (or (get-input)
+                               (exit-early))
                       "\r" (set enter-repeat? true)
-                      x-mode-prefix-key (set x-mode? true))
-                    (var res in0)
-                    (when (and x-mode? (not invoked-in-x-mode?))
-                      ; Get the "true" first input then.
-                      (match (or (get-input)
-                                 (exit-early))
-                        "\r" (set enter-repeat? true)
-                        in0* (set res in0*)))
-                    (set new-search? (not (or repeat-invoc enter-repeat?)))
-                    (if enter-repeat? (or self.state.cold.in1
-                                          (exit-early (echo-no-prev-search)))
-                        res)))))
+                      in0* (set res in0*)))
+                  (set new-search? (not (or repeat-invoc enter-repeat?)))
+                  (if enter-repeat? (or self.state.cold.in1
+                                        (exit-early (echo-no-prev-search)))
+                      res)))))
 
     ; No need to pass in `in1` every time once we have it, so let's curry this.
     (fn update-state* [in1]
@@ -1081,9 +1079,9 @@ sub-table containing label-target k-v pairs for these targets."
     ; Jumping based on partial input is nice, but it's annoying that we
     ; don't see the actual changes right away (we are staying in the main
     ; function, waiting for another input, so that we can introduce a safety
-    ; timespan to ignore the character in the next column).
-    ; Therefore we need to provide visual feedback, to tell the user that the
-    ; target has been found, and they can continue editing.
+    ; timespan to ignore the character in the next column). Therefore we need
+    ; to provide visual feedback, to tell the user that the target has been
+    ; found, and they can continue editing.
     (fn highlight-new-curpos-and-op-area [from-pos]  ; 1,1
       (let [forced-motion (string.sub (vim.fn.mode :t) -1)
             blockwise? (= forced-motion (replace-keycodes "<c-v>"))
@@ -1092,17 +1090,17 @@ sub-table containing label-target k-v pairs for these targets."
             ; (forced-motion might affect these).
             [startline startcol &as start] (if reverse? to-pos from-pos)
             [_ endcol &as end] (if reverse? from-pos to-pos)
+            top-left [startline (min startcol endcol)]
             ; In OP-mode, the cursor always ends up at the beginning of the
-            ; operated area, that might differ from the targeted position.
+            ; operated area, that might differ from the targeted position!
             ; (Caveat: linewise works as if there would be no forcing modifier.)
-            new-curpos (if op-mode? (if blockwise?  ; get the top/leftmost corner
-                                        [startline (min startcol endcol)]
-                                        start)
-                           to-pos)]
+            new-curpos (if op-mode? (if blockwise? top-left start) to-pos)]
         (when-not change-op?  ; then we're entering insert mode anyway (couldn't move away)
           (highlight-cursor new-curpos))
         (when op-mode?
-          (highlight-range hl.group.pending-op-area (map dec start) (map dec end)
+          (highlight-range hl.group.pending-op-area
+                           (map dec start)
+                           (map dec end)
                            {: forced-motion
                             :inclusive-motion? (and x-mode? (not reverse?))}))
         (vim.cmd :redraw)))
@@ -1137,6 +1135,9 @@ sub-table containing label-target k-v pairs for these targets."
             (vim.fn.feedkeys :i))))
 
     (fn get-last-input [sublist]
+      (local [cycle-fwd-key cycle-bwd-key]
+             (->> [opts.cycle_group_fwd_key opts.cycle_group_bwd_key]
+                  (map replace-keycodes)))
       ((fn recur [group-offset initial-invoc?]
          (set-beacons sublist {:repeat? enter-repeat?})
          (with-highlight-chores (light-up-beacons sublist))
@@ -1145,9 +1146,11 @@ sub-table containing label-target k-v pairs for these targets."
                                opts.exit_after_idle_msecs.labeled)))
            input
            (if (and sublist.autojump?
-                    ; That is, auto-jump has been set heuristically (not
-                    ; forced), implying that there are no subsequent groups.
-                    opts.labels (not (empty? opts.labels))) 
+                    ; Non-empty `labels` means auto-jump has been set
+                    ; heuristically (not forced), implying that there are no
+                    ; subsequent groups.
+                    opts.labels
+                    (not (empty? opts.labels))) 
                [input 0]
 
                (one-of? input cycle-fwd-key cycle-bwd-key)
