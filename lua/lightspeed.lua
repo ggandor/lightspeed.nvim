@@ -1200,9 +1200,9 @@ local function set_beacon(_279_, repeat_3f)
     local _285_ = label_state
     if (_285_ == nil) then
       if overlapped_3f then
-        target.beacon = {inc(col), {ch20, hl.group["unlabeled-match"]}}
+        target.beacon = {1, {{ch20, hl.group["unlabeled-match"]}}}
       else
-        target.beacon = {col, {(ch10 .. ch20), hl.group["unlabeled-match"]}}
+        target.beacon = {0, {{(ch10 .. ch20), hl.group["unlabeled-match"]}}}
       end
     elseif (_285_ == "active-primary") then
       if repeat_3f then
@@ -1212,23 +1212,23 @@ local function set_beacon(_279_, repeat_3f)
         else
           _287_ = 2
         end
-        target.beacon = {(col + _287_), {label, hl.group.label}}
+        target.beacon = {_287_, {{label, hl.group.label}}}
       elseif shortcut_3f then
         if overlapped_3f then
-          target.beacon = {inc(col), {label, hl.group["shortcut-overlapped"]}}
+          target.beacon = {1, {{label, hl.group["shortcut-overlapped"]}}}
         else
           if squeezed_3f then
-            target.beacon = {col, {ch20, hl.group["masked-ch"]}, {label, hl.group.shortcut}}
+            target.beacon = {0, {{ch20, hl.group["masked-ch"]}, {label, hl.group.shortcut}}}
           else
-            target.beacon = {(col + 2), {label, hl.group.shortcut}}
+            target.beacon = {2, {{label, hl.group.shortcut}}}
           end
         end
       elseif overlapped_3f then
-        target.beacon = {inc(col), {label, hl.group["label-overlapped"]}}
+        target.beacon = {1, {{label, hl.group["label-overlapped"]}}}
       elseif squeezed_3f then
-        target.beacon = {col, {ch20, hl.group["masked-ch"]}, {label, hl.group.label}}
+        target.beacon = {0, {{ch20, hl.group["masked-ch"]}, {label, hl.group.label}}}
       else
-        target.beacon = {(col + 2), {label, hl.group.label}}
+        target.beacon = {2, {{label, hl.group.label}}}
       end
     elseif (_285_ == "active-secondary") then
       if repeat_3f then
@@ -1238,13 +1238,13 @@ local function set_beacon(_279_, repeat_3f)
         else
           _292_ = 2
         end
-        target.beacon = {(col + _292_), {label, hl.group["label-distant"]}}
+        target.beacon = {_292_, {{label, hl.group["label-distant"]}}}
       elseif overlapped_3f then
-        target.beacon = {inc(col), {label, hl.group["label-distant-overlapped"]}}
+        target.beacon = {1, {{label, hl.group["label-distant-overlapped"]}}}
       elseif squeezed_3f then
-        target.beacon = {col, {ch20, hl.group["masked-ch"]}, {label, hl.group["label-distant"]}}
+        target.beacon = {0, {{ch20, hl.group["masked-ch"]}, {label, hl.group["label-distant"]}}}
       else
-        target.beacon = {(col + 2), {label, hl.group["label-distant"]}}
+        target.beacon = {2, {{label, hl.group["label-distant"]}}}
       end
     elseif (_285_ == "inactive") then
       target.beacon = nil
@@ -1268,13 +1268,12 @@ local function light_up_beacons(target_list)
     local beacon = _each_299_["beacon"]
     local _each_300_ = _each_299_["pos"]
     local line = _each_300_[1]
-    local _0 = _each_300_[2]
+    local col = _each_300_[2]
     local _301_ = beacon
-    if ((type(_301_) == "table") and (nil ~= (_301_)[1]) and (nil ~= (_301_)[2]) and true) then
-      local startcol = (_301_)[1]
-      local chunk1 = (_301_)[2]
-      local _3fchunk2 = (_301_)[3]
-      hl["set-extmark"](hl, dec(line), dec(startcol), {virt_text = {chunk1, _3fchunk2}, virt_text_pos = "overlay"})
+    if ((type(_301_) == "table") and (nil ~= (_301_)[1]) and (nil ~= (_301_)[2])) then
+      local offset = (_301_)[1]
+      local chunks = (_301_)[2]
+      hl["set-extmark"](hl, dec(line), dec((col + offset)), {virt_text = chunks, virt_text_pos = "overlay"})
     end
   end
   return nil
@@ -1659,9 +1658,9 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
     end
     _380_ = (get_targets(in1, reverse_3f) or _381_())
     if ((type(_380_) == "table") and ((type((_380_)[1]) == "table") and ((type(((_380_)[1]).pair) == "table") and true and (nil ~= (((_380_)[1]).pair)[2]))) and ((_380_)[2] == nil)) then
+      local only = (_380_)[1]
       local _ = (((_380_)[1]).pair)[1]
       local ch2 = (((_380_)[1]).pair)[2]
-      local only = (_380_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           if dot_repeatable_op_3f then
@@ -1746,9 +1745,9 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
           _395_ = t_396_
         end
         if ((type(_395_) == "table") and ((type((_395_).pair) == "table") and true and (nil ~= ((_395_).pair)[2]))) then
+          local shortcut = _395_
           local _ = ((_395_).pair)[1]
           local ch2 = ((_395_).pair)[2]
-          local shortcut = _395_
           do
             if dot_repeatable_op_3f then
               set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f, x_mode_3f, "dot")))

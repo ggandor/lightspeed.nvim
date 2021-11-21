@@ -750,7 +750,7 @@ ones might be set by subsequent functions):
   ?overlapped? : bool
   ?label       : char
   ?label-state : 'active-primary' | 'active-secondary' | 'inactive'
-  ?beacon      : [col [char hl-group] ?[char hl-group]]
+  ?beacon      : [col-offset [[char hl-group]]]
 "
   (local targets [])
   (var prev-match {})
@@ -914,32 +914,33 @@ sub-table containing label-target k-v pairs for these targets."
                 repeat?]
   (let [[ch1 ch2] (map #(or (. opts.substitute_chars $) $) [ch1 ch2])]
     (set target.beacon
+         ; The `beacon` field looks like: [col-offset [[char hl-group]]]
          (match label-state
            ; No label-state = unlabeled match. (Note: there are no unlabeled
            ; matches when repeating, as we have the full input sequence
            ; available then, and we will have jumped to the first match already
            ; if it was on the "winning" sublist.)
-           nil (if overlapped? [(inc col) [ch2 hl.group.unlabeled-match]]
-                   [col [(.. ch1 ch2) hl.group.unlabeled-match]])
+           nil (if overlapped? [1 [[ch2 hl.group.unlabeled-match]]]
+                   [0 [[(.. ch1 ch2) hl.group.unlabeled-match]]])
 
            ; Note: `repeat?` is also mutually exclusive with both `overlapped?`
            ; and `shortcut?`.
            :active-primary
-           (if repeat? [(+ col (if squeezed? 1 2)) [label hl.group.label]]
+           (if repeat? [(if squeezed? 1 2) [[label hl.group.label]]]
                shortcut? (if overlapped?
-                             [(inc col) [label hl.group.shortcut-overlapped]]
+                             [1 [[label hl.group.shortcut-overlapped]]]
                              (if squeezed?
-                                 [col [ch2 hl.group.masked-ch] [label hl.group.shortcut]]
-                                 [(+ col 2) [label hl.group.shortcut]]))
-               overlapped? [(inc col) [label hl.group.label-overlapped]]
-               squeezed? [col [ch2 hl.group.masked-ch] [label hl.group.label]]
-               [(+ col 2) [label hl.group.label]])
+                                 [0 [[ch2 hl.group.masked-ch] [label hl.group.shortcut]]]
+                                 [2 [[label hl.group.shortcut]]]))
+               overlapped? [1 [[label hl.group.label-overlapped]]]
+               squeezed? [0 [[ch2 hl.group.masked-ch] [label hl.group.label]]]
+               [2 [[label hl.group.label]]])
 
            :active-secondary
-           (if repeat? [(+ col (if squeezed? 1 2)) [label hl.group.label-distant]]
-               overlapped? [(inc col) [label hl.group.label-distant-overlapped]]
-               squeezed? [col [ch2 hl.group.masked-ch] [label hl.group.label-distant]]
-               [(+ col 2) [label hl.group.label-distant]])
+           (if repeat? [(if squeezed? 1 2) [[label hl.group.label-distant]]]
+               overlapped? [1 [[label hl.group.label-distant-overlapped]]]
+               squeezed? [0 [[ch2 hl.group.masked-ch] [label hl.group.label-distant]]]
+               [2 [[label hl.group.label-distant]]])
 
            :inactive nil))))
 
@@ -950,12 +951,12 @@ sub-table containing label-target k-v pairs for these targets."
 
 
 (fn light-up-beacons [target-list]
-  (each [_ {:pos [line _] : beacon} (ipairs target-list)]
+  (each [_ {:pos [line col] : beacon} (ipairs target-list)]
     (match beacon  ; might be nil, if the state is inactive
-      [startcol chunk1 ?chunk2]
+      [offset chunks]
       (hl:set-extmark (dec line)
-                      (dec startcol)
-                      {:virt_text [chunk1 ?chunk2]
+                      (dec (+ col offset))
+                      {:virt_text chunks
                        :virt_text_pos "overlay"}))))
 
 
