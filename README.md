@@ -15,14 +15,16 @@ for choosing among multiple matches. The plugin aims to substitute _all_ native
 commands for in-window navigation (`/`, `?`, `gg`, `f`, etc.) with a uniform,
 _minimal_ set of atomic (repeatable), multi-axis motions.
 
-So far this sounds similar to what
+So far we have more or less described what
 [vim-sneak](https://github.com/justinmk/vim-sneak) does. The game-changing idea
-that takes Lightspeed to the next level, is its "clairvoyant" ability: it maps
-possible futures, and tells you which keys you need to press _before_ you
-actually need to do that.
+in Lightspeed is its "clairvoyant" ability: it maps possible futures, and shows
+you which keys you will need to press _before_ you actually need to do that, so
+despite the use of target labels, you can keep typing in a continuous manner.
+Over 95 percent of the time, you can reach the destination by at most - and very
+often less than - four keystrokes in total, that can be typed _in one go_.
 
-If this sounds magical enough, read on, or watch this [6-minute introductory
-video by DevOnDuty](https://youtu.be/ESyld9NCl1w) first.
+If this sounds cool enough, read on, or watch this [6-minute introductory video
+by DevOnDuty](https://youtu.be/ESyld9NCl1w) first.
 
 ## Sky chart
 
@@ -31,9 +33,7 @@ video by DevOnDuty](https://youtu.be/ESyld9NCl1w) first.
 * [Getting started](#-getting-started)
 * [Usage](#-usage)
 * [Configuration](#-configuration)
-* [Coming sooner or later](#-coming-sooner-or-later)
 * [Why is there no feature X or Y?](#-why-is-there-no-feature-x-or-y)
-* [Goals and non-goals](#-goals-and-non-goals)
 * [Contributing](#-contributing)
 * [Inspired by](#-inspired-by)
 
@@ -148,12 +148,12 @@ about cohesion, conceptual integrity, and reliability. I think of [the latter]
 as the @tpope school."_
 ([justinmk](https://github.com/justinmk/vim-sneak/issues/62#issuecomment-34044380))
 
-* [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
-  the plugin should feel a natural extension to the core, with an interplay as
-  seamless and intuitive as possible
 * [Design is making
   decisions](https://www.infoq.com/presentations/Design-Composition-Performance/):
   mitigate choice paralysis for the user, regarding both usage and configuration
+* [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
+  the plugin should feel a natural extension to the core, with an interplay as
+  seamless and intuitive as possible
 
 ## 📚 An in-depth introduction of the key features
 
@@ -213,7 +213,7 @@ immediate next group is always shown ahead of time too, with a different color,
 so your brain has a bit of time to process the label, even in case of a distant
 group. If the target is right in the second group, you don't even have to think
 in terms of "switching groups" - a blue label should rather be thought of as a
-`<tab>`-prefixed 2-character label. That means we have `2 * number-of-labels`
+`<space>`-prefixed, 2-character label. That means we have `2 * number-of-labels`
 targets right away that are in the efficiently-reachable/low-cognitive-load
 range.
 
@@ -278,6 +278,31 @@ That is,
 In Operator-pending mode the search is invoked with `z`/`Z`, acknowledging that
 "surround" plugins may benefit even more from being able to use `s`/`S` then.
 
+#### A primer on the highlighting strategy
+
+Let's say you would like to jump to an `A` `B` pair, and you have entered `A`,
+the first character of the search pattern.
+
+At that moment, all `A` `?` matches will be highlighted, in different manners
+according to the next step needed to be taken to reach them.
+
+- The directly reachable ones among the `A` `?` matches will be highlighted as
+  they are (with white/black for dark/light themes, respectively). For those, it
+  is enough to finish the pattern, i.e., type `?`, to land on the target.
+
+- Otherwise, in the usual case, a label will appear right next to the second
+  character. These labels can also be [shortcuts](#shortcuts), with a filled
+  background (the inverse of a regular label), that allow for reaching the
+  target right after the first input.
+
+- If a match is too close to the next one, the beacon should be "squeezed" into
+  the original 2-column box of the match; that is, on top of an `A` `?` match, a
+  `?` `label` pair will appear, where the first field shows the character masked
+  by the label (it is shifted left by a column). In the most extreme case, the
+  `?` field can even be overlapped by the label of another match, but only until
+  the second input has not been entered - after that, all overlapped matches are
+  guaranteed to become uncovered.
+
 #### X-mode
 
 `s`/`S` follow the semantics of `/` and `?` in terms of cursor placement and
@@ -323,31 +348,6 @@ search pattern.
 
 A character before EOL can be targeted by pressing `<enter>` after it (indicated
 by `¬` in the highlighted match).
-
-#### A primer on the highlighting strategy
-
-Let's say you would like to jump to an `A` `B` pair, and you have entered `A`,
-the first character of the search pattern.
-
-At that moment, all `A` `?` matches will be highlighted, in different manners
-according to the next step needed to be taken to reach them.
-
-- The directly reachable ones among the `A` `?` matches will be highlighted as
-  they are (with white/black for dark/light themes, respectively). For those, it
-  is enough to finish the pattern, i.e., type `?`, to land on the target.
-
-- Otherwise, in the usual case, a label will appear right next to the second
-  character. These labels can also be [shortcuts](#shortcuts), with a filled
-  background (the inverse of a regular label), that allow for reaching the
-  target right after the first input.
-
-- If a match is too close to the next one, the beacon should be "squeezed" into
-  the original 2-column box of the match; that is, on top of an `A` `?` match, a
-  `?` `label` pair will appear, where the first field shows the character masked
-  by the label (it is shifted left by a column). In the most extreme case, the
-  `?` field can even be overlapped by the label of another match, but only until
-  the second input has not been entered - after that, all overlapped matches are
-  guaranteed to become uncovered.
 
 ### 1-character search (f/t)
 
@@ -573,16 +573,6 @@ only execute for certain ones, etc.
   For `:normal`, you could use the bang-version `:normal!`, although that disables
   all custom mappings, so that is only a half-measure.
 
-## 👀 Coming sooner or later
-
-- There is a _huge_ feature in the making, but do not expect it to land anytime
-  soon: the idea is that the target labels could be chosen, based on a given
-  input sequence, in an optimal way that minimizes typing effort. (This should
-  take the keyboard layout and the preferred fingering into account, obviously.)
-  I am more or less in the planning phase of this, and this might very well turn
-  out to be more complex than the rest of the plugin itself. (Any help is
-  appreciated!)
-
 ## ❔ Why is there no feature X or Y?
 
 ### I miss Sneak's "vertical scope" feature... 
@@ -671,17 +661,6 @@ directions? What do we do when there are not enough labels?
 (In any case, I humbly suggest mapping `<C-w>h/j/k/l` to `<A-h/j/k/l>` first, if
 you have not done that already.)
 
-## ❕ Goals and non-goals
-
-Lightspeed aims to do one thing in a close to perfect manner, that is, helping
-to reach visible targets, while requiring minimal mental effort to operate:
-every design decision has been made with this goal in mind. That means, it is
-not intended to be a general search tool, and neither an EasyMotion-like plugin
-offering a bunch of different commands for specific kinds of targets (lines,
-word beginnings, 3rd-column-form-the-right-of-EOL-modulo-7). Still, I'm eager to
-include any cool idea, if it (1) does not complicate the interface and usage in
-significant ways, and (2) makes navigation actually faster.
-
 ## 🌜 Contributing
 
 Every contribution is very welcome, be it a bug report, fix, or just a
@@ -693,11 +672,11 @@ tracker](https://github.com/ggandor/lightspeed.nvim/issues), be sure to also
 check/use [Discussions](https://github.com/ggandor/lightspeed.nvim/discussions)
 for announcements, simple Q&A, and open-ended brainstorming.
 
-Regarding feature requests and enhancements, consider the "goals" section above
-first. If you have a different vision, feel free to fork the plugin and improve
-upon it in ways you think are best - I am glad to help  -, but I'd like to keep
-this version streamlined, and save it from feature creep. Of course, that
-doesn't mean that I am not open for discussions.
+Regarding feature requests and enhancements, consider the [guiding
+principles](#guiding-principles) first. If you have a different vision, feel
+free to fork the plugin and improve upon it in ways you think are best - I am
+glad to help  -, but I'd like to keep this version streamlined, and save it from
+feature creep. Of course, that doesn't mean that I am not open for discussions.
 
 Lightspeed is written in [Fennel](https://fennel-lang.org/), and compiled to Lua
 ahead of time. I am aware that using Fennel might limit the number of available
