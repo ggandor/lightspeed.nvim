@@ -1196,6 +1196,13 @@ local function set_beacon(_279_, repeat_3f)
   local _let_283_ = map(_284_, {ch1, ch2})
   local ch10 = _let_283_[1]
   local ch20 = _let_283_[2]
+  local masked_char_24 = {ch20, hl.group["masked-ch"]}
+  local label_24 = {label, hl.group.label}
+  local shortcut_24 = {label, hl.group.shortcut}
+  local distant_label_24 = {label, hl.group["label-distant"]}
+  local overlapped_label_24 = {label, hl.group["label-overlapped"]}
+  local overlapped_shortcut_24 = {label, hl.group["shortcut-overlapped"]}
+  local overlapped_distant_label_24 = {label, hl.group["label-distant-overlapped"]}
   do
     local _285_ = label_state
     if (_285_ == nil) then
@@ -1212,23 +1219,23 @@ local function set_beacon(_279_, repeat_3f)
         else
           _287_ = 2
         end
-        target.beacon = {_287_, {{label, hl.group.label}}}
+        target.beacon = {_287_, {label_24}}
       elseif shortcut_3f then
         if overlapped_3f then
-          target.beacon = {1, {{label, hl.group["shortcut-overlapped"]}}}
+          target.beacon = {1, {overlapped_shortcut_24}}
         else
           if squeezed_3f then
-            target.beacon = {0, {{ch20, hl.group["masked-ch"]}, {label, hl.group.shortcut}}}
+            target.beacon = {0, {masked_char_24, shortcut_24}}
           else
-            target.beacon = {2, {{label, hl.group.shortcut}}}
+            target.beacon = {2, {shortcut_24}}
           end
         end
       elseif overlapped_3f then
-        target.beacon = {1, {{label, hl.group["label-overlapped"]}}}
+        target.beacon = {1, {overlapped_label_24}}
       elseif squeezed_3f then
-        target.beacon = {0, {{ch20, hl.group["masked-ch"]}, {label, hl.group.label}}}
+        target.beacon = {0, {masked_char_24, label_24}}
       else
-        target.beacon = {2, {{label, hl.group.label}}}
+        target.beacon = {2, {label_24}}
       end
     elseif (_285_ == "active-secondary") then
       if repeat_3f then
@@ -1238,13 +1245,13 @@ local function set_beacon(_279_, repeat_3f)
         else
           _292_ = 2
         end
-        target.beacon = {_292_, {{label, hl.group["label-distant"]}}}
+        target.beacon = {_292_, {distant_label_24}}
       elseif overlapped_3f then
-        target.beacon = {1, {{label, hl.group["label-distant-overlapped"]}}}
+        target.beacon = {1, {overlapped_distant_label_24}}
       elseif squeezed_3f then
-        target.beacon = {0, {{ch20, hl.group["masked-ch"]}, {label, hl.group["label-distant"]}}}
+        target.beacon = {0, {masked_char_24, distant_label_24}}
       else
-        target.beacon = {2, {{label, hl.group["label-distant"]}}}
+        target.beacon = {2, {distant_label_24}}
       end
     elseif (_285_ == "inactive") then
       target.beacon = nil
@@ -1658,9 +1665,9 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
     end
     _380_ = (get_targets(in1, reverse_3f) or _381_())
     if ((type(_380_) == "table") and ((type((_380_)[1]) == "table") and ((type(((_380_)[1]).pair) == "table") and true and (nil ~= (((_380_)[1]).pair)[2]))) and ((_380_)[2] == nil)) then
-      local only = (_380_)[1]
       local _ = (((_380_)[1]).pair)[1]
       local ch2 = (((_380_)[1]).pair)[2]
+      local only = (_380_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           if dot_repeatable_op_3f then
@@ -1745,9 +1752,9 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
           _395_ = t_396_
         end
         if ((type(_395_) == "table") and ((type((_395_).pair) == "table") and true and (nil ~= ((_395_).pair)[2]))) then
-          local shortcut = _395_
           local _ = ((_395_).pair)[1]
           local ch2 = ((_395_).pair)[2]
+          local shortcut = _395_
           do
             if dot_repeatable_op_3f then
               set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f, x_mode_3f, "dot")))

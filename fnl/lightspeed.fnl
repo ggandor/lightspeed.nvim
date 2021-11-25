@@ -912,35 +912,43 @@ sub-table containing label-target k-v pairs for these targets."
                  : label : label-state : squeezed? : overlapped? : shortcut?
                  &as target}
                 repeat?]
-  (let [[ch1 ch2] (map #(or (. opts.substitute_chars $) $) [ch1 ch2])]
+  (let [[ch1 ch2] (map #(or (. opts.substitute_chars $) $) [ch1 ch2])
+        masked-char$ [ch2 hl.group.masked-ch]
+        label$ [label hl.group.label]
+        shortcut$ [label hl.group.shortcut]
+        distant-label$ [label hl.group.label-distant]
+        overlapped-label$ [label hl.group.label-overlapped]
+        overlapped-shortcut$ [label hl.group.shortcut-overlapped]
+        overlapped-distant-label$ [label hl.group.label-distant-overlapped]]
+    ; The `beacon` field looks like: [col-offset [[char hl-group]]]
     (set target.beacon
-         ; The `beacon` field looks like: [col-offset [[char hl-group]]]
          (match label-state
            ; No label-state = unlabeled match. (Note: there are no unlabeled
            ; matches when repeating, as we have the full input sequence
            ; available then, and we will have jumped to the first match already
            ; if it was on the "winning" sublist.)
-           nil (if overlapped? [1 [[ch2 hl.group.unlabeled-match]]]
+           nil (if overlapped?
+                   [1 [[ch2 hl.group.unlabeled-match]]]
                    [0 [[(.. ch1 ch2) hl.group.unlabeled-match]]])
 
            ; Note: `repeat?` is also mutually exclusive with both `overlapped?`
            ; and `shortcut?`.
            :active-primary
-           (if repeat? [(if squeezed? 1 2) [[label hl.group.label]]]
+           (if repeat? [(if squeezed? 1 2) [label$]]
                shortcut? (if overlapped?
-                             [1 [[label hl.group.shortcut-overlapped]]]
+                             [1 [overlapped-shortcut$]]
                              (if squeezed?
-                                 [0 [[ch2 hl.group.masked-ch] [label hl.group.shortcut]]]
-                                 [2 [[label hl.group.shortcut]]]))
-               overlapped? [1 [[label hl.group.label-overlapped]]]
-               squeezed? [0 [[ch2 hl.group.masked-ch] [label hl.group.label]]]
-               [2 [[label hl.group.label]]])
+                                 [0 [masked-char$ shortcut$]]
+                                 [2 [shortcut$]]))
+               overlapped? [1 [overlapped-label$]]
+               squeezed? [0 [masked-char$ label$]]
+               [2 [label$]])
 
            :active-secondary
-           (if repeat? [(if squeezed? 1 2) [[label hl.group.label-distant]]]
-               overlapped? [1 [[label hl.group.label-distant-overlapped]]]
-               squeezed? [0 [[ch2 hl.group.masked-ch] [label hl.group.label-distant]]]
-               [2 [[label hl.group.label-distant]]])
+           (if repeat? [(if squeezed? 1 2) [distant-label$]]
+               overlapped? [1 [overlapped-distant-label$]]
+               squeezed? [0 [masked-char$ distant-label$]]
+               [2 [distant-label$]])
 
            :inactive nil))))
 
