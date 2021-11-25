@@ -519,14 +519,14 @@ interrupted change-operation."
 
 (fn get-input [?timeout]
   (let [esc-keycode 27
-        char-available? #(not= 0 (vim.fn.getchar 1))
+        char-available? #(not= "" (vim.fn.getcharstr true))
         getchar-timeout #(when (vim.wait ?timeout char-available? 100)
-                           (vim.fn.getchar 0))
+                           (vim.fn.getcharstr false))
         ; pcall for handling <C-c>.
-        (ok? ch) (pcall (if ?timeout getchar-timeout vim.fn.getchar))]
+        (ok? ch) (pcall (if ?timeout getchar-timeout vim.fn.getcharstr))]
     ; <esc> should cleanly exit anytime.
     (when (and ok? (not= ch esc-keycode))
-      (if (= (type ch) :number) (vim.fn.nr2char ch) ch))))
+      ch)))
 
 
 ; repeat.vim support
