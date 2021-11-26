@@ -599,9 +599,6 @@ interrupted change-operation."
         ; us again and again, and be stuck. (Instant-repeat implies that we are
         ; right before a target, so it's fine to simply increment `count` here.)
         count (if (and instant-repeat? t-mode?) (inc count) count)
-        [repeat-key revert-key] (->> [opts.instant_repeat_fwd_key
-                                      opts.instant_repeat_bwd_key]
-                                     (map replace-keycodes))
         op-mode? (operator-pending-mode?)
         dot-repeatable-op? (dot-repeatable-operation?)
         cmd-for-dot-repeat (replace-keycodes
@@ -680,10 +677,12 @@ interrupted change-operation."
                       (let [mode (if (= (vim.fn.mode) :n) :n :x)  ; vim-cutlass compat (#28)
                             repeat? (or (= (vim.fn.maparg in2 mode)
                                            (get-plug-key :ft false t-mode?))
-                                        (= in2 repeat-key))
+                                        (= in2 (replace-keycodes
+                                                 opts.instant_repeat_fwd_key)))
                             revert? (or (= (vim.fn.maparg in2 mode)
                                            (get-plug-key :ft true t-mode?))
-                                        (= in2 revert-key))
+                                        (= in2 (replace-keycodes
+                                                 opts.instant_repeat_bwd_key)))
                             do-instant-repeat? (or repeat? revert?)]
                         (if do-instant-repeat?
                             (do
