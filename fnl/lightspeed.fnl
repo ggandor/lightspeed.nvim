@@ -18,8 +18,8 @@
           (icollect [_ y (ipairs [...])]
             `(= ,x ,y)))))
 
-(macro when-not [condition ...]
-  `(when (not ,condition) ,...))
+(macro when-not [cond ...]
+  `(when (not ,cond) ,...))
 
 (fn inc [x] (+ x 1))
 (fn dec [x] (- x 1))
@@ -589,6 +589,10 @@ interrupted change-operation."
         reverted-instant-repeat? (when instant-repeat? instant.reverted?)
         cold-repeat? (= repeat-invoc :cold)
         dot-repeat? (= repeat-invoc :dot)
+        reverse? (if cold-repeat? (#(if reverse? (not $) $)
+                                    self.state.cold.reverse?)
+                     reverse?)
+        t-mode? (if cold-repeat? self.state.cold.t-mode? t-mode?)
         ; After a reverted repeat , we highlight the next n matches as always,
         ; as per `limit_ft_matches`, but _stay_ where we are. (We have already
         ; moved the cursor back to the previous position on the stack!)
@@ -997,11 +1001,15 @@ sub-table containing label-target k-v pairs for these targets."
         op-mode? (operator-pending-mode?)
         change-op? (change-operation?)
         delete-op? (delete-operation?)
-        dot-repeatable-op? (dot-repeatable-operation?)]
+        dot-repeatable-op? (dot-repeatable-operation?)
+        reverse? (if cold-repeat? (#(if reverse? (not $) $)
+                                    self.state.cold.reverse?)
+                     reverse?)
+        x-mode? (if cold-repeat? self.state.cold.x-mode? invoked-in-x-mode?)]
 
     ; Top-level vars
 
-    (var x-mode? invoked-in-x-mode?)
+    (var x-mode? x-mode?)
     (var enter-repeat? nil)
     (var new-search? nil)
 
@@ -1315,16 +1323,16 @@ sub-table containing label-target k-v pairs for these targets."
      ["<Plug>Lightspeed_t" "ft:go(false, true)"]
      ["<Plug>Lightspeed_T" "ft:go(true, true)"]
 
-     ; "cold" repeat (;/,-like) (note: we should not start the name with ft_ or sx_ if using `hasmapto`)
-     ["<Plug>Lightspeed_;_sx" "sx:go(require'lightspeed'.sx.state.cold['reverse?'], require'lightspeed'.sx.state.cold['x-mode?'], 'cold')"]
-     ["<Plug>Lightspeed_,_sx" "sx:go(not require'lightspeed'.sx.state.cold['reverse?'], require'lightspeed'.sx.state.cold['x-mode?'], 'cold')"]
-
-     ["<Plug>Lightspeed_;_ft" "ft:go(require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
-     ["<Plug>Lightspeed_,_ft" "ft:go(not require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
-
+     ; "cold" repeat (;/,-like) (`x-mode?` and `t-mode?` will be retrieved from `state`)
+     ; Note: we should not start the name with ft_ or sx_ if using `hasmapto`
+     ; (or we might switch to <plug> names like `<plug>(lightspeed-;-sx)`).
+     ["<Plug>Lightspeed_;_sx" "sx:go(false, nil, 'cold')"]
+     ["<Plug>Lightspeed_,_sx" "sx:go(true, nil, 'cold')"]
+     ["<Plug>Lightspeed_;_ft" "ft:go(false, nil, 'cold')"]
+     ["<Plug>Lightspeed_,_ft" "ft:go(true, nil, 'cold')"]
      ; TODO: let these repeat the last one
-     ["<Plug>Lightspeed_;" "ft:go(require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
-     ["<Plug>Lightspeed_," "ft:go(not require'lightspeed'.ft.state.cold['reverse?'], require'lightspeed'.ft.state.cold['t-mode?'], 'cold')"]
+     ["<Plug>Lightspeed_;" "sx:go(false, nil, 'cold')"]
+     ["<Plug>Lightspeed_," "sx:go(true, nil, 'cold')"]
      ])
 
   (each [_ [lhs rhs-call] (ipairs plug-keys)]
