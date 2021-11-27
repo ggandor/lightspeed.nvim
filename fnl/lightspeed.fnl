@@ -576,18 +576,17 @@ interrupted change-operation."
 ; issues than it absorbs, I guess. Time might prove me wrong.
 
 ; State for 1-character search that is persisted between invocations.
-(local ft {:state {:instant {:in nil
-                             :stack []}
-                   :dot {:in nil}
+(local ft {:state {:dot {:in nil}  ; `reverse?` & `t-mode?` are hardcoded into
+                                   ; the dot-repeat command
                    :cold {:in nil
                           :reverse? nil
                           :t-mode? nil}}})
 
 (fn ft.go [self reverse? t-mode? repeat-invoc]
   "Entry point for 1-character search."
-  (let [instant-repeat? (or (= repeat-invoc :instant)
-                            (= repeat-invoc :reverted-instant))
-        reverted-instant-repeat? (= repeat-invoc :reverted-instant)
+  (let [instant-repeat? (= (type repeat-invoc) :table)
+        instant (when instant-repeat? repeat-invoc)
+        reverted-instant-repeat? (when instant-repeat? instant.reverted?)
         cold-repeat? (= repeat-invoc :cold)
         dot-repeat? (= repeat-invoc :dot)
         ; After a reverted repeat , we highlight the next n matches as always,
@@ -602,19 +601,19 @@ interrupted change-operation."
         op-mode? (operator-pending-mode?)
         dot-repeatable-op? (dot-repeatable-operation?)
         cmd-for-dot-repeat (replace-keycodes
-                             (get-plug-key :ft reverse? t-mode? :dot))
-        reset-instant-state #(set self.state.instant {:in nil :stack []})]
+                             (get-plug-key :ft reverse? t-mode? :dot))]
 
     (macro exit [...] `(exit-template :ft false ,...))
     (macro exit-early [...] `(exit-template :ft true ,...))
 
-    (when-not instant-repeat? (enter :ft))
+    (when-not instant-repeat?
+      (enter :ft))
     (when-not repeat-invoc
       (echo "")
       (highlight-cursor)
       (vim.cmd :redraw))
 
-    (match (if instant-repeat? self.state.instant.in
+    (match (if instant-repeat? instant.in
                dot-repeat? self.state.dot.in
                cold-repeat? self.state.cold.in
                (match (or (with-highlight-cleanup (get-input))
@@ -634,7 +633,7 @@ interrupted change-operation."
               ; matches, and do not shift until reaching the end of the group -
               ; it is less disorienting if the "snake" does not move
               ; continuously, on every repeat.
-              stack-size (length self.state.instant.stack)
+              stack-size (if instant-repeat? (length instant.stack) 0)
               group-limit (or opts.limit_ft_matches 0)
               eaten-up (if (= group-limit 0) 0 (% stack-size group-limit))
               remaining (- group-limit eaten-up)
@@ -654,8 +653,7 @@ interrupted change-operation."
                  (or (= match-count 0)
                      ; Just the character in front of us, but no more matches.
                      (and (= match-count 1) instant-repeat? t-mode?)))
-            (exit-early (reset-instant-state)
-                        (echo-not-found in1))
+            (exit-early (echo-not-found in1))
             (do
               (when-not reverted-instant-repeat?
                 (jump-to!* jump-pos
@@ -672,31 +670,26 @@ interrupted change-operation."
                     (vim.cmd :redraw)
                     (match (or (with-highlight-cleanup
                                  (get-input opts.exit_after_idle_msecs.unlabeled))
-                               (exit (reset-instant-state)))
+                               (exit))
                       in2
                       (let [mode (if (= (vim.fn.mode) :n) :n :x)  ; vim-cutlass compat (#28)
                             repeat? (or (= (vim.fn.maparg in2 mode)
                                            (get-plug-key :ft false t-mode?))
                                         (= in2 (replace-keycodes
-                                                 opts.instant_repeat_fwd_key)))
+                                                 (or opts.instant_repeat_fwd_key ""))))
                             revert? (or (= (vim.fn.maparg in2 mode)
                                            (get-plug-key :ft true t-mode?))
                                         (= in2 (replace-keycodes
-                                                 opts.instant_repeat_bwd_key)))
-                            do-instant-repeat? (or repeat? revert?)]
-                        (if do-instant-repeat?
-                            (do
-                              (when-not instant-repeat? (set self.state.instant.in in1))
-                              (if revert? (match (table.remove self.state.instant.stack)
+                                                 (or opts.instant_repeat_bwd_key ""))))
+                            invoke-instant-repeat? (or repeat? revert?)]
+                        (if invoke-instant-repeat?
+                            (let [stack (if instant-repeat? instant.stack [])]
+                              (if revert? (match (table.remove stack)
                                             ; Moving the cursor!
                                             old-pos (vim.fn.cursor old-pos))
-                                  repeat? (table.insert self.state.instant.stack
-                                                        (get-cursor-pos)))
-                              (ft:go reverse? t-mode? (if revert?
-                                                          :reverted-instant
-                                                          :instant)))
-                            (exit (reset-instant-state)
-                                  (vim.fn.feedkeys in2 :i)))))))))))))
+                                  repeat? (table.insert stack (get-cursor-pos)))
+                              (ft:go reverse? t-mode? {:in in1 : stack :reverted? revert?}))
+                            (exit (vim.fn.feedkeys in2 :i)))))))))))))
 
 
 ; The workaround described in :h lightspeed-custom-ft-repeat-mappings used these fields.
