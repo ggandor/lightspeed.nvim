@@ -1,4 +1,4 @@
-*lightspeed.txt*      For Neovim version 0.5       Last change: 2021 November 16
+*lightspeed.txt*     For Neovim version 0.5.1      Last change: 2021 November 30
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -37,7 +37,7 @@ settings:
 
 `s|S <c-x>? char1 (char2|label)? (<space>|<tab>)* label?`
 
-That is, 
+That is,
 - invoke in the forward (`s`) or backward (`S`) direction
 - optionally turn on X-mode (extend/exclude)
 - enter 1st character of the search pattern (might short-circuit after this,
@@ -91,8 +91,6 @@ previous position - before the previous match -, allowing for an easy
 correction when you accidentally overshoot your target.
 
 This "instant-repeat" mode is active until you type any other character.
-
-To specify custom keys for triggering instant-repeat, see |lightspeed-config|.
 
 If you would like to keep using `;` and `,` (or some other pair of keys) to be
 able to trigger repeat in the native way ("cold" repeat after finishing
@@ -232,17 +230,6 @@ f/t-specific options~
     For 1-character search, the next 'n' matches will be highlighted after
     [count]. Highlighting matches can be turned off altogether by setting the
     value to 0 or `nil`.
-
-`instant_repeat_fwd_key = nil`
-`instant_repeat_bwd_key = nil`
-
-    Custom keys to trigger instant-repeat and revert. These will only be
-    "hijacked" while 1-character search is active, so you are free to use any
-    key here, the original mappings will not be disturbed.
-
-    Note: If you would like to keep using `;` and `,` to trigger repeat
-          at any time, even after `ft:go` has finished executing, see
-          |lightspeed-custom-mappings|.
 <
 ==============================================================================
 DEFAULT MAPPINGS                                   *lightspeed-default-mappings*
@@ -314,21 +301,21 @@ CUSTOM MAPPINGS                                     *lightspeed-custom-mappings*
 method calls. If you are not familiar with the concept, see |<Plug>| and
 |using-<Plug>|.
 
+Note: Be sure to use `-map`, and not `-noremap`, for <Plug> mappings, as they
+      should be used recursively, by design.
+
 Available <Plug> keys for all modes (pattern length, direction,
 motion/operation semantics):
 
-`<Plug>Lightspeed_s`  2-character  forward   /-like
-`<Plug>Lightspeed_S`  2-character  backward  ?-like
-`<Plug>Lightspeed_x`  2-character  forward   X-mode
-`<Plug>Lightspeed_X`  2-character  backward  X-mode
+`<Plug>Lightspeed_s`  2-character  forward   /-like (0,  exclusive op)
+`<Plug>Lightspeed_S`  2-character  backward  ?-like (0,  exclusive op)
+`<Plug>Lightspeed_x`  2-character  forward          (+1, inclusive op)
+`<Plug>Lightspeed_X`  2-character  backward         (+2, exclusive op)
 
-`<Plug>Lightspeed_f`  1-character  forward   f-like
-`<Plug>Lightspeed_F`  1-character  backward  F-like
-`<Plug>Lightspeed_t`  1-character  forward   t-like
-`<Plug>Lightspeed_T`  1-character  backward  T-like
-
-Note: Be sure _not_ to use `-noremap`, as <Plug> mappings should be used
-      recursively, by design.
+`<Plug>Lightspeed_f`  1-character  forward   f-like (0,  inclusive op)
+`<Plug>Lightspeed_F`  1-character  backward  F-like (0,  exclusive op)
+`<Plug>Lightspeed_t`  1-character  forward   t-like (-1, inclusive op)
+`<Plug>Lightspeed_T`  1-character  backward  T-like (+1, exclusive op)
 
 The following correspond to the native `;` and `,` ("cold" repeat):
 
@@ -337,9 +324,20 @@ The following correspond to the native `;` and `,` ("cold" repeat):
 `<Plug>Lightspeed_;_ft`
 `<Plug>Lightspeed_,_ft`
 
-Note: These are currently experimental and might be changed or removed in the
-      future.
-
+If you would like to use the f/t repeat keys only for instant repeat, you can
+easily do that with help of an expression mapping (|map-<expr>|):
+>
+    " set up a flag first
+    augroup lightspeed_flag
+    autocmd!
+    autocmd User LightspeedFtEnter let g:lightspeed_active = 1
+    autocmd User LightspeedFtLeave unlet g:lightspeed_active
+    augroup end
+    " Note that you can wrap the whole right-hand-side expression in a
+    " function if you want.
+    nmap <expr> ; exists('g:lightspeed_active') ? "<Plug>Lightspeed_;_ft" : '...'
+    nmap <expr> , exists('g:lightspeed_active') ? "<Plug>Lightspeed_,_ft" : '...'
+<
 For 2-character search, the keys for cycling between groups of matches, and
 the prefix triggering X-mode can be set in the `opts` table, see
 |lightspeed-config|.
@@ -348,9 +346,9 @@ the prefix triggering X-mode can be set in the `opts` table, see
 Lightspeed does not remap any keys for which there is a custom mapping already
 defined. If you wish to preserve the _native_ behaviour of some of the keys,
 for example f/F/t/T, simply unmap the given keys after the plugin has been
-loaded (either `nnoremap f f` or `silent! unmap f`, for each), or
-equivalently, map anything unused to the corresponding <Plug> keys, before the
-plugin has been loaded.
+loaded (either `noremap f f` or `silent! unmap f`, for each), or equivalently,
+map anything unused to the corresponding <Plug> keys, before the plugin has
+been loaded.
 
 ==============================================================================
 HIGHLIGHTING                                              *lightspeed-highlight*

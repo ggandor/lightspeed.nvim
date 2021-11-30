@@ -2,6 +2,7 @@
 
 (local api vim.api)
 (local empty? vim.tbl_isempty)
+(local contains? vim.tbl_contains)
 (local map vim.tbl_map)
 (local min math.min)
 (local max math.max)
@@ -147,14 +148,68 @@ character instead."
         :x_mode_prefix_key "<c-x>"
         ; f/t
         :limit_ft_matches 4
-        :instant_repeat_fwd_key nil
-        :instant_repeat_bwd_key nil
-        ; deprecated (still valid)
-        ; :full_incusive_prefix_key "<c-x>"
+
+        ; deprecated (still valid) 
+        ; :full_inclusive_prefix_key
         }))
 
+
+(local deprecated-opts [:instant_repeat_fwd_key
+                        :instant_repeat_bwd_key])
+
+
+(fn get-deprec-msg [arg-fields]
+  (let [msg [["ligthspeed.nvim\n" :Question]
+             ["You are trying to set or access deprecated fields in the "]
+             ["opts" :Visual] [" table:\n\n"]]
+
+        field-names (icollect [_ field (ipairs arg-fields)]
+                      [(.. "\t" field "\n")])
+        
+        msg-for-instant-repeat-keys
+        [["There are dedicated "] ["<Plug>" :Visual] [" keys available for native-like "]
+         [";" :Visual] [" and "] ["," :Visual] [" functionality now, "]
+         ["that can also be used for instant repeat only, if you prefer. See "]
+         [":h lightspeed-custom-mappings" :Visual] ["."]]
+
+        spec-messages
+        {:instant_repeat_fwd_key msg-for-instant-repeat-keys
+         :instant_repeat_bwd_key msg-for-instant-repeat-keys}]
+    (each [_ field-name-chunk (ipairs field-names)]
+      (table.insert msg field-name-chunk))
+    (table.insert msg ["\n"])
+    (each [field spec-msg (pairs spec-messages)]
+      (when (contains? arg-fields field)
+        (table.insert msg [(.. field "\n") :IncSearch])
+        (each [_ chunk (ipairs spec-msg)]
+          (table.insert msg chunk))
+        (table.insert msg ["\n\n"])))
+  msg))
+
+
+; Prevent setting or accessing deprecated fields directly.
+(let [guard (fn [t k]
+              (when (contains? deprecated-opts k)
+                (api.nvim_echo (get-deprec-msg [k]) true {})))]
+  (setmetatable opts {:__index guard
+                      :__newindex guard}))
+
+
+; Prevent setting deprecated fields via the `setup` function.
+(fn normalize-opts [opts]
+  (let [deprecated-arg-opts []]
+    (each [k v (pairs opts)]
+      (when (contains? deprecated-opts k)
+        (table.insert deprecated-arg-opts k)
+        (tset opts k nil)))
+    (when-not (empty? deprecated-arg-opts)
+      (api.nvim_echo (get-deprec-msg deprecated-arg-opts) true {}))
+    opts))
+
+
 (fn setup [user-opts]
-  (set opts (setmetatable user-opts {:__index opts})))
+  (set opts (-> (normalize-opts user-opts)
+                (setmetatable {:__index opts}))))
 
 
 ; Highlight ///1
@@ -623,22 +678,25 @@ interrupted change-operation."
     (fn get-followup-action [in from-reverse-cold-repeat?]
       (let [mode (if (= (vim.fn.mode) :n) :n :x)  ; vim-cutlass compat (#28)
                                                   ; (note: non-OP mode assumed)
-            mapped-to (vim.fn.maparg in mode)]
-        ; TODO: Handle <a-?> keys, i.e., those with multibyte representation
-        ;       (`maparg` breaks on them, and we cannot convert `in` _to_ a
-        ;       keycode, so it's not trivial).
-        (if (or (= mapped-to (if from-reverse-cold-repeat?
+            ; TODO: Handle <a-?> keys, i.e., those with multibyte representation
+            ;       (`maparg` breaks on them, and we cannot convert `in` _to_ a
+            ;       keycode, so it's not trivial. Related: Vim #1810.)
+            rhs (vim.fn.maparg in mode)
+            ; `rhs` might be an expression mapping.
+            (ok? eval-rhs) (pcall vim.fn.eval rhs)
+            in-mapped-to (if (and ok? (= (type eval-rhs) :string)) eval-rhs rhs)]
+        (if (or (= in-mapped-to (get-plug-key :ft false t-mode?))
+                (string.find in-mapped-to
+                             (if from-reverse-cold-repeat?
                                  "<Plug>Lightspeed_,_ft"
-                                 "<Plug>Lightspeed_;_ft"))
-                (= mapped-to (get-plug-key :ft false t-mode?))
-                (= in (replace-keycodes (or opts.instant_repeat_fwd_key ""))))
+                                 "<Plug>Lightspeed_;_ft")))
             :repeat
 
-            (or (= mapped-to (if from-reverse-cold-repeat?
+            (or (= in-mapped-to (get-plug-key :ft true t-mode?))
+                (string.find in-mapped-to
+                             (if from-reverse-cold-repeat?
                                  "<Plug>Lightspeed_;_ft"
-                                 "<Plug>Lightspeed_,_ft"))
-                (= mapped-to (get-plug-key :ft true t-mode?))
-                (= in (replace-keycodes (or opts.instant_repeat_bwd_key ""))))
+                                 "<Plug>Lightspeed_,_ft")))
             :revert)))
 
     ;;;

@@ -367,15 +367,8 @@ This "instant-repeat" mode is active until you type any other character.
 
 By default, `;` and `,` are not utilized by the plugin anymore - you are free to
 remap them to more useful things (`:` and `localleader` are great contenders).
-If you are too used to the native Vim way, and want to keep using them for
-repeating, there are two different possibilities. First, you can specify custom
-keys for instant-repeat in the `opts` table. The keys will be temporarily
-hijacked by the plugin then, but their actual mappings will not be disturbed, so
-you can use them in multiple roles. If you would like the keys to actually
-restart the search and trigger repeat at any time, even after the plugin has
-finished executing (similar to the native behaviour), there are dedicated
-`<Plug>` keys available for that. See the configuration section for both
-options.
+If you are too used to the native Vim way, there are dedicated `<Plug>` keys
+available to emulate that - see `:h lightspeed-custom-keymaps`.
 
 ### Repeating motions
 
@@ -419,8 +412,6 @@ require'lightspeed'.setup {
 
   -- f/t
   limit_ft_matches = 4,
-  instant_repeat_fwd_key = nil,
-  instant_repeat_bwd_key = nil,
 }
 ```
 
@@ -451,19 +442,19 @@ To set alternative keymaps, you can use the following `<Plug>` keys in all modes
 (pattern length, direction, motion/operation semantics):
 
 ```
-<Plug>Lightspeed_s  -  2-character  forward   /-like
-<Plug>Lightspeed_S  -  2-character  backward  ?-like
-<Plug>Lightspeed_x  -  2-character  forward   X-mode
-<Plug>Lightspeed_X  -  2-character  backward  X-mode
-
-<Plug>Lightspeed_f  -  1-character  forward   f-like
-<Plug>Lightspeed_F  -  1-character  backward  F-like
-<Plug>Lightspeed_t  -  1-character  forward   t-like
-<Plug>Lightspeed_T  -  1-character  backward  T-like
+<Plug>Lightspeed_s  -  2-character  forward   /-like (0,  exclusive op)
+<Plug>Lightspeed_S  -  2-character  backward  ?-like (0,  exclusive op)
+<Plug>Lightspeed_x  -  2-character  forward          (+1, inclusive op)
+<Plug>Lightspeed_X  -  2-character  backward         (+2, exclusive op)
+                                                                       
+<Plug>Lightspeed_f  -  1-character  forward   f-like (0,  inclusive op)
+<Plug>Lightspeed_F  -  1-character  backward  F-like (0,  exclusive op)
+<Plug>Lightspeed_t  -  1-character  forward   t-like (-1, inclusive op)
+<Plug>Lightspeed_T  -  1-character  backward  T-like (+1, exclusive op)
 ```
 
-(Note: `<Plug>` keys need to be mapped to recursively by design, do not use
-`-noremap` for them.)
+(Note: Be sure to use `-map`, and not `-noremap`, for `<Plug>` mappings, as they
+should be used recursively, by design.)
 
 The following keys are also available to emulate the native `;` and `,`
 functionality ("cold" repeat).
@@ -478,11 +469,14 @@ behaviours are fixed yet._
 <Plug>Lightspeed_,_ft
 ```
 
+If you would like to use the f/t repeat keys only for instant repeat, you can do
+that with an expression mapping. See `h: lightspeed-custom-mappings`.
+
 It is considered an exceptional request if one would like to revert to the
 native behaviour of certain keys, that is, would not like to use some search
 mode of the plugin at all; but in that case, all they have to do is to unmap the
-relevant keys after the plugin has been sourced (`nnoremap f f` or `silent!
-unmap f` for each).
+relevant keys after the plugin has been sourced (`noremap f f` or `silent! unmap
+f` for each).
 
 ### User events
 
