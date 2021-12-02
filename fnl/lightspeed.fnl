@@ -134,7 +134,8 @@ character instead."
                "u" "t"
                "m" "v" "c" "a" "." "z"
                "/" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
-       {:exit_after_idle_msecs {:labeled 1500 :unlabeled 1000}
+       {:exit_after_idle_msecs {:labeled nil
+                                :unlabeled 1000}
         ; s/x
         :grey_out_search_area true
         :highlight_unique_chars true
@@ -1263,8 +1264,7 @@ sub-table containing label-target k-v pairs for these targets."
           (with-highlight-chores (light-up-beacons sublist start-idx))
           (match (with-highlight-cleanup
                    (get-input (when initial-invoc?
-                                (. opts :exit_after_idle_msecs
-                                   (if instant-repeat? :unlabeled :labeled)))))
+                                opts.exit_after_idle_msecs.labeled)))
             input
             (if (and sublist.autojump? opts.labels (not (empty? opts.labels))) 
                 ; Non-empty `labels` means auto-jump has been set heuristically

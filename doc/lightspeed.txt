@@ -150,11 +150,11 @@ Setting multiple options via the `setup` function: >
 
 Common options~
 
-`exit_after_idle_msecs = { labeled = 1500, unlabeled = 1000 }`
+`exit_after_idle_msecs = { labeled = nil, unlabeled = 1000 }`
 
     Timeout value, in milliseconds, after which the plugin should exit
-    unconditionally. (`unlabeled` refers to f/t-mode, and "cold-repeating" s/x
-    searches.) The feature can be disabled by setting the given value to `nil`.
+    unconditionally (`unlabeled` refers to f/t-mode). The feature can be
+    disabled by setting the given value to `nil`.
 
 s/x-specific options~
 

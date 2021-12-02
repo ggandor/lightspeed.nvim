@@ -420,7 +420,7 @@ defaults.)
 
 ```Lua
 require'lightspeed'.setup {
-  exit_after_idle_msecs = { labeled = 1500, unlabeled = 1000 },
+  exit_after_idle_msecs = { labeled = nil, unlabeled = 1000 },
 
   -- s/x
   grey_out_search_area = true,
