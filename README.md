@@ -44,7 +44,6 @@ by DevOnDuty](https://youtu.be/ESyld9NCl1w) first.
   integrations](#guidelines-for-colorscheme-integrations)
 * [Enforce the default highlighting if a colorscheme messes things
   up](#enforce-the-default-highlighting)
-* [Using ;/, to repeat f/t](#1-character-search-ft)
 * [Multi-line f/t motions VS macros and :normal](#notes)
 * [Using the plugin together with
   vim-surround](https://github.com/ggandor/lightspeed.nvim/discussions/83)
@@ -367,7 +366,7 @@ same way as the native ones.
 
 ### Repeating motions
 
-Repeating in Lightspeed works in a uniform way accross all motions - all of the
+Repeating in Lightspeed works in a uniform way across all motions - all of the
 following methods (and even combinations of them) are valid options:
 
 #### "Instant" repeat
@@ -397,8 +396,8 @@ following methods (and even combinations of them) are valid options:
   behaviour). If you would like to set `;` and `,` to repeat the last Lightspeed
   motion (whether it was s/x or f/t), see `:h lightspeed-custom-mappings`.
 
-- Note that for s/x motions _the labels will remain available_ even after
-  entering instant-repeat mode.
+Note that for s/x motions the labels will remain available during the whole
+time, even after entering instant-repeat mode.
 
 #### Dot-repeat
 
@@ -439,6 +438,7 @@ require'lightspeed'.setup {
 
   -- f/t
   limit_ft_matches = 4,
+  repeat_ft_with_target_char = false,
 }
 ```
 
@@ -479,11 +479,11 @@ To set alternative keymaps, you can use the following `<Plug>` keys in all modes
 <Plug>Lightspeed_t      1-character  forward   t-like (-1, inclusive op)
 <Plug>Lightspeed_T      1-character  backward  T-like (+1, exclusive op)
 
-" Repeat, or revert the opposite key
+Repeat, or revert the opposite key
 <Plug>Lightspeed_;_sx
 <Plug>Lightspeed_;_ft
 
-" Repeat in the reverse direction, or revert the opposite key
+Repeat in the reverse direction, or revert the opposite key
 <Plug>Lightspeed_,_sx
 <Plug>Lightspeed_,_ft
 ```
