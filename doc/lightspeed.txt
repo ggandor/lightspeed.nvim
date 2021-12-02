@@ -1,4 +1,4 @@
-*lightspeed.txt*     For Neovim version 0.5.1      Last change: 2021 December 02
+*lightspeed.txt*     For Neovim version 0.5.0      Last change: 2021 December 02
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
