@@ -127,13 +127,13 @@ character instead."
        (local safe-labels 
               ["s" "f" "n"
                "u" "t"
-               "/" "S" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
+               "/" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
        (local labels
               ["s" "f" "n"
                "j" "k" "l" "o" "i" "w" "e" "h" "g"
                "u" "t"
-               "m" "v" "c" ";" "a" "." "z"
-               "/" "S" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
+               "m" "v" "c" "a" "." "z"
+               "/" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
        {:exit_after_idle_msecs {:labeled 1500 :unlabeled 1000}
         ; s/x
         :grey_out_search_area true
@@ -148,6 +148,7 @@ character instead."
         :x_mode_prefix_key "<c-x>"
         ; f/t
         :limit_ft_matches 4
+        :repeat_ft_with_target_char false
 
         ; deprecated (still valid) 
         ; :full_inclusive_prefix_key
@@ -537,8 +538,8 @@ interrupted change-operation."
 (fn enter [mode]
   (doau-when-exists :LightspeedEnter)
   (match mode
-    :sx (doau-when-exists :LightspeedSxEnter)
-    :ft (doau-when-exists :LightspeedFtEnter)))
+    :ft (doau-when-exists :LightspeedFtEnter)
+    :sx (doau-when-exists :LightspeedSxEnter)))
 
 
 ; Note: One of the main purpose of these macros, besides wrapping cleanup stuff,
@@ -560,8 +561,8 @@ interrupted change-operation."
      ; an additional `do` - else only sees the first item.)
      (do ,...)
      ,(match mode
-        :sx `(doau-when-exists :LightspeedSxLeave)
-        :ft `(doau-when-exists :LightspeedFtLeave))
+        :ft `(doau-when-exists :LightspeedFtLeave)
+        :sx `(doau-when-exists :LightspeedSxLeave))
      (doau-when-exists :LightspeedLeave)
      nil))
 
@@ -675,7 +676,7 @@ interrupted change-operation."
         ; Switch to next group if no remaining matches.
         (if (= remaining 0) group-limit remaining)))
 
-    (fn get-followup-action [in from-reverse-cold-repeat?]
+    (fn get-followup-action [in from-reverse-cold-repeat? target-char]
       (let [mode (if (= (vim.fn.mode) :n) :n :x)  ; vim-cutlass compat (#28)
                                                   ; (note: non-OP mode assumed)
             ; TODO: Handle <a-?> keys, i.e., those with multibyte representation
@@ -685,18 +686,22 @@ interrupted change-operation."
             ; `rhs` might be an expression mapping.
             (ok? eval-rhs) (pcall vim.fn.eval rhs)
             in-mapped-to (if (and ok? (= (type eval-rhs) :string)) eval-rhs rhs)]
-        (if (or (= in-mapped-to (get-plug-key :ft false t-mode?))
+        (if (or (when opts.repeat_ft_with_target_char (= in target-char))
+                (= in "\r")
+                (= in-mapped-to (get-plug-key :ft false t-mode?))
                 (string.find in-mapped-to
                              (if from-reverse-cold-repeat?
                                  "<Plug>Lightspeed_,_ft"
                                  "<Plug>Lightspeed_;_ft")))
             :repeat
 
-            (or (= in-mapped-to (get-plug-key :ft true t-mode?))
-                (string.find in-mapped-to
-                             (if from-reverse-cold-repeat?
-                                 "<Plug>Lightspeed_;_ft"
-                                 "<Plug>Lightspeed_,_ft")))
+            (when instant-repeat?
+              (or (= in "\t")
+                  (= in-mapped-to (get-plug-key :ft true t-mode?))
+                  (string.find in-mapped-to
+                               (if from-reverse-cold-repeat?
+                                   "<Plug>Lightspeed_;_ft"
+                                   "<Plug>Lightspeed_,_ft"))))
             :revert)))
 
     ;;;
@@ -766,7 +771,7 @@ interrupted change-operation."
                             from-reverse-cold-repeat?
                             (if instant-repeat? instant-state.from-reverse-cold-repeat?
                                 (and cold-repeat? invoked-as-reverse?))]
-                        (match (get-followup-action in2 from-reverse-cold-repeat?)
+                        (match (get-followup-action in2 from-reverse-cold-repeat? in1)
                           :repeat (do (table.insert stack (get-cursor-pos))
                                       (ft:go reverse? t-mode?
                                              {:in in1 : stack :reverted? false
@@ -921,7 +926,7 @@ implicit attribute of the target - whether and how it should actually be
 displayed depends on `label-state`."
   (each [_ sublist (pairs targets.sublists)]
     (when (> (length sublist) 1)  ; else we'll jump automatically anyway
-      (let [labels (get-labels sublist)]
+      (let [labels (get-labels sublist)]  ; sets :autojump? (!)
         (each [i target (ipairs sublist)]
           (tset target
                 :label
@@ -989,7 +994,7 @@ sub-table containing label-target k-v pairs for these targets."
 (fn set-beacon [{:pos [_ col] :pair [ch1 ch2]
                  : label : label-state : squeezed? : overlapped? : shortcut?
                  &as target}
-                repeat?]
+                repeat]
   (let [[ch1 ch2] (map #(or (. opts.substitute_chars $) $) [ch1 ch2])
         masked-char$ [ch2 hl.group.masked-ch]
         label$ [label hl.group.label]
@@ -1001,18 +1006,19 @@ sub-table containing label-target k-v pairs for these targets."
     ; The `beacon` field looks like: [col-offset [[char hl-group]]]
     (set target.beacon
          (match label-state
-           ; No label-state = unlabeled match. (Note: there are no unlabeled
-           ; matches when repeating, as we have the full input sequence
-           ; available then, and we will have jumped to the first match already
-           ; if it was on the "winning" sublist.)
-           nil (if overlapped?
-                   [1 [[ch2 hl.group.unlabeled-match]]]
-                   [0 [[(.. ch1 ch2) hl.group.unlabeled-match]]])
+           ; No label-state = unlabeled match. (Note: there should be no
+           ; unlabeled matches when repeating, as we have the full input
+           ; sequence available then, and we will have jumped to the first
+           ; match already, if it was on the "winning" sublist.)
+           nil (when-not repeat
+                 (if overlapped?
+                     [1 [[ch2 hl.group.unlabeled-match]]]
+                     [0 [[(.. ch1 ch2) hl.group.unlabeled-match]]]))
 
-           ; Note: `repeat?` is also mutually exclusive with both `overlapped?`
-           ; and `shortcut?`.
+           ; Note: `repeat` is also mutually exclusive with both
+           ; `overlapped?` and `shortcut?`.
            :active-primary
-           (if repeat? [(if squeezed? 1 2) [label$]]
+           (if repeat [(if squeezed? 1 2) [shortcut$]]
                shortcut? (if overlapped?
                              [1 [overlapped-shortcut$]]
                              (if squeezed?
@@ -1023,7 +1029,7 @@ sub-table containing label-target k-v pairs for these targets."
                [2 [label$]])
 
            :active-secondary
-           (if repeat? [(if squeezed? 1 2) [distant-label$]]
+           (if repeat [(if squeezed? 1 2) [distant-label$]]
                overlapped? [1 [overlapped-distant-label$]]
                squeezed? [0 [masked-char$ distant-label$]]
                [2 [distant-label$]])
@@ -1031,19 +1037,20 @@ sub-table containing label-target k-v pairs for these targets."
            :inactive nil))))
 
 
-(fn set-beacons [target-list {: repeat?}]
+(fn set-beacons [target-list {: repeat}]
   (each [_ target (ipairs target-list)]
-    (set-beacon target repeat?)))
+    (set-beacon target repeat)))
 
 
-(fn light-up-beacons [target-list]
-  (each [_ {:pos [line col] : beacon} (ipairs target-list)]
-    (match beacon  ; might be nil, if the state is inactive
-      [offset chunks]
-      (hl:set-extmark (dec line)
-                      (dec (+ col offset))
-                      {:virt_text chunks
-                       :virt_text_pos "overlay"}))))
+(fn light-up-beacons [target-list ?start-idx]
+  (for [i (or ?start-idx 1) (length target-list)]
+    (let [{:pos [line col] : beacon} (. target-list i)]
+      (match beacon  ; might be nil, if the state is inactive
+        [offset chunks]
+        (hl:set-extmark (dec line)
+                        (dec (+ col offset))
+                        {:virt_text chunks
+                         :virt_text_pos "overlay"})))))
 
 
 (fn get-target-with-active-primary-label [target-list input]
@@ -1078,13 +1085,17 @@ sub-table containing label-target k-v pairs for these targets."
 
 (fn sx.go [self reverse? invoked-in-x-mode? repeat-invoc]
   "Entry point for 2-character search."
-  (let [dot-repeat? (= repeat-invoc :dot)
-        cold-repeat? (= repeat-invoc :cold)
-        op-mode? (operator-pending-mode?)
+  (let [op-mode? (operator-pending-mode?)
         change-op? (change-operation?)
         delete-op? (delete-operation?)
         dot-repeatable-op? (dot-repeatable-operation?)
-        reverse? (if cold-repeat? (#(if reverse? (not $) $)
+        ; TODO: DRY
+        instant-repeat? (= (type repeat-invoc) :table)
+        instant-state (when instant-repeat? repeat-invoc)
+        cold-repeat? (= repeat-invoc :cold)
+        dot-repeat? (= repeat-invoc :dot)
+        invoked-as-reverse? reverse?
+        reverse? (if cold-repeat? (#(if invoked-as-reverse? (not $) $)
                                     self.state.cold.reverse?)
                      reverse?)
         x-mode? (if cold-repeat? self.state.cold.x-mode? invoked-in-x-mode?)]
@@ -1109,14 +1120,16 @@ sub-table containing label-target k-v pairs for these targets."
     (macro exit-early [...] `(exit-template :sx true ,...))
 
     (macro with-highlight-chores [...]
-      `(do (when (and opts.grey_out_search_area (not cold-repeat?))
+      `(do (when (and opts.grey_out_search_area
+                      (not (or cold-repeat? instant-repeat?)))
              (grey-out-search-area reverse?))
            (do ,...)
            (highlight-cursor)
            (vim.cmd :redraw)))
 
     (fn get-first-input []
-      (if dot-repeat? (do (set x-mode? self.state.dot.x-mode?)
+      (if instant-repeat? instant-state.in1
+          dot-repeat? (do (set x-mode? self.state.dot.x-mode?)
                           self.state.dot.in1)
           cold-repeat? self.state.cold.in1
           (match (or (with-highlight-cleanup (get-input))
@@ -1164,7 +1177,8 @@ sub-table containing label-target k-v pairs for these targets."
                (fn [target]
                  (let [adjusted-pos
                        (jump-to!* target
-                                  {:add-to-jumplist? first-jump?
+                                  {:add-to-jumplist? (and first-jump?
+                                                          (not instant-repeat?))
                                    : reverse?
                                    :inclusive-motion? (and x-mode? (not reverse?))
                                    :adjust (when x-mode?
@@ -1217,51 +1231,60 @@ sub-table containing label-target k-v pairs for these targets."
               (when-not (empty? rest) rest)
               sublist))))
 
-    ; In case of "cold" repeat, we just wait for another input and
-    ; unconditionally feed it, to be able to highlight the remaining
-    ; matches in a clean way.
-    (fn after-cold-repeat [target-list]
-      (when-not op-mode?
-        (with-highlight-chores
-          (each [_ {:pos [line col]} (ipairs target-list)]
-            (hl:add-hl hl.group.one-char-match (dec line) (dec col) (inc col))))
-        (-> (or (with-highlight-cleanup 
-                  (get-input opts.exit_after_idle_msecs.unlabeled))
-                "")
-            (vim.fn.feedkeys :i))))
+    (fn get-followup-action [in from-reverse-cold-repeat?]
+      (let [mode (if (= (vim.fn.mode) :n) :n :x)
+            ; See ft:go. (TODO: DRY)
+            rhs (vim.fn.maparg in mode)
+            (ok? eval-rhs) (pcall vim.fn.eval rhs)
+            in-mapped-to (if (and ok? (= (type eval-rhs) :string)) eval-rhs rhs)]
+        (if (or (= in "\r")
+                (= in-mapped-to (get-plug-key :sx false x-mode?))
+                (string.find in-mapped-to
+                             (if from-reverse-cold-repeat?
+                                 "<Plug>Lightspeed_,_sx"
+                                 "<Plug>Lightspeed_;_sx")))
+            :repeat
 
-    (fn get-last-input [sublist]
-      (local [cycle-fwd-key cycle-bwd-key]
-             (->> [opts.cycle_group_fwd_key opts.cycle_group_bwd_key]
-                  (map replace-keycodes)))
-      ((fn recur [group-offset initial-invoc?]
-         (set-beacons sublist {:repeat? enter-repeat?})
-         (with-highlight-chores (light-up-beacons sublist))
-         (match (with-highlight-cleanup
-                  (get-input (when initial-invoc?
-                               opts.exit_after_idle_msecs.labeled)))
-           input
-           (if (and sublist.autojump?
-                    ; Non-empty `labels` means auto-jump has been set
-                    ; heuristically (not forced), implying that there are no
-                    ; subsequent groups.
-                    opts.labels
-                    (not (empty? opts.labels))) 
-               [input 0]
+            (when instant-repeat?
+              (or (= in "\t")
+                  (= in-mapped-to (get-plug-key :sx true x-mode?))
+                  (string.find in-mapped-to
+                               (if from-reverse-cold-repeat?
+                                   "<Plug>Lightspeed_;_sx"
+                                   "<Plug>Lightspeed_,_sx"))))
+            :revert)))
 
-               (one-of? input cycle-fwd-key cycle-bwd-key)
-               (let [labels (get-labels sublist)
-                     num-of-groups (ceil (/ (length sublist) (length labels)))
-                     max-offset (dec num-of-groups)
-                     group-offset* (-> group-offset
-                                       ((match input cycle-fwd-key inc _ dec))
-                                       (clamp 0 max-offset))]
-                 (set-label-states-for-sublist
-                   sublist {:group-offset group-offset*})
-                 (recur group-offset*))
+    (fn get-last-input [sublist start-idx]
+      (let [next_group_key (replace-keycodes opts.cycle_group_fwd_key)
+            prev_group_key (replace-keycodes opts.cycle_group_bwd_key)]
+        (fn recur [group-offset initial-invoc?]
+          (set-beacons sublist {:repeat (if (or cold-repeat? enter-repeat?) :cold
+                                            instant-repeat? :instant)})
+          (with-highlight-chores (light-up-beacons sublist start-idx))
+          (match (with-highlight-cleanup
+                   (get-input (when initial-invoc?
+                                (. opts :exit_after_idle_msecs
+                                   (if instant-repeat? :unlabeled :labeled)))))
+            input
+            (if (and sublist.autojump? opts.labels (not (empty? opts.labels))) 
+                ; Non-empty `labels` means auto-jump has been set heuristically
+                ; (not forced), implying that there are no subsequent groups.
+                [input 0]
 
-               [input group-offset])))
-       0 true))
+                (and (one-of? input next_group_key prev_group_key)
+                     (not instant-repeat?))
+                (let [labels (get-labels sublist)
+                      num-of-groups (ceil (/ (length sublist) (length labels)))
+                      max-offset (dec num-of-groups)
+                      group-offset* (-> group-offset
+                                        ((match input next_group_key inc _ dec))
+                                        (clamp 0 max-offset))]
+                  (set-label-states-for-sublist
+                    sublist {:group-offset group-offset*})
+                  (recur group-offset*))
+
+                [input group-offset])))
+        (recur 0 true)))
 
     ; //> Helpers
 
@@ -1279,9 +1302,11 @@ sub-table containing label-target k-v pairs for these targets."
       in1
       (let [from-pos (get-cursor-pos)
             update-state (update-state* in1)
-            prev-in2 (if (or cold-repeat? enter-repeat?) self.state.cold.in2
+            prev-in2 (if instant-repeat? instant-state.in2
+                         (or cold-repeat? enter-repeat?) self.state.cold.in2
                          dot-repeat? self.state.dot.in2)]
-        (match (or (get-targets in1 reverse?)
+        (match (or (?. instant-state :sublist)
+                   (get-targets in1 reverse?)
                    (exit-early (echo-not-found (.. in1 (or prev-in2 "")))))
           [{:pair [_ ch2] &as only} nil]
           (if (or new-search? (= ch2 prev-in2))
@@ -1301,14 +1326,15 @@ sub-table containing label-target k-v pairs for these targets."
 
           targets
           (do
-            (doto targets
-              (populate-sublists)
-              (set-labels)
-              (set-label-states))
+            (when-not instant-repeat?
+              (doto targets
+                (populate-sublists)
+                (set-labels)
+                (set-label-states)))
             (when new-search?
               (doto targets
                 (set-shortcuts-and-populate-shortcuts-map)
-                (set-beacons {:repeat? false}))
+                (set-beacons {:repeat nil}))
               (with-highlight-chores (light-up-beacons targets)))
             (match (or prev-in2
                        (with-highlight-cleanup (get-input))
@@ -1322,31 +1348,48 @@ sub-table containing label-target k-v pairs for these targets."
                 _
                 (do
                   (update-state {:cold {: in2}})  ; endnote #1
-                  (match (or (get-sublist targets in2)
+                  (match (or (?. instant-state :sublist)
+                             (get-sublist targets in2)
                              (exit-early (echo-not-found (.. in1 in2))))
                     [only nil]
                     (exit (update-state {:dot {: in2 :in3 (. opts.labels 1)}})
                           (jump-to! only.pos))
 
-                    sublist
-                    (let [[first & rest] sublist
-                          autojump? sublist.autojump?]
-                      (when (or autojump? cold-repeat?)
+                    [first &as sublist]
+                    (let [autojump? sublist.autojump?
+                          curr-idx (or (?. instant-state :idx)
+                                       (if autojump? 1 0))
+                          from-reverse-cold-repeat? (if instant-repeat?
+                                                        instant-state.from-reverse-cold-repeat?
+                                                        (and cold-repeat? invoked-as-reverse?))]
+                      ; If instant-repeating, we have already done the jump,
+                      ; before descending into the recursive call (see below).
+                      (when (and autojump? (not instant-repeat?))
                         (jump-to! first.pos))
-                      (if cold-repeat? (exit (after-cold-repeat rest))
-                          (match (or (when (and dot-repeat? self.state.dot.in3)  ; endnote #3
-                                       [self.state.dot.in3 0])
-                                     (get-last-input sublist)
-                                     (exit-early))
-                            [in3 group-offset]
-                            (match (or (get-target-with-active-primary-label sublist in3)
-                                       (if autojump?
-                                           (exit (vim.fn.feedkeys in3 :i))
-                                           (exit-early)))
-                              target
-                              (exit (update-state
-                                      {:dot {: in2 :in3 (if (> group-offset 0) nil in3)}})  ; endnote #3
-                                    (jump-to! target.pos))))))))))))))))
+                      (match (or (when (and dot-repeat? self.state.dot.in3)  ; endnote #3
+                                   [self.state.dot.in3 0])
+                                 (get-last-input sublist (inc curr-idx))
+                                 (exit-early))
+                        [in3 group-offset]
+                        (match (when-not op-mode?
+                                 (get-followup-action in3 from-reverse-cold-repeat?)) ; instant repeat
+                          action (let [idx (match action
+                                             :repeat (min (inc curr-idx) (length targets))
+                                             :revert (max (dec curr-idx) 1))]
+                                   (jump-to! (. sublist idx :pos))
+                                   (sx:go reverse? x-mode?
+                                          {: in1 : in2 : sublist : idx
+                                           : from-reverse-cold-repeat?}))
+                          _
+                          (match (get-target-with-active-primary-label sublist in3)
+                            target
+                            (exit (update-state
+                                    {:dot {: in2 :in3 (if (> group-offset 0) nil in3)}})  ; endnote #3
+                                  (jump-to! target.pos))
+
+                            _ (if autojump?
+                                  (exit (vim.fn.feedkeys in3 :i))
+                                  (exit-early))))))))))))))))
 
 
 ; Handling editor options ///1
@@ -1411,11 +1454,7 @@ sub-table containing label-target k-v pairs for these targets."
      ["<Plug>Lightspeed_;_sx" "sx:go(false, nil, 'cold')"]
      ["<Plug>Lightspeed_,_sx" "sx:go(true, nil, 'cold')"]
      ["<Plug>Lightspeed_;_ft" "ft:go(false, nil, 'cold')"]
-     ["<Plug>Lightspeed_,_ft" "ft:go(true, nil, 'cold')"]
-     ; TODO: let these repeat the last one
-     ["<Plug>Lightspeed_;" "sx:go(false, nil, 'cold')"]
-     ["<Plug>Lightspeed_," "sx:go(true, nil, 'cold')"]
-     ])
+     ["<Plug>Lightspeed_,_ft" "ft:go(true, nil, 'cold')"]])
 
   (each [_ [lhs rhs-call] (ipairs plug-keys)]
     (each [_ mode (ipairs [:n :x :o])]
@@ -1462,7 +1501,15 @@ sub-table containing label-target k-v pairs for these targets."
      [:x "t" "<Plug>Lightspeed_t"]
      [:x "T" "<Plug>Lightspeed_T"]
      [:o "t" "<Plug>Lightspeed_t"]
-     [:o "T" "<Plug>Lightspeed_T"]])
+     [:o "T" "<Plug>Lightspeed_T"]
+     
+     [:n ";" "<Plug>Lightspeed_;_ft"]
+     [:x ";" "<Plug>Lightspeed_;_ft"]
+     [:o ";" "<Plug>Lightspeed_;_ft"]
+
+     [:n "," "<Plug>Lightspeed_,_ft"]
+     [:x "," "<Plug>Lightspeed_,_ft"]
+     [:o "," "<Plug>Lightspeed_,_ft"]])
 
   (each [_ [mode lhs rhs] (ipairs default-keymaps)]
     (when (and

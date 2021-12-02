@@ -1,4 +1,4 @@
-*lightspeed.txt*     For Neovim version 0.5.1      Last change: 2021 November 30
+*lightspeed.txt*     For Neovim version 0.5.1      Last change: 2021 December 02
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -76,29 +76,42 @@ included in the operation).
 A character before <EOL> can be targeted by pressing <enter> after it
 (indicated by `¬` in the highlighted match).
 
-                       *lightspeed-1-character-search* *lightspeed-instant-repeat*
+                                                 *lightspeed-1-character-search*
 Lightspeed also overrides the native `f`/`F`/`t`/`T` motions with enhanced
-versions that work over multiple lines. 
+versions that work over multiple lines. In all other respects they behave the
+same way as the native ones.
 
-In Normal and Visual mode, the motion can be repeated by pressing the
-corresponding key - `f` or `t` - again (they continue in the original
-direction, whether it was forward or backward).
+                                                             *lightspeed-repeat*
+Repeating in Lightspeed works in a uniform way accross all motions - all of the
+following methods (and even combinations of them) are valid options:
 
-`F` and `T` always _revert_ the previous repeat. In the case of `T`, this
-results in a different behaviour than the native `,` motion: `T` does not
+                                                     *lightspeed-instant-repeat*
+In Normal and Visual mode, the motions can be repeated by pressing the
+corresponding trigger key - `s`, `f`, `t` - again. (They continue in the
+original direction, whether it was forward or backward.) `S`, `F` and `T`, on
+the other hand, always _revert_ the previous repeat. Note that in the case of
+`T` (or `X`, if mapped), this results in a different, and presumably more
+useful behaviour than what you are used to in clever-f and Sneak: it does not
 repeat the search in the reverse direction, but puts the cursor back to its
-previous position - before the previous match -, allowing for an easy
+previous position - _before_ the previous match -, allowing for an easy
 correction when you accidentally overshoot your target.
 
-This "instant-repeat" mode is active until you type any other character.
+For f/t-search, there is a special, opt-in repeat mode: pressing the _target
+character_ can also repeat the motion (`opts.repeat_ft_with_target_char`).
 
-If you would like to keep using `;` and `,` (or some other pair of keys) to be
-able to trigger repeat in the native way ("cold" repeat after finishing
-execution), see |lightspeed-custom-mappings|.
+                                *lightspeed-cold-repeat* *lightspeed-enter-repeat*
+Pressing `<enter>` after invoking any of Lightspeed's motions searches with
+the previous input (1- and 2-character searches are saved separately).
+Subsequent keystrokes of `<enter>` move on to the next match (that is, it
+invokes "instant-repeat" mode), while `<tab>` reverts (just like `S`/`F`/`T`).
 
-                                                       *lightspeed-enter-repeat*
-Pressing <enter> after invoking any of Lightspeed's commands searches with the
-previous input (1- and 2-character searches are saved separately).
+There are dedicated `<Plug>` keys available for the two modes; `;` and `,` are
+mapped to f/t-repeat by default (that is, they follow the native behaviour).
+If you would like to set `;` and `,` to repeat the last Lightspeed motion
+(whether it was s/x or f/t), see |lightspeed-custom-mappings|.
+
+Note that for s/x motions the labels will remain available even after entering
+instant-repeat mode.
 
                                                          *lightspeed-dot-repeat*
 You can repeat change and delete operations with the `.` character, if
@@ -178,7 +191,7 @@ s/x-specific options~
 `safe_labels` >
     {"s", "f", "n"
      "u", "t"
-     "/", "S", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
+     "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
 <
     When the number of matches does not exceed the number of these "safe"
     labels plus one, the plugin jumps to the first match automatically after
@@ -194,8 +207,8 @@ s/x-specific options~
     {"s", "f", "n"
      "j", "k", "l", "o", "i", "w", "e", "h", "g"
      "u", "t"
-     "m", "v", "c", ";", "a" ".", "z",
-     "/", "S", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
+     "m", "v", "c", "a" ".", "z",
+     "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
 <
     Target labels to be used when there are more matches than the number of
     safe labels plus one.
@@ -210,6 +223,10 @@ Heuristics behind the defaults:
 - Since the commands invoking the motions are mapped to left-hand keys
   (`s`, `z`, `x`), we tend to prioritize right-hand keys to get a better
   balance for the whole sequence on average.
+
+Note: If you have mapped some keys to `<Plug>Lightspeed_;_sx` and
+      `<Plug>Lightspeed_,_sx`, you should not use them as labels too,
+      obviously.
 
 `cycle_group_fwd_key = '<space>'`
 `cycle_group_bwd_key = '<tab>'`
@@ -230,6 +247,13 @@ f/t-specific options~
     For 1-character search, the next 'n' matches will be highlighted after
     [count]. Highlighting matches can be turned off altogether by setting the
     value to 0 or `nil`.
+
+`repeat_ft_with_target_char = false`
+
+    If turned on, you can repeat f/t motions by pressing the target character
+    repeatedly, like `faaa`. Note that in this case you have to `esc` your way
+    out if you would like to use the target character for something else right
+    after the repeat.
 <
 ==============================================================================
 DEFAULT MAPPINGS                                   *lightspeed-default-mappings*
@@ -276,6 +300,7 @@ All modes~
 
 {key}<Enter>               Repeat with previous input. (1-character and
                            2-character searches are stored separately.)
+                           See also |lightspeed-repeat|.
 
 <Esc>                      Exit Lightspeed at any stage cleanly.
 
@@ -293,6 +318,14 @@ All modes~
                            presumably more comfortable - pair of mappings is
                            used. Can be configured with `cycle_group_fwd_key`
                            and `cycle_group_bwd_key`.
+
+1-character search~
+
+;                          Repeat the previous f/t motion in the forward
+                           direction, or revert `,`. 
+,                          Repeat the previous f/t motion in the backward
+                           direction, or revert `;`.
+                           See also |lightspeed-repeat|.
 
 ==============================================================================
 CUSTOM MAPPINGS                                     *lightspeed-custom-mappings*
@@ -317,18 +350,19 @@ motion/operation semantics):
 `<Plug>Lightspeed_t`  1-character  forward   t-like (-1, inclusive op)
 `<Plug>Lightspeed_T`  1-character  backward  T-like (+1, exclusive op)
 
-The following correspond to the native `;` and `,` ("cold" repeat):
-
+Repeat (or revert the opposite key):
 `<Plug>Lightspeed_;_sx`
-`<Plug>Lightspeed_,_sx`
 `<Plug>Lightspeed_;_ft`
+
+Repeat in the reverse direction (or revert the opposite key):
+`<Plug>Lightspeed_,_sx`
 `<Plug>Lightspeed_,_ft`
 
 If you would like to use the f/t repeat keys only for instant repeat, you can
 easily do that with help of an expression mapping (|map-<expr>|):
 >
     " set up a flag first
-    augroup lightspeed_flag
+    augroup lightspeed_active
     autocmd!
     autocmd User LightspeedFtEnter let g:lightspeed_active = 1
     autocmd User LightspeedFtLeave unlet g:lightspeed_active
@@ -337,6 +371,17 @@ easily do that with help of an expression mapping (|map-<expr>|):
     " function if you want.
     nmap <expr> ; exists('g:lightspeed_active') ? "<Plug>Lightspeed_;_ft" : '...'
     nmap <expr> , exists('g:lightspeed_active') ? "<Plug>Lightspeed_,_ft" : '...'
+<
+Setting `;` and `,` to repeat the last Lightspeed motion (s/x or f/t):
+>
+    let g:lightspeed_last_motion = ''
+    augroup lightspeed_last_motion
+    autocmd!
+    autocmd User LightspeedSxEnter let g:lightspeed_last_motion = 'sx'
+    autocmd User LightspeedFtEnter let g:lightspeed_last_motion = 'ft'
+    augroup end
+    map <expr> ; g:lightspeed_last_motion == 'sx' ? "<Plug>Lightspeed_;_sx" : "<Plug>Lightspeed_;_ft"
+    map <expr> , g:lightspeed_last_motion == 'sx' ? "<Plug>Lightspeed_,_sx" : "<Plug>Lightspeed_,_ft"
 <
 For 2-character search, the keys for cycling between groups of matches, and
 the prefix triggering X-mode can be set in the `opts` table, see

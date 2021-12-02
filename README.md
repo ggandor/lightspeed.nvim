@@ -53,12 +53,15 @@ by DevOnDuty](https://youtu.be/ESyld9NCl1w) first.
 
 The plugin's closest ancestor is Justin Keyes' beloved
 [vim-sneak](https://github.com/justinmk/vim-sneak), in that they share the same
-basic assumptions, namely: (1) to reach all kinds of distant targets, ideally we
-need a few _context-independent_ motions, that are flexible enough to do the job
-all the time, and can be invoked/operated with _total automatism_, without being
-aware of the type or the surroundings of the target; (2) for that, the most
-adequate basis is unidirectional 1- and 2-character search; (3) the interface
-should be _optimized for the common case_.
+basic assumptions, namely:
+
+1. To reach all kinds of distant targets, ideally we need a few
+   _context-independent_ motions, that are flexible enough to do the job all
+   the time, and can be invoked/operated with _total automatism_, without
+   being aware of the type or the surroundings of the target.
+2. For that, the most adequate basis is unidirectional 1- and 2-character
+   search.
+3. The interface should be _optimized for the common case_.
 
 ### Composite motions do not compose
 
@@ -148,9 +151,16 @@ about cohesion, conceptual integrity, and reliability. I think of [the latter]
 as the @tpope school."_
 ([justinmk](https://github.com/justinmk/vim-sneak/issues/62#issuecomment-34044380))
 
+* [80/20](https://youtu.be/Bt-vmPC_-Ho?t=1249): focus on features that are
+  applicable in all contexts; micro-optimisations for the most frequent tasks
+  accumulate more savings than vanity features that turn out to be rarely needed
+  in practice
+
 * [Design is making
   decisions](https://www.infoq.com/presentations/Design-Composition-Performance/):
-  mitigate choice paralysis for the user, regarding both usage and configuration
+  leaving all options open is avoiding design; mitigate choice paralysis for the
+  user, regarding both usage and configuration
+
 * [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
   the plugin should feel a natural extension to the core, with an interplay as
   seamless and intuitive as possible
@@ -352,31 +362,48 @@ by `¬` in the highlighted match).
 ### 1-character search (f/t)
 
 Lightspeed also overrides the native `f`/`F`/`t`/`T` motions with enhanced
-versions that work over multiple lines. 
-
-In Normal and Visual mode, the motion can be repeated by pressing the
-corresponding key - `f` or `t` - again. (They continue in the original
-direction, whether it was forward or backward.) `F` and `T`, on the other hand,
-always _revert_ the previous repeat. Note that in the case of `T`, this results
-in a different, and presumably more useful behaviour than what you're used to in
-clever-f and Sneak: `T` does not repeat the search in the reverse direction, but
-puts the cursor back to its previous position - _before_ the previous match -,
-allowing for an easy correction when you accidentally overshoot your target.
-
-This "instant-repeat" mode is active until you type any other character.
-
-By default, `;` and `,` are not utilized by the plugin anymore - you are free to
-remap them to more useful things (`:` and `localleader` are great contenders).
-If you are too used to the native Vim way, there are dedicated `<Plug>` keys
-available to emulate that - see `:h lightspeed-custom-keymaps`.
+versions that work over multiple lines. In all other respects they behave the
+same way as the native ones.
 
 ### Repeating motions
 
-Pressing `<enter>` after invoking any of Lightspeed's commands searches with the
-previous input (1- and 2-character searches are saved separately).
+Repeating in Lightspeed works in a uniform way accross all motions - all of the
+following methods (and even combinations of them) are valid options:
 
-Dot-repeat aims to behave in the most intuitive way in different situations - on
-special cases, see `:h lightspeed-dot-repeat`.
+#### "Instant" repeat
+
+- In Normal and Visual mode, the motions can be repeated by pressing the
+  corresponding trigger key - `s`, `f`, `t` - again. (They continue in the
+  original direction, whether it was forward or backward.) `S`, `F` and `T`, on
+  the other hand, always _revert_ the previous repeat. Note that in the case of
+  `T` (or `X`, if mapped), this results in a different, and presumably more
+  useful behaviour than what you are used to in clever-f and Sneak: it does not
+  repeat the search in the reverse direction, but puts the cursor back to its
+  previous position - _before_ the previous match -, allowing for an easy
+  correction when you accidentally overshoot your target.
+
+- For f/t-search, there is a special, opt-in repeat mode: pressing the _target
+  character_ can also repeat the motion (`opts.repeat_ft_with_target_char`).
+
+#### "Cold" repeat
+
+- Pressing `<enter>` after invoking any of Lightspeed's motions searches with
+  the previous input (1- and 2-character searches are saved separately).
+  Subsequent keystrokes of `<enter>` move on to the next match (that is, it
+  invokes "instant-repeat" mode), while `<tab>` reverts (just like `S`/`F`/`T`).
+
+- There are dedicated `<Plug>` keys available for the two modes; `;`
+  and `,` are mapped to f/t-repeat by default (that is, they follow the native
+  behaviour). If you would like to set `;` and `,` to repeat the last Lightspeed
+  motion (whether it was s/x or f/t), see `:h lightspeed-custom-mappings`.
+
+- Note that for s/x motions _the labels will remain available_ even after
+  entering instant-repeat mode.
+
+#### Dot-repeat
+
+Dot-repeat aims to behave in the most intuitive way in different situations -
+on special cases, see `:h lightspeed-dot-repeat`.
 
 ### See also
 
@@ -442,35 +469,34 @@ To set alternative keymaps, you can use the following `<Plug>` keys in all modes
 (pattern length, direction, motion/operation semantics):
 
 ```
-<Plug>Lightspeed_s  -  2-character  forward   /-like (0,  exclusive op)
-<Plug>Lightspeed_S  -  2-character  backward  ?-like (0,  exclusive op)
-<Plug>Lightspeed_x  -  2-character  forward          (+1, inclusive op)
-<Plug>Lightspeed_X  -  2-character  backward         (+2, exclusive op)
-                                                                       
-<Plug>Lightspeed_f  -  1-character  forward   f-like (0,  inclusive op)
-<Plug>Lightspeed_F  -  1-character  backward  F-like (0,  exclusive op)
-<Plug>Lightspeed_t  -  1-character  forward   t-like (-1, inclusive op)
-<Plug>Lightspeed_T  -  1-character  backward  T-like (+1, exclusive op)
+<Plug>Lightspeed_s      2-character  forward   /-like (0,  exclusive op)
+<Plug>Lightspeed_S      2-character  backward  ?-like (0,  exclusive op)
+<Plug>Lightspeed_x      2-character  forward          (+1, inclusive op)
+<Plug>Lightspeed_X      2-character  backward         (+2, exclusive op)
+                                                                        
+<Plug>Lightspeed_f      1-character  forward   f-like (0,  inclusive op)
+<Plug>Lightspeed_F      1-character  backward  F-like (0,  exclusive op)
+<Plug>Lightspeed_t      1-character  forward   t-like (-1, inclusive op)
+<Plug>Lightspeed_T      1-character  backward  T-like (+1, exclusive op)
+
+" Repeat, or revert the opposite key
+<Plug>Lightspeed_;_sx
+<Plug>Lightspeed_;_ft
+
+" Repeat in the reverse direction, or revert the opposite key
+<Plug>Lightspeed_,_sx
+<Plug>Lightspeed_,_ft
 ```
 
 (Note: Be sure to use `-map`, and not `-noremap`, for `<Plug>` mappings, as they
 should be used recursively, by design.)
 
-The following keys are also available to emulate the native `;` and `,`
-functionality ("cold" repeat).
+#### Using the repeat `<Plug>` keys for instant repeat only
 
-***Note***: _These are currently experimental; neither the API nor the
-behaviours are fixed yet._
+That can be achieved easily with an expression mapping. See `h:
+lightspeed-custom-mappings`.
 
-```
-<Plug>Lightspeed_;_sx
-<Plug>Lightspeed_,_sx
-<Plug>Lightspeed_;_ft
-<Plug>Lightspeed_,_ft
-```
-
-If you would like to use the f/t repeat keys only for instant repeat, you can do
-that with an expression mapping. See `h: lightspeed-custom-mappings`.
+#### Disabling features
 
 It is considered an exceptional request if one would like to revert to the
 native behaviour of certain keys, that is, would not like to use some search
