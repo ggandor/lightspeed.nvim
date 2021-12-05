@@ -333,6 +333,9 @@ types properly."
 
 ; Common ///1
 
+(local <backspace> (replace-keycodes "<bs>"))
+
+
 (fn echo-no-prev-search [] (echo "no previous search"))
 
 (fn echo-not-found [s] (echo (.. "not found: " s)))
@@ -688,7 +691,7 @@ interrupted change-operation."
             (ok? eval-rhs) (pcall vim.fn.eval rhs)
             in-mapped-to (if (and ok? (= (type eval-rhs) :string)) eval-rhs rhs)]
         (if (or (when opts.repeat_ft_with_target_char (= in target-char))
-                (= in "\r")
+                (= in <backspace>)
                 (= in-mapped-to (get-plug-key :ft false t-mode?))
                 (string.find in-mapped-to
                              (if from-reverse-cold-repeat?
@@ -719,8 +722,8 @@ interrupted change-operation."
                cold-repeat? self.state.cold.in
                (match (or (with-highlight-cleanup (get-input))
                           (exit-early))
-                 "\r" (or self.state.cold.in
-                          (exit-early (echo-no-prev-search)))
+                 <backspace> (or self.state.cold.in
+                                 (exit-early (echo-no-prev-search)))
                  in in))
       in1
       (do
@@ -1078,7 +1081,6 @@ sub-table containing label-target k-v pairs for these targets."
                          ; Note: we don't need `reverse?`, since we
                          ; hardcode it into the dot-repeat command.
                          :x-mode? nil}
-                   ; Enter-repeat uses these inputs too.
                    :cold {:in1 nil
                           :in2 nil
                           :reverse? nil
@@ -1104,7 +1106,7 @@ sub-table containing label-target k-v pairs for these targets."
     ; Top-level vars
 
     (var x-mode? x-mode?)
-    (var enter-repeat? nil)
+    (var backspace-repeat? nil)
     (var new-search? nil)
 
     ; Helpers ///
@@ -1141,24 +1143,24 @@ sub-table containing label-target k-v pairs for these targets."
                                           (or opts.x_mode_prefix_key
                                               opts.full_inclusive_prefix_key))]  ; deprecated
                   (match in0
-                    "\r" (set enter-repeat? true)
+                    <backspace> (set backspace-repeat? true)
                     x-mode-prefix-key (set x-mode? true))
                   (var res in0)
                   (when (and x-mode? (not invoked-in-x-mode?))
                     ; Get the "true" first input then.
                     (match (or (get-input)
                                (exit-early))
-                      "\r" (set enter-repeat? true)
+                      <backspace> (set backspace-repeat? true)
                       in0* (set res in0*)))
-                  (set new-search? (not (or repeat-invoc enter-repeat?)))
-                  (if enter-repeat? (or self.state.cold.in1
-                                        (exit-early (echo-no-prev-search)))
+                  (set new-search? (not (or repeat-invoc backspace-repeat?)))
+                  (if backspace-repeat? (or self.state.cold.in1
+                                            (exit-early (echo-no-prev-search)))
                       res)))))
 
     ; No need to pass in `in1` every time once we have it, so let's curry this.
     (fn update-state* [in1]
       (fn [{: cold : dot}]
-        (when new-search?  ; not dot-repeat? / cold-repeat? / enter-repeat?
+        (when new-search?  ; not dot-repeat? / cold-repeat? / backspace-repeat?
           (when cold
             (set self.state.cold (doto cold
                                    (tset :in1 in1)
@@ -1238,7 +1240,7 @@ sub-table containing label-target k-v pairs for these targets."
             rhs (vim.fn.maparg in mode)
             (ok? eval-rhs) (pcall vim.fn.eval rhs)
             in-mapped-to (if (and ok? (= (type eval-rhs) :string)) eval-rhs rhs)]
-        (if (or (= in "\r")
+        (if (or (= in <backspace>)
                 (= in-mapped-to (get-plug-key :sx false x-mode?))
                 (string.find in-mapped-to
                              (if from-reverse-cold-repeat?
@@ -1259,7 +1261,7 @@ sub-table containing label-target k-v pairs for these targets."
       (let [next_group_key (replace-keycodes opts.cycle_group_fwd_key)
             prev_group_key (replace-keycodes opts.cycle_group_bwd_key)]
         (fn recur [group-offset initial-invoc?]
-          (set-beacons sublist {:repeat (if (or cold-repeat? enter-repeat?) :cold
+          (set-beacons sublist {:repeat (if (or cold-repeat? backspace-repeat?) :cold
                                             instant-repeat? :instant)})
           (with-highlight-chores (light-up-beacons sublist start-idx))
           (match (with-highlight-cleanup
@@ -1303,7 +1305,7 @@ sub-table containing label-target k-v pairs for these targets."
       (let [from-pos (get-cursor-pos)
             update-state (update-state* in1)
             prev-in2 (if instant-repeat? instant-state.in2
-                         (or cold-repeat? enter-repeat?) self.state.cold.in2
+                         (or cold-repeat? backspace-repeat?) self.state.cold.in2
                          dot-repeat? self.state.dot.in2)]
         (match (or (?. instant-state :sublist)
                    (get-targets in1 reverse?)
@@ -1557,8 +1559,8 @@ sub-table containing label-target k-v pairs for these targets."
 ;     self.state.dot.in3, and will ask for input. It makes no practical
 ;     sense to dot-repeat such an operation exactly as it went ("delete
 ;     again till the 27th match..."?). The most intuitive/logical
-;     behaviour is repeating as <enter>-repeat in these cases, prompting
-;     for a target label again.
+;     behaviour is repeating as <backspace>-repeat in these cases,
+;     prompting for a target label again.
 ;     Note: `save-state-for-repeat` only executes on new searches - if
 ;     we're currently dot-repeating, then it won't overwrite the state,
 ;     we can safely get `self.state.dot.in3` for the previous value.

@@ -1,4 +1,4 @@
-*lightspeed.txt*     For Neovim version 0.5.0      Last change: 2021 December 02
+*lightspeed.txt*     For Neovim version 0.5.0      Last change: 2021 December 05
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -99,10 +99,10 @@ correction when you accidentally overshoot your target.
 For f/t-search, there is a special, opt-in repeat mode: pressing the _target
 character_ can also repeat the motion (`opts.repeat_ft_with_target_char`).
 
-                                *lightspeed-cold-repeat* *lightspeed-enter-repeat*
-Pressing `<enter>` after invoking any of Lightspeed's motions searches with
-the previous input (1- and 2-character searches are saved separately).
-Subsequent keystrokes of `<enter>` move on to the next match (that is, it
+                            *lightspeed-cold-repeat* *lightspeed-backspace-repeat*
+Pressing `<backspace>` after invoking any of Lightspeed's motions searches
+with the previous input (1- and 2-character searches are saved separately).
+Subsequent keystrokes of `<backspace>` move on to the next match (that is, it
 invokes "instant-repeat" mode), while `<tab>` reverts (just like `S`/`F`/`T`).
 
 There are dedicated `<Plug>` keys available for the two modes; `;` and `,` are
@@ -124,7 +124,8 @@ Special cases:
 - dot-repeating a jump via a shortcut-label behaves the same as if we have not
   used the shortcut
 - dot-repeating a jump in which group-switching was involved is repeated as
-  <enter>-repeat (the target chosen is not saved, will prompt for input again)
+  <backspace>-repeat (the target chosen is not saved, will prompt for input
+  again)
 
 
 Note: <C-o> will ignore the jump if the cursor line has not changed. This is a
@@ -298,7 +299,7 @@ All modes~
 [count]t{char}             To right before the [count]'th next {char}.
 [count]T{char}             To right after the [count]'th previous {char}.
 
-{key}<Enter>               Repeat with previous input. (1-character and
+{key}<Backspace>           Repeat with previous input. (1-character and
                            2-character searches are stored separately.)
                            See also |lightspeed-repeat|.
 

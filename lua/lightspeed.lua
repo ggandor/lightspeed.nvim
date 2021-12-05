@@ -350,6 +350,7 @@ local function highlight_range(hl_group, _81_, _83_, _85_)
     return hl_range(start, _end, inclusive_motion_3f)
   end
 end
+local _3cbackspace_3e = replace_keycodes("<bs>")
 local function echo_no_prev_search()
   return echo("no previous search")
 end
@@ -788,7 +789,7 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
         return "<Plug>Lightspeed_;_ft"
       end
     end
-    if (_185_() or (_in == "\13") or (in_mapped_to == get_plug_key("ft", false, t_mode_3f0)) or string.find(in_mapped_to, _186_())) then
+    if (_185_() or (_in == _3cbackspace_3e) or (in_mapped_to == get_plug_key("ft", false, t_mode_3f0)) or string.find(in_mapped_to, _186_())) then
       return "repeat"
     else
       local _187_
@@ -845,7 +846,7 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
       return nil
     end
     _194_ = (_195_() or _196_())
-    if (_194_ == "\13") then
+    if (_194_ == _3cbackspace_3e) then
       local function _198_()
         if change_operation_3f() then
           handle_interrupted_change_op_21()
@@ -1472,7 +1473,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
     x_mode_3f = invoked_in_x_mode_3f
   end
   local x_mode_3f0 = x_mode_3f
-  local enter_repeat_3f = nil
+  local backspace_repeat_3f = nil
   local new_search_3f = nil
   local function get_first_input()
     if instant_repeat_3f then
@@ -1508,8 +1509,8 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
         local x_mode_prefix_key = replace_keycodes((opts.x_mode_prefix_key or opts.full_inclusive_prefix_key))
         do
           local _338_ = in0
-          if (_338_ == "\13") then
-            enter_repeat_3f = true
+          if (_338_ == _3cbackspace_3e) then
+            backspace_repeat_3f = true
           elseif (_338_ == x_mode_prefix_key) then
             x_mode_3f0 = true
           end
@@ -1528,15 +1529,15 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
             return nil
           end
           _340_ = (get_input() or _341_())
-          if (_340_ == "\13") then
-            enter_repeat_3f = true
+          if (_340_ == _3cbackspace_3e) then
+            backspace_repeat_3f = true
           elseif (nil ~= _340_) then
             local in0_2a = _340_
             res = in0_2a
           end
         end
-        new_search_3f = not (repeat_invoc or enter_repeat_3f)
-        if enter_repeat_3f then
+        new_search_3f = not (repeat_invoc or backspace_repeat_3f)
+        if backspace_repeat_3f then
           local function _345_()
             if change_operation_3f() then
               handle_interrupted_change_op_21()
@@ -1715,7 +1716,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
         return "<Plug>Lightspeed_;_sx"
       end
     end
-    if ((_in == "\13") or (in_mapped_to == get_plug_key("sx", false, x_mode_3f0)) or string.find(in_mapped_to, _385_())) then
+    if ((_in == _3cbackspace_3e) or (in_mapped_to == get_plug_key("sx", false, x_mode_3f0)) or string.find(in_mapped_to, _385_())) then
       return "repeat"
     else
       local _386_
@@ -1741,7 +1742,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
     local prev_group_key = replace_keycodes(opts.cycle_group_bwd_key)
     local function recur(group_offset, initial_invoc_3f)
       local _390_
-      if (cold_repeat_3f or enter_repeat_3f) then
+      if (cold_repeat_3f or backspace_repeat_3f) then
         _390_ = "cold"
       elseif instant_repeat_3f then
         _390_ = "instant"
@@ -1824,7 +1825,7 @@ sx.go = function(self, reverse_3f, invoked_in_x_mode_3f, repeat_invoc)
     local prev_in2
     if instant_repeat_3f then
       prev_in2 = instant_state.in2
-    elseif (cold_repeat_3f or enter_repeat_3f) then
+    elseif (cold_repeat_3f or backspace_repeat_3f) then
       prev_in2 = self.state.cold.in2
     elseif dot_repeat_3f then
       prev_in2 = self.state.dot.in2

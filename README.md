@@ -386,9 +386,9 @@ following methods (and even combinations of them) are valid options:
 
 #### "Cold" repeat
 
-- Pressing `<enter>` after invoking any of Lightspeed's motions searches with
-  the previous input (1- and 2-character searches are saved separately).
-  Subsequent keystrokes of `<enter>` move on to the next match (that is, it
+- Pressing `<backspace>` after invoking any of Lightspeed's motions searches
+  with the previous input (1- and 2-character searches are saved separately).
+  Subsequent keystrokes of `<backspace>` move on to the next match (that is, it
   invokes "instant-repeat" mode), while `<tab>` reverts (just like `S`/`F`/`T`).
 
 - There are dedicated `<Plug>` keys available for the two modes; `;`
