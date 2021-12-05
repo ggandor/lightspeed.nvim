@@ -353,16 +353,20 @@ other on a QWERTY keyboard.
 In any Vim mode, X-mode can also be invoked by pressing `<c-x>` before the
 search pattern.
 
-#### Matching before line breaks
-
-A character before EOL can be targeted by pressing `<enter>` after it (indicated
-by `¬` in the highlighted match).
-
 ### 1-character search (f/t)
 
 Lightspeed also overrides the native `f`/`F`/`t`/`T` motions with enhanced
 versions that work over multiple lines. In all other respects they behave the
 same way as the native ones.
+
+### Matching line breaks
+
+The newline character is represented by `<enter>` in search patterns. For
+example, `f<enter>` is equivalent to `$`, and will move the cursor to the end of
+the line, while `s<enter>` will label all EOL positions, providing an easy way
+to move to blank lines. Likewise, in s/x mode, a character before EOL can be
+targeted by pressing `<enter>` after it (indicated by `¬` in the highlighted
+match).
 
 ### Repeating motions
 

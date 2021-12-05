@@ -727,12 +727,13 @@ interrupted change-operation."
                  in in))
       in1
       (do
+        (local to-newline? (= in1 "\r"))
         (when-not repeat-invoc
           (set self.state.cold {:in in1 : reverse? : t-mode?}))  ; endnote #1
         (var jump-pos nil)
         (var match-count 0)
         (let [next-pos (vim.fn.searchpos "\\_." (if reverse? :nWb :nW))
-              pattern (.. "\\V" (in1:gsub "\\" "\\\\"))
+              pattern (if to-newline? "\\n" (.. "\\V" (in1:gsub "\\" "\\\\")))
               limit (+ count (get-num-of-matches-to-be-highlighted instant-state))]
           (each [[line col &as pos]
                  (onscreen-match-positions pattern reverse? {:ft-search? true : limit})]
@@ -755,7 +756,11 @@ interrupted change-operation."
                             : reverse?
                             :inclusive-motion? true  ; just like the native f/t
                             :adjust (when t-mode?
-                                      (push-cursor! (if reverse? :fwd :bwd)))}))
+                                      (push-cursor! (if reverse? :fwd :bwd))
+                                      (when (and to-newline?
+                                                 (not reverse?)
+                                                 (= (vim.fn.mode) :n))
+                                        (push-cursor! :fwd)))}))
               (if op-mode?
                   (exit (when (dot-repeatable-operation?)
                           (set self.state.dot {:in in1})
@@ -840,53 +845,56 @@ ones might be set by subsequent functions):
   ?beacon      : [col-offset [[char hl-group]]]
 "
   (local targets [])
+  (local to-newline? (= ch1 "\r"))
   (var prev-match {})
   (var added-prev-match? nil)
-  (let [pattern (.. "\\V\\C"                ; force matching case (for the moment)
-                    (ch1:gsub "\\" "\\\\")  ; backslash still needs to be escaped for \V
-                    "\\_.")]                ; match anything (including EOL) after ch1
+  (let [pattern (if to-newline? "\\n"           ; we should send in a literal \n, for searchpos
+                    (.. "\\V\\C"                ; force matching case (for the moment)
+                        (ch1:gsub "\\" "\\\\")  ; backslash still needs to be escaped for \V
+                        "\\_."))]               ; match anything (including EOL) after ch1
     (each [[line col &as pos] (onscreen-match-positions pattern reverse? {})]
-      (let [ch2 (or (char-at-pos pos {:char-offset 1})
-                    "\r")  ; <enter> is the expected input for line breaks
-            before-eol? (= ch2 "\r")
-            overlaps-prev-match? (and (= line prev-match.line)
-                                      (= col ((if reverse? dec inc) prev-match.col)))
-            same-char-triplet? (and overlaps-prev-match? (= ch2 prev-match.ch2))
-            overlaps-prev-target? (and overlaps-prev-match? added-prev-match?)]
-        (set prev-match {: line : col : ch2})
-        (if (and same-char-triplet?
-                 (or added-prev-match?  ; the 2nd 'xx' in 'xxx' is _always_ skipped
-                     opts.match_only_the_start_of_same_char_seqs))
-            (set added-prev-match? false)
-            (let [target {: pos :pair [ch1 ch2]}
-                  prev-target (last targets)
-                  ; Let 'ab' a match:
-                  ; [a][b][c][d][e]
-                  ;  0  1  2  3  4
-                  ; Usually, the beacon would look like this:
-                  ; [a][b]>>[label]<<[c] ...
-                  ; When 'cd' is another match, the beacon of 'ab' should
-                  ; be squeezed back into the 2-column box of the match:
-                  ; >>[b*][label]<<[ ]      b* = with special highlight
-                  ;     0    1      2
-                  match-width 2
-                  touches-prev-target? (match prev-target
-                                         {:pos [prev-line prev-col]}
-                                         (and (= line prev-line)
-                                              (let [col-delta 
-                                                    (if reverse?
-                                                        (- prev-col col)
-                                                        (- col prev-col))]
-                                                (<= col-delta match-width))))]
-              (when before-eol? (tset target :squeezed? true))
-              (when touches-prev-target?
-                (tset (if reverse? target prev-target) :squeezed? true))
-              (when overlaps-prev-target?
-                ; Just the opposite: the _label_ should remain visible
-                ; in any case.
-                (tset (if reverse? prev-target target) :overlapped? true))
-              (table.insert targets target)
-              (set added-prev-match? true)))))
+      (if to-newline? (table.insert targets {:pos pos :pair ["\n" ""]})
+          (let [ch2 (or (char-at-pos pos {:char-offset 1})
+                        "\r")  ; <enter> is the expected input for line breaks
+                before-eol? (= ch2 "\r")
+                overlaps-prev-match? (and (= line prev-match.line)
+                                          (= col ((if reverse? dec inc) prev-match.col)))
+                same-char-triplet? (and overlaps-prev-match? (= ch2 prev-match.ch2))
+                overlaps-prev-target? (and overlaps-prev-match? added-prev-match?)]
+            (set prev-match {: line : col : ch2})
+            (if (and same-char-triplet?
+                     (or added-prev-match?  ; the 2nd 'xx' in 'xxx' is _always_ skipped
+                         opts.match_only_the_start_of_same_char_seqs))
+                (set added-prev-match? false)
+                (let [target {: pos :pair [ch1 ch2]}
+                      prev-target (last targets)
+                      ; Let 'ab' a match:
+                      ; [a][b][c][d][e]
+                      ;  0  1  2  3  4
+                      ; Usually, the beacon would look like this:
+                      ; [a][b]>>[label]<<[c] ...
+                      ; When 'cd' is another match, the beacon of 'ab' should
+                      ; be squeezed back into the 2-column box of the match:
+                      ; >>[b*][label]<<[ ]      b* = with special highlight
+                      ;     0    1      2
+                      match-width 2
+                      touches-prev-target? (match prev-target
+                                             {:pos [prev-line prev-col]}
+                                             (and (= line prev-line)
+                                                  (let [col-delta 
+                                                        (if reverse?
+                                                            (- prev-col col)
+                                                            (- col prev-col))]
+                                                    (<= col-delta match-width))))]
+                  (when before-eol? (tset target :squeezed? true))
+                  (when touches-prev-target?
+                    (tset (if reverse? target prev-target) :squeezed? true))
+                  (when overlaps-prev-target?
+                    ; Just the opposite: the _label_ should remain visible
+                    ; in any case.
+                    (tset (if reverse? prev-target target) :overlapped? true))
+                  (table.insert targets target)
+                  (set added-prev-match? true))))))
     (when (next targets) targets)))
 
 
@@ -999,7 +1007,8 @@ sub-table containing label-target k-v pairs for these targets."
                  : label : label-state : squeezed? : overlapped? : shortcut?
                  &as target}
                 repeat]
-  (let [[ch1 ch2] (map #(or (. opts.substitute_chars $) $) [ch1 ch2])
+  (let [to-newline? (and (= ch1 "\n") (= ch2 ""))
+        [ch1 ch2] (map #(or (. opts.substitute_chars $) $) [ch1 ch2])
         masked-char$ [ch2 hl.group.masked-ch]
         label$ [label hl.group.label]
         shortcut$ [label hl.group.shortcut]
@@ -1014,7 +1023,7 @@ sub-table containing label-target k-v pairs for these targets."
            ; unlabeled matches when repeating, as we have the full input
            ; sequence available then, and we will have jumped to the first
            ; match already, if it was on the "winning" sublist.)
-           nil (when-not repeat
+           nil (when-not (or repeat to-newline?)
                  (if overlapped?
                      [1 [[ch2 hl.group.unlabeled-match]]]
                      [0 [[(.. ch1 ch2) hl.group.unlabeled-match]]]))
@@ -1022,7 +1031,8 @@ sub-table containing label-target k-v pairs for these targets."
            ; Note: `repeat` is also mutually exclusive with both
            ; `overlapped?` and `shortcut?`.
            :active-primary
-           (if repeat [(if squeezed? 1 2) [shortcut$]]
+           (if to-newline? [0 [shortcut$]]
+               repeat [(if squeezed? 1 2) [shortcut$]]
                shortcut? (if overlapped?
                              [1 [overlapped-shortcut$]]
                              (if squeezed?
@@ -1033,7 +1043,8 @@ sub-table containing label-target k-v pairs for these targets."
                [2 [label$]])
 
            :active-secondary
-           (if repeat [(if squeezed? 1 2) [distant-label$]]
+           (if to-newline? [0 [distant-label$]]
+               repeat [(if squeezed? 1 2) [distant-label$]]
                overlapped? [1 [overlapped-distant-label$]]
                squeezed? [0 [masked-char$ distant-label$]]
                [2 [distant-label$]])
@@ -1108,6 +1119,8 @@ sub-table containing label-target k-v pairs for these targets."
     (var x-mode? x-mode?)
     (var backspace-repeat? nil)
     (var new-search? nil)
+    (var to-newline? nil)
+    (var before-newline? nil)
 
     ; Helpers ///
 
@@ -1177,7 +1190,7 @@ sub-table containing label-target k-v pairs for these targets."
     ; itself, so setting up a closure here.
     (local jump-to!
            (do (var first-jump? true)
-               (fn [target]
+               (fn [target ?before-newline?]
                  (let [adjusted-pos
                        (jump-to!* target
                                   {:add-to-jumplist? (and first-jump?
@@ -1185,8 +1198,9 @@ sub-table containing label-target k-v pairs for these targets."
                                    : reverse?
                                    :inclusive-motion? (and x-mode? (not reverse?))
                                    :adjust (when x-mode?
-                                             (push-cursor! :fwd)
-                                             (when reverse? (push-cursor! :fwd)))})]
+                                             (when-not (or ?before-newline? before-newline?)
+                                               (when-not to-newline? (push-cursor! :fwd))
+                                               (when reverse? (push-cursor! :fwd))))})]
                  (set first-jump? false)
                  adjusted-pos))))
 
@@ -1302,7 +1316,8 @@ sub-table containing label-target k-v pairs for these targets."
 
     (match (get-first-input)
       in1
-      (let [from-pos (get-cursor-pos)
+      (let [_ (set to-newline? (= in1 "\r"))
+            from-pos (get-cursor-pos)
             update-state (update-state* in1)
             prev-in2 (if instant-repeat? instant-state.in2
                          (or cold-repeat? backspace-repeat?) self.state.cold.in2
@@ -1319,7 +1334,7 @@ sub-table containing label-target k-v pairs for these targets."
                       ; can safely save either an item from `opts.labels` or the
                       ; actual user input from here on.
                       {:cold {:in2 ch2} :dot {:in2 ch2 :in3 (. opts.labels 1)}})
-                    (local to-pos (jump-to! only.pos))
+                    (local to-pos (jump-to! only.pos (= ch2 "\r")))
                     (when new-search?  ; i.e. user is actually typing the pattern
                       (with-highlight-cleanup
                         (highlight-new-curpos-and-op-area from-pos to-pos)
@@ -1333,22 +1348,24 @@ sub-table containing label-target k-v pairs for these targets."
                 (populate-sublists)
                 (set-labels)
                 (set-label-states)))
-            (when new-search?
+            (when (and new-search? (not to-newline?))
               (doto targets
                 (set-shortcuts-and-populate-shortcuts-map)
                 (set-beacons {:repeat nil}))
               (with-highlight-chores (light-up-beacons targets)))
             (match (or prev-in2
+                       (when to-newline? "")
                        (with-highlight-cleanup (get-input))
                        (exit-early))
               in2
               (match (?. targets.shortcuts in2)
                 {:pair [_ ch2] &as shortcut}
                 (exit (update-state {:cold {:in2 ch2} :dot {:in2 ch2 :in3 in2}})
-                      (jump-to! shortcut.pos))
+                      (jump-to! shortcut.pos (= ch2 "\r")))
 
                 _
                 (do
+                  (set before-newline? (= in2 "\r"))
                   (update-state {:cold {: in2}})  ; endnote #1
                   (match (or (?. instant-state :sublist)
                              (get-sublist targets in2)
@@ -1382,16 +1399,13 @@ sub-table containing label-target k-v pairs for these targets."
                                    (sx:go reverse? x-mode?
                                           {: in1 : in2 : sublist : idx
                                            : from-reverse-cold-repeat?}))
-                          _
-                          (match (get-target-with-active-primary-label sublist in3)
-                            target
-                            (exit (update-state
-                                    {:dot {: in2 :in3 (if (> group-offset 0) nil in3)}})  ; endnote #3
-                                  (jump-to! target.pos))
-
-                            _ (if autojump?
-                                  (exit (vim.fn.feedkeys in3 :i))
-                                  (exit-early))))))))))))))))
+                          _ (match (get-target-with-active-primary-label sublist in3)
+                              target (exit (update-state
+                                             {:dot {: in2 :in3 (if (> group-offset 0) nil in3)}})  ; endnote #3
+                                           (jump-to! target.pos))
+                              _ (if autojump?
+                                    (exit (vim.fn.feedkeys in3 :i))
+                                    (exit-early))))))))))))))))
 
 
 ; Handling editor options ///1
