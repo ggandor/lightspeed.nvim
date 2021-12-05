@@ -157,8 +157,7 @@ as the @tpope school."_
 
 * [Design is making
   decisions](https://www.infoq.com/presentations/Design-Composition-Performance/):
-  leaving all options open is avoiding design; mitigate choice paralysis for the
-  user, regarding both usage and configuration
+  mitigate choice paralysis for the user, regarding both usage and configuration
 
 * [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
   the plugin should feel a natural extension to the core, with an interplay as
@@ -634,45 +633,36 @@ heck are you editing, on what size of display, by the way?)
 
 ### Labeled matches for 1-character search?
 
-That would be pretty pointless, for two reasons. First, the "pause" is
-inevitable then, since it is physically impossible to show labels ahead of time.
-Second, usually there are too many matches, so we should use multi-character
-labels. (The closer ones you could probably reach with `sab` directly, instead
-of `fa` + `l`.) Now, ask yourself the question: isn't it much better to type two
-on-screen characters and then a "little bit surprising" label in one go - or
-almost in one go - (`sabl`), than to type one on-screen character, and wait for
-(most probably) two surprising characters to appear (`fa` + `lm`)?
+That would be pretty pointless, for two reasons. First, the pause is inevitable
+then, since it is physically impossible to show labels ahead of time. And
+usually there are too many matches, so we should use multi-character labels.
+(The closer ones you could probably reach with `sab` directly, instead of `fa` +
+`l`.) Now, ask yourself the question: isn't it much better to type two on-screen
+characters and then a "little bit surprising" label almost in one go (`sabl`),
+than to type one on-screen character, and wait for (most probably) two
+surprising characters to appear (`fa` + `lm`)?
 
-In the not-too-frequent case it might end up being `fa` + `l` versus `sabl`,
-where the former could technically be faster by a narrow margin (annoying pause
-notwithstanding). But in general, if you need to start thinking about whether to
-use `f` or `s`, scanning the context, then the whole thing is screwed already.
-Minimal mental effort. That is the mantra of Lightspeed. 1-character search is
-for very short distances, or when you can clearly count the number of
-occurrences, and reach for `f` or `t` in a totally automatic way. In those cases
-they are invaluable shortcuts, but for everything else, `s` should be the
-default choice. The multiline enhancement has only been implemented because of
-that annoying situation when there is a unique character just a couple of lines
-above of below the current line, but we could not target it with the native
-`f`/`t`.
+Second, labeling matches makes it impossible to directly jump to the first
+target when doing operations - we're making our lives harder in the most
+frequent case (e.g. couldn't do a simple `dfa`).
+
+In general, if you need to start thinking about whether to use `f` or `s`,
+scanning the context, then the whole thing is screwed already. Minimal mental
+effort. That is the mantra of Lightspeed. You should think of `f` and `t` as
+_shortcuts_ for very specific situations, when you can count the number of
+occurrences, and thus reach for them in a totally automatic way, and _not_ as
+equals of the `s`/`x` motions.
 
 ### Bi-directional search?
 
 Wontfix. When you aim for a target, you know the direction to go, that's not
 something you have to consciously think about or something that slows you down
-at all. Consequently, it's utterly wasteful _not_ to use this information to
-ease our lives, by - on average - halving the search area and thus doubling the
-number of available target labels, while creating less visual noise on screen.
-(Note that bi-directional search also makes it impossible to automatically jump
+at all. Consequently, it's utterly wasteful _not_ to use this information and
+encode it in the trigger key right away, to ease our lives, by - on average -
+halving the search area and thus doubling the number of available target labels,
+while creating less visual noise on screen. (Note that bi-directional search
+also makes it impossible - or at least very problematic - to automatically jump
 to the first match, an extremely convenient feature.)
-
-EasyMotion/Hop needs bi-directional search, simply because they do not have
-enough keys to map to, as a result of their insistence on having a lot of
-specialized targets (a fundamentally different approach). On the other hand,
-Sneak/Lightspeed is a more organic extension of the native Vim toolkit: with
-only one additional keypair, we can nicely stay in line with the native search
-commands, that are all unidirectional: `<shift-{key}>` counterparts are obvious
-and intuitive in Vim-land.
 
 ### Multi-window search?
 
