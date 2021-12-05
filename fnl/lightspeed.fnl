@@ -1191,16 +1191,21 @@ sub-table containing label-target k-v pairs for these targets."
     (local jump-to!
            (do (var first-jump? true)
                (fn [target ?before-newline?]
-                 (let [adjusted-pos
+                 (let [before-newline? (or ?before-newline? before-newline?)
+                       adjusted-pos
                        (jump-to!* target
                                   {:add-to-jumplist? (and first-jump?
                                                           (not instant-repeat?))
                                    : reverse?
                                    :inclusive-motion? (and x-mode? (not reverse?))
-                                   :adjust (when x-mode?
-                                             (when-not (or ?before-newline? before-newline?)
-                                               (when-not to-newline? (push-cursor! :fwd))
-                                               (when reverse? (push-cursor! :fwd))))})]
+                                   :adjust (if (and x-mode? (not before-newline?))
+                                               (do (when reverse? (push-cursor! :fwd))
+                                                   (when-not to-newline? (push-cursor! :fwd)))
+
+                                               (and op-mode?
+                                                    (or to-newline?
+                                                        (and reverse? before-newline?)))
+                                               (push-cursor! :fwd))})]
                  (set first-jump? false)
                  adjusted-pos))))
 
