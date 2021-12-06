@@ -35,11 +35,10 @@ USAGE                                                         *lightspeed-usage*
 Command sequence for 2-character search in Normal mode, with the default
 settings:
 
-`s|S <c-x>? char1 (char2|label)? (<space>|<tab>)* label?`
+`s|S char1 (char2|label)? (<space>|<tab>)* label?`
 
 That is,
 - invoke in the forward (`s`) or backward (`S`) direction
-- optionally turn on X-mode (extend/exclude)
 - enter 1st character of the search pattern (might short-circuit after this,
   if the character is unique in the search direction)
 - enter 2nd character of the search pattern (might short-circuit after this,
@@ -239,12 +238,6 @@ Note: If you have mapped some keys to `<Plug>Lightspeed_;_sx` and
     These keys switch to the next/previous group of matches, when there are
     more matches than labels available.
 
-`x_mode_prefix_key = '<c-x>'`
-
-    Key to switch on |lightspeed-x-mode| for 2-character search. For this, you
-    will probably want to use some special - non-searchable - key (|keycodes|
-    are supported).
-
 f/t-specific options~
 
 `limit_ft_matches = 4`
@@ -310,10 +303,6 @@ All modes~
 <Esc>                      Exit Lightspeed at any stage cleanly.
 
 2-character search~
-
-{key}<C-x>{pattern}        Switches to |lightspeed-x-mode| (extend/exclude) in
-                           any mode. Can be configured with
-                           `x_mode_prefix_key`.
 
 <Tab> (or <Space>)         Cycle to the next group of labeled matches.
 <S-Tab> (or <Tab>)         Cycle to the previous group of labeled matches.
@@ -388,9 +377,8 @@ Setting `;` and `,` to repeat the last Lightspeed motion (s/x or f/t):
     map <expr> ; g:lightspeed_last_motion == 'sx' ? "<Plug>Lightspeed_;_sx" : "<Plug>Lightspeed_;_ft"
     map <expr> , g:lightspeed_last_motion == 'sx' ? "<Plug>Lightspeed_,_sx" : "<Plug>Lightspeed_,_ft"
 <
-For 2-character search, the keys for cycling between groups of matches, and
-the prefix triggering X-mode can be set in the `opts` table, see
-|lightspeed-config|.
+For 2-character search, the keys for cycling between groups of matches can be
+set in the `opts` table, see |lightspeed-config|.
 
                                            *lightspeed-disable-default-mappings*
 Lightspeed does not remap any keys for which there is a custom mapping already

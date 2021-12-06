@@ -148,14 +148,9 @@ character instead."
         :labels labels
         :cycle_group_fwd_key "<space>"
         :cycle_group_bwd_key "<tab>"
-        :x_mode_prefix_key "<c-x>"
         ; f/t
         :limit_ft_matches 4
-        :repeat_ft_with_target_char false
-
-        ; deprecated (still valid) 
-        ; :full_inclusive_prefix_key
-        }))
+        :repeat_ft_with_target_char false}))
 
 
 (local deprecated-opts [:instant_repeat_fwd_key
@@ -176,9 +171,15 @@ character instead."
          ["that can also be used for instant repeat only, if you prefer. See "]
          [":h lightspeed-custom-mappings" :Visual] ["."]]
 
+        msg-for-x-prefix
+        [["Use "] ["<Plug>Lightspeed_x" :Visual] [" and "] ["<Plug>Lightspeed_X" :Visual]
+         [" instead."]]
+
         spec-messages
         {:instant_repeat_fwd_key msg-for-instant-repeat-keys
-         :instant_repeat_bwd_key msg-for-instant-repeat-keys}]
+         :instant_repeat_bwd_key msg-for-instant-repeat-keys
+         :x_mode_prefix_key msg-for-x-prefix
+         :full_inclusive_prefix_key msg-for-x-prefix}]
     (each [_ field-name-chunk (ipairs field-names)]
       (table.insert msg field-name-chunk))
     (table.insert msg ["\n"])
@@ -1089,18 +1090,17 @@ sub-table containing label-target k-v pairs for these targets."
 ; //> Helpers
 
 ; State for 2-character search that is persisted between invocations.
+; (Note: we don't need `reverse?` and `x-mode?` for the dot state, since we
+; hardcode them into the dot-repeat command.)
 (local sx {:state {:dot {:in1 nil
                          :in2 nil
-                         :in3 nil
-                         ; Note: we don't need `reverse?`, since we
-                         ; hardcode it into the dot-repeat command.
-                         :x-mode? nil}
+                         :in3 nil}
                    :cold {:in1 nil
                           :in2 nil
                           :reverse? nil
                           :x-mode? nil}}})
 
-(fn sx.go [self reverse? invoked-in-x-mode? repeat-invoc]
+(fn sx.go [self reverse? x-mode? repeat-invoc]
   "Entry point for 2-character search."
   (let [op-mode? (operator-pending-mode?)
         change-op? (change-operation?)
@@ -1115,13 +1115,12 @@ sub-table containing label-target k-v pairs for these targets."
         reverse? (if cold-repeat? (#(if invoked-as-reverse? (not $) $)
                                     self.state.cold.reverse?)
                      reverse?)
-        x-mode? (if cold-repeat? self.state.cold.x-mode? invoked-in-x-mode?)]
+        x-mode? (if cold-repeat? self.state.cold.x-mode? x-mode?)]
 
     ; Top-level vars
 
-    (var x-mode? x-mode?)
+    (var new-search? (not repeat-invoc))
     (var backspace-repeat? nil)
-    (var new-search? nil)
     (var to-newline? nil)
     (var before-newline? nil)
 
@@ -1148,30 +1147,17 @@ sub-table containing label-target k-v pairs for these targets."
 
     (fn get-first-input []
       (if instant-repeat? instant-state.in1
-          dot-repeat? (do (set x-mode? self.state.dot.x-mode?)
-                          self.state.dot.in1)
+          dot-repeat? self.state.dot.in1
           cold-repeat? self.state.cold.in1
           (match (or (with-highlight-cleanup (get-input))
                      (exit-early))
             ; Here we can handle any other modifier key as "zeroth" input,
             ; if the need arises (e.g. regex search).
-            in0 (let [x-mode-prefix-key (replace-keycodes
-                                          (or opts.x_mode_prefix_key
-                                              opts.full_inclusive_prefix_key))]  ; deprecated
-                  (match in0
-                    <backspace> (set backspace-repeat? true)
-                    x-mode-prefix-key (set x-mode? true))
-                  (var res in0)
-                  (when (and x-mode? (not invoked-in-x-mode?))
-                    ; Get the "true" first input then.
-                    (match (or (get-input)
-                               (exit-early))
-                      <backspace> (set backspace-repeat? true)
-                      in0* (set res in0*)))
-                  (set new-search? (not (or repeat-invoc backspace-repeat?)))
-                  (if backspace-repeat? (or self.state.cold.in1
-                                            (exit-early (echo-no-prev-search)))
-                      res)))))
+            <backspace> (do (set backspace-repeat? true)
+                            (set new-search? false)
+                            (or self.state.cold.in1
+                                (exit-early (echo-no-prev-search))))
+            in in)))
 
     ; No need to pass in `in1` every time once we have it, so let's curry this.
     (fn update-state* [in1]

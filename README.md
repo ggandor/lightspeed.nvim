@@ -349,9 +349,6 @@ seems a sensible default, as those keys are free in O-P mode; consider also the
 handy mnemonics, and the fact that `z` and `x` are physically right next to each
 other on a QWERTY keyboard.
 
-In any Vim mode, X-mode can also be invoked by pressing `<c-x>` before the
-search pattern.
-
 ### 1-character search (f/t)
 
 Lightspeed also overrides the native `f`/`F`/`t`/`T` motions with enhanced
@@ -437,7 +434,6 @@ require'lightspeed'.setup {
   labels = { ... },
   cycle_group_fwd_key = '<space>',
   cycle_group_bwd_key = '<tab>',
-  x_mode_prefix_key = '<c-x>',
 
   -- f/t
   limit_ft_matches = 4,
