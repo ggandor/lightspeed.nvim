@@ -154,7 +154,9 @@ character instead."
 
 
 (local deprecated-opts [:instant_repeat_fwd_key
-                        :instant_repeat_bwd_key])
+                        :instant_repeat_bwd_key
+                        :x_mode_prefix_key
+                        :full_inclusive_prefix_key])
 
 
 (fn get-deprec-msg [arg-fields]
