@@ -75,7 +75,9 @@ character instead."
   (vim.cmd "norm! 0")
   (local wincol (vim.fn.wincol))
   (vim.fn.winrestview view)
-  wincol)
+  (if (= "\t" (string.sub (vim.fn.getline ".") 1 1))  ; #98
+      (- wincol (dec vim.o.tabstop))
+      wincol))
 
 
 (fn get-fold-edge [lnum reverse?]
@@ -438,13 +440,14 @@ types properly."
 
 
 (fn get-horizontal-bounds [{: match-width}]
-  (let [gutter-width (dec (leftmost-editable-wincol))  ; sign/number/foldcolumn
-        offset-in-win (vim.fn.wincol)  ; including gutter
-        offset-in-editable-win (- offset-in-win gutter-width)
+  (let [textoff (or (. (vim.fn.getwininfo (vim.fn.win_getid)) 1 :textoff)  ; 0.6+
+                    (dec (leftmost-editable-wincol)))
+        offset-in-win (vim.fn.wincol)
+        offset-in-editable-win (- offset-in-win textoff)
         ; I.e., screen-column of the first visible column in the editable area.
         left-bound (- (vim.fn.virtcol ".") (dec offset-in-editable-win))
         window-width (api.nvim_win_get_width 0)
-        right-edge (+ left-bound (dec (- window-width gutter-width)))
+        right-edge (+ left-bound (dec (- window-width textoff)))
         right-bound (- right-edge (dec match-width))]  ; the whole match should be visible
     [left-bound right-bound]))  ; screen columns (TODO: multibyte?)
 
