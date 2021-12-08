@@ -315,7 +315,7 @@ according to the next step needed to be taken to reach them.
 
 `s`/`S` follow the semantics of `/` and `?` in terms of cursor placement and
 inclusive/exclusive operational behaviour, including forced motion types (`:h
-forced-motion`). 
+forced-motion`): 
 
 ```
 ab···|                         |···ab
@@ -325,16 +325,8 @@ ab···|                         |···ab
 ██████  ← vZ   operate   vz →  █████b
 ```
 
-The mnemonic for X-mode could be "extend/exclude" - it provides missing variants
-for the two directions.
-
-In the forward direction, the cursor goes to the end of the match; in the
-backward direction, the cursor stops just before - in an absolute sense, after -
-the end of the match (the equivalent of `T` for two-character search). In
-Operator-pending mode, the edge of the operated area always gets an offset of
-+2. This means that in the forward direction the motion becomes _inclusive_ (the
-end position will be included in the operation). Compare the illustration with
-the above one:
+The mnemonic for X-mode could be **extend/exclude** (corresponding to `x`/`X`).
+It provides missing variants for the two directions:
 
 ```
 ab···|                         |···ab
@@ -344,10 +336,17 @@ ab███·  ← X    operate   x  →  ██████
 ab████  ← vX   operate   vx →  █████b
 ```
 
+As you can see from the figure, `x` goes to the end of the match, while `X`
+stops just before - in an absolute sense, after - the end of the match (the
+equivalent of `T` for two-character search). In Operator-pending mode, the edge
+of the operated area always gets an offset of +2. This means that in the forward
+direction the motion becomes _inclusive_ (the end position will be included in
+the operation).
+
 In Operator-pending mode `x`/`X` are readily available mappings for X-mode. This
-seems a sensible default, as those keys are free in O-P mode; consider also the
-handy mnemonics, and the fact that `z` and `x` are physically right next to each
-other on a QWERTY keyboard.
+seems a sensible default, considering that those keys are free in O-P mode, and
+the handy visual mnemonic that `x` is physically to the right of `z` on a QWERTY
+keyboard (think about "pulling" the cursor forward).
 
 ### 1-character search (f/t)
 
@@ -355,7 +354,7 @@ Lightspeed also overrides the native `f`/`F`/`t`/`T` motions with enhanced
 versions that work over multiple lines. In all other respects they behave the
 same way as the native ones.
 
-### Matching line breaks
+### Matching line breaks (linewise motions)
 
 The newline character is represented by `<enter>` in search patterns. For
 example, `f<enter>` is equivalent to `$`, and will move the cursor to the end of
@@ -369,7 +368,7 @@ match).
 Repeating in Lightspeed works in a uniform way across all motions - all of the
 following methods (and even combinations of them) are valid options:
 
-#### "Instant" repeat
+#### "Instant" repeat (after jumping)
 
 - In Normal and Visual mode, the motions can be repeated by pressing the
   corresponding trigger key - `s`, `f`, `t` - again. (They continue in the
@@ -382,7 +381,8 @@ following methods (and even combinations of them) are valid options:
   correction when you accidentally overshoot your target.
 
 - For f/t-search, there is a special, opt-in repeat mode: pressing the _target
-  character_ can also repeat the motion (`opts.repeat_ft_with_target_char`).
+  character_ again can also repeat the motion
+  (`opts.repeat_ft_with_target_char`).
 
 #### "Cold" repeat
 
@@ -391,10 +391,13 @@ following methods (and even combinations of them) are valid options:
   Subsequent keystrokes of `<backspace>` move on to the next match (that is, it
   invokes "instant-repeat" mode), while `<tab>` reverts (just like `S`/`F`/`T`).
 
-- There are dedicated `<Plug>` keys available for the two modes; `;`
-  and `,` are mapped to f/t-repeat by default (that is, they follow the native
-  behaviour). If you would like to set `;` and `,` to repeat the last Lightspeed
-  motion (whether it was s/x or f/t), see `:h lightspeed-custom-mappings`.
+- There are dedicated repeat `<Plug>` keys available for the two search modes.
+  `;` and `,` are mapped to f/t repeat by default (following the native
+  behaviour), but it might be a good idea to remap them to repeat s/x. If you
+  would like to set them to repeat the last Lightspeed motion (whether it was
+  s/x or f/t), see `:h lightspeed-custom-mappings`. Just like above, subsequent
+  keystrokes move on to the next match, while the opposite key reverts the
+  previous motion.
 
 Note that for s/x motions the labels will remain available during the whole
 time, even after entering instant-repeat mode.
@@ -456,11 +459,7 @@ canonized Vim plugins like [surround.vim](https://github.com/tpope/vim-surround)
 or [targets.vim](https://github.com/wellle/targets.vim). Therefore it provides
 carefully thought-out defaults, mapping to the following keys: `s`, `S` (Normal
 and Visual mode), `z`, `Z`, `x`, `X` (Operator-pending mode), and - obviously,
-enhancing the built-in motions - `f`, `F`, `t`, `T` (all modes).
-
-(Note: Basic motions should have the absolute least friction among all commands,
-since they are the most frequent. The native `s` and `S` both have comfortable
-equivalents - `cl` and `cc`, respectively.)
+enhancing the built-in motions - `f`, `F`, `t`, `T`, `;`, `,` (all modes).
 
 That said, Lightspeed will check for conflicts with any custom mappings created
 by you or other plugins, and will not overwite them, unless explicitly told so.
@@ -494,6 +493,12 @@ should be used recursively, by design.)
 
 That can be achieved easily with an expression mapping. See `h:
 lightspeed-custom-mappings`.
+
+#### Why `s`/`S`?
+
+Basic motions should have the absolute least friction among all commands, since
+they are the most frequent. The native `s` and `S` both have comfortable
+equivalents - `cl` and `cc`, respectively.
 
 #### Disabling features
 
