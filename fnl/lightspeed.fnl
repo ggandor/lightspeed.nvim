@@ -153,7 +153,8 @@ character instead."
         :repeat_ft_with_target_char false}))
 
 
-(local deprecated-opts [:instant_repeat_fwd_key
+(local deprecated-opts [:jump_to_first_match
+                        :instant_repeat_fwd_key
                         :instant_repeat_bwd_key
                         :x_mode_prefix_key
                         :full_inclusive_prefix_key])
@@ -178,7 +179,12 @@ character instead."
          [" instead."]]
 
         spec-messages
-        {:instant_repeat_fwd_key msg-for-instant-repeat-keys
+        {:jump_to_first_match 
+         [["The plugin implements \"smart\" auto-jump now, that you can fine-tune via "]
+          ["opts.labels" :Visual] [" and "] ["opts.safe_labels" :Visual] [". See "]
+          [":h lightspeed-config" :Visual] [" for details."]]
+
+         :instant_repeat_fwd_key msg-for-instant-repeat-keys
          :instant_repeat_bwd_key msg-for-instant-repeat-keys
          :x_mode_prefix_key msg-for-x-prefix
          :full_inclusive_prefix_key msg-for-x-prefix}]
