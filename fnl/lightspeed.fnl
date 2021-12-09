@@ -684,13 +684,18 @@ interrupted change-operation."
     ; When instant-repeating, keep highlighting the same one group of matches,
     ; and do not shift until reaching the end of the group - it is less
     ; disorienting if the "snake" does not move continuously, on every repeat.
-    (fn get-num-of-matches-to-be-highlighted [?instant-state]
-      (let [stack-size (if ?instant-state (length instant-state.stack) 0)
-            group-limit (or opts.limit_ft_matches 0)
-            eaten-up (if (= group-limit 0) 0 (% stack-size group-limit))
-            remaining (- group-limit eaten-up)]
-        ; Switch to next group if no remaining matches.
-        (if (= remaining 0) group-limit remaining)))
+    (fn get-num-of-matches-to-be-highlighted []
+      (match opts.limit_ft_matches
+        (where group-limit (> group-limit 0))
+        (let [matches-left-behind (or (-?> instant-state (. :stack) (length)) 0)
+              ; Leaving behind a match = eating one from the highlighted group.
+              ; [] | [2 3 4 ...]  ->  [1] | [3 4 ...]
+              eaten-up (% matches-left-behind group-limit)
+              remaining (- group-limit eaten-up)]
+          ; Switch to next group if no remaining matches.
+          (if (= remaining 0) group-limit remaining))
+
+        _ 0))
 
     (fn get-followup-action [in from-reverse-cold-repeat? target-char]
       (let [mode (if (= (vim.fn.mode) :n) :n :x)  ; vim-cutlass compat (#28)
@@ -746,7 +751,7 @@ interrupted change-operation."
         (var match-count 0)
         (let [next-pos (vim.fn.searchpos "\\_." (if reverse? :nWb :nW))
               pattern (if to-newline? "\\n" (.. "\\V" (in1:gsub "\\" "\\\\")))
-              limit (+ count (get-num-of-matches-to-be-highlighted instant-state))]
+              limit (+ count (get-num-of-matches-to-be-highlighted))]
           (each [[line col &as pos]
                  (onscreen-match-positions pattern reverse? {:ft-search? true : limit})]
             ; If we've started cold-repeating t/T from right before a match,
