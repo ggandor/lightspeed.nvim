@@ -648,8 +648,8 @@ interrupted change-operation."
 ; TODO: Handle <a-?> keys, i.e., those with multibyte representation
 ; (`maparg` will not work with them, and we cannot convert `in` _to_
 ; a keycode(-sequence), so it's not trivial. Related: Vim #1810.)
-(fn get-followup-action [in kind x-or-t? instant-repeat?
-                         from-reverse-cold-repeat? ?target-char]
+(fn get-repeat-action [in kind x-or-t? instant-repeat?
+                       from-reverse-cold-repeat? ?target-char]
   (let [mode (if (= (vim.fn.mode) :n) :n :x)  ; vim-cutlass compat (#28)
                                               ; (note: non-OP mode assumed)
         in-mapped-to (maparg-expr in mode)
@@ -805,8 +805,8 @@ interrupted change-operation."
                             from-reverse-cold-repeat?
                             (if instant-repeat? instant-state.from-reverse-cold-repeat?
                                 (and cold-repeat? invoked-as-reverse?))]
-                        (match (get-followup-action in2 :ft t-mode? instant-repeat?
-                                                    from-reverse-cold-repeat? in1)
+                        (match (get-repeat-action in2 :ft t-mode? instant-repeat?
+                                                  from-reverse-cold-repeat? in1)
                           :repeat (do (table.insert stack (get-cursor-pos))
                                       (ft:go reverse? t-mode?
                                              {:in in1 : stack :reverted? false
@@ -1387,8 +1387,8 @@ sub-table containing label-target k-v pairs for these targets."
                                  (exit-early))
                         [in3 group-offset]
                         (match (when-not op-mode?
-                                 (get-followup-action in3 :sx x-mode? instant-repeat?
-                                                      from-reverse-cold-repeat?))
+                                 (get-repeat-action in3 :sx x-mode? instant-repeat?
+                                                    from-reverse-cold-repeat?))
                           action (let [idx (match action
                                              :repeat (min (inc curr-idx) (length targets))
                                              :revert (max (dec curr-idx) 1))]

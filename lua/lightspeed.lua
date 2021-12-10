@@ -703,7 +703,7 @@ local function get_plug_key(kind, reverse_3f, x_or_t_3f, repeat_invoc)
   end
   return ("<Plug>Lightspeed_" .. _158_ .. _163_)
 end
-local function get_followup_action(_in, kind, x_or_t_3f, instant_repeat_3f, from_reverse_cold_repeat_3f, _3ftarget_char)
+local function get_repeat_action(_in, kind, x_or_t_3f, instant_repeat_3f, from_reverse_cold_repeat_3f, _3ftarget_char)
   local mode
   if (vim.fn.mode() == "n") then
     mode = "n"
@@ -1029,7 +1029,7 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
           else
             from_reverse_cold_repeat_3f = (cold_repeat_3f and invoked_as_reverse_3f)
           end
-          local _236_ = get_followup_action(in2, "ft", t_mode_3f0, instant_repeat_3f, from_reverse_cold_repeat_3f, in1)
+          local _236_ = get_repeat_action(in2, "ft", t_mode_3f0, instant_repeat_3f, from_reverse_cold_repeat_3f, in1)
           if (_236_ == "repeat") then
             table.insert(stack, get_cursor_pos())
             return ft:go(reverse_3f0, t_mode_3f0, {["from-reverse-cold-repeat?"] = from_reverse_cold_repeat_3f, ["in"] = in1, ["reverted?"] = false, stack = stack})
@@ -1838,9 +1838,9 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
     end
     _405_ = (_407_() or get_targets(in1, reverse_3f0) or _409_())
     if ((type(_405_) == "table") and ((type((_405_)[1]) == "table") and ((type(((_405_)[1]).pair) == "table") and true and (nil ~= (((_405_)[1]).pair)[2]))) and ((_405_)[2] == nil)) then
-      local only = (_405_)[1]
       local _0 = (((_405_)[1]).pair)[1]
       local ch2 = (((_405_)[1]).pair)[2]
+      local only = (_405_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           if dot_repeatable_op_3f then
@@ -1930,9 +1930,9 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
           _425_ = t_426_
         end
         if ((type(_425_) == "table") and ((type((_425_).pair) == "table") and true and (nil ~= ((_425_).pair)[2]))) then
-          local shortcut = _425_
           local _0 = ((_425_).pair)[1]
           local ch2 = ((_425_).pair)[2]
+          local shortcut = _425_
           do
             if dot_repeatable_op_3f then
               set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f0, x_mode_3f0, "dot")))
@@ -2030,7 +2030,7 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
               local group_offset = (_442_)[2]
               local _446_
               if not op_mode_3f then
-                _446_ = get_followup_action(in3, "sx", x_mode_3f0, instant_repeat_3f, from_reverse_cold_repeat_3f)
+                _446_ = get_repeat_action(in3, "sx", x_mode_3f0, instant_repeat_3f, from_reverse_cold_repeat_3f)
               else
               _446_ = nil
               end
