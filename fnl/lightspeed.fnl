@@ -86,6 +86,15 @@ character instead."
     fold-edge fold-edge))
 
 
+(fn maparg-expr [name mode]
+  "Like vim.fn.maparg, but returns the rhs of <expr> mappings evaluated."
+  (let [rhs (vim.fn.maparg name mode)
+        ; Note: We could use `maparg` with the `dict` arg, and check the `expr`
+        ; field, but this works as well.
+        (ok? eval-rhs) (pcall vim.fn.eval rhs)]
+    (if (and ok? (= (type eval-rhs) :string)) eval-rhs rhs)))
+
+
 ; Glossary ///1
 
 ; Instant-repeat (1-char search)
@@ -636,6 +645,33 @@ interrupted change-operation."
         [:sx true  true ] "X")))
 
 
+; TODO: Handle <a-?> keys, i.e., those with multibyte representation
+; (`maparg` will not work with them, and we cannot convert `in` _to_
+; a keycode(-sequence), so it's not trivial. Related: Vim #1810.)
+(fn get-followup-action [in kind x-or-t? instant-repeat?
+                         from-reverse-cold-repeat? ?target-char]
+  (let [mode (if (= (vim.fn.mode) :n) :n :x)  ; vim-cutlass compat (#28)
+                                              ; (note: non-OP mode assumed)
+        in-mapped-to (maparg-expr in mode)
+        repeat-plug-key (.. "<Plug>Lightspeed_;_" kind)
+        revert-plug-key (.. "<Plug>Lightspeed_,_" kind)]
+    (if (or (when opts.repeat_ft_with_target_char (= in ?target-char))
+            (= in <backspace>)
+            (= in-mapped-to (get-plug-key kind false x-or-t?))
+            (string.find in-mapped-to (if from-reverse-cold-repeat?
+                                          revert-plug-key
+                                          repeat-plug-key)))
+        :repeat
+
+        (when instant-repeat?
+          (or (= in "\t")
+              (= in-mapped-to (get-plug-key kind true x-or-t?))
+              (string.find in-mapped-to (if from-reverse-cold-repeat?
+                                            repeat-plug-key
+                                            revert-plug-key))))
+        :revert)))
+
+
 ; 1-character search ///1
 
 ; Precursory remarks: do not readily succumb to the siren call of
@@ -696,34 +732,6 @@ interrupted change-operation."
           (if (= remaining 0) group-limit remaining))
 
         _ 0))
-
-    (fn get-followup-action [in from-reverse-cold-repeat? target-char]
-      (let [mode (if (= (vim.fn.mode) :n) :n :x)  ; vim-cutlass compat (#28)
-                                                  ; (note: non-OP mode assumed)
-            ; TODO: Handle <a-?> keys, i.e., those with multibyte representation
-            ;       (`maparg` breaks on them, and we cannot convert `in` _to_ a
-            ;       keycode, so it's not trivial. Related: Vim #1810.)
-            rhs (vim.fn.maparg in mode)
-            ; `rhs` might be an expression mapping.
-            (ok? eval-rhs) (pcall vim.fn.eval rhs)
-            in-mapped-to (if (and ok? (= (type eval-rhs) :string)) eval-rhs rhs)]
-        (if (or (when opts.repeat_ft_with_target_char (= in target-char))
-                (= in <backspace>)
-                (= in-mapped-to (get-plug-key :ft false t-mode?))
-                (string.find in-mapped-to
-                             (if from-reverse-cold-repeat?
-                                 "<Plug>Lightspeed_,_ft"
-                                 "<Plug>Lightspeed_;_ft")))
-            :repeat
-
-            (when instant-repeat?
-              (or (= in "\t")
-                  (= in-mapped-to (get-plug-key :ft true t-mode?))
-                  (string.find in-mapped-to
-                               (if from-reverse-cold-repeat?
-                                   "<Plug>Lightspeed_;_ft"
-                                   "<Plug>Lightspeed_,_ft"))))
-            :revert)))
 
     ;;;
 
@@ -797,7 +805,8 @@ interrupted change-operation."
                             from-reverse-cold-repeat?
                             (if instant-repeat? instant-state.from-reverse-cold-repeat?
                                 (and cold-repeat? invoked-as-reverse?))]
-                        (match (get-followup-action in2 from-reverse-cold-repeat? in1)
+                        (match (get-followup-action in2 :ft t-mode? instant-repeat?
+                                                    from-reverse-cold-repeat? in1)
                           :repeat (do (table.insert stack (get-cursor-pos))
                                       (ft:go reverse? t-mode?
                                              {:in in1 : stack :reverted? false
@@ -1255,29 +1264,6 @@ sub-table containing label-target k-v pairs for these targets."
               (when-not (empty? rest) rest)
               sublist))))
 
-    (fn get-followup-action [in from-reverse-cold-repeat?]
-      (let [mode (if (= (vim.fn.mode) :n) :n :x)
-            ; See ft:go. (TODO: DRY)
-            rhs (vim.fn.maparg in mode)
-            (ok? eval-rhs) (pcall vim.fn.eval rhs)
-            in-mapped-to (if (and ok? (= (type eval-rhs) :string)) eval-rhs rhs)]
-        (if (or (= in <backspace>)
-                (= in-mapped-to (get-plug-key :sx false x-mode?))
-                (string.find in-mapped-to
-                             (if from-reverse-cold-repeat?
-                                 "<Plug>Lightspeed_,_sx"
-                                 "<Plug>Lightspeed_;_sx")))
-            :repeat
-
-            (when instant-repeat?
-              (or (= in "\t")
-                  (= in-mapped-to (get-plug-key :sx true x-mode?))
-                  (string.find in-mapped-to
-                               (if from-reverse-cold-repeat?
-                                   "<Plug>Lightspeed_;_sx"
-                                   "<Plug>Lightspeed_,_sx"))))
-            :revert)))
-
     (fn get-last-input [sublist start-idx]
       (let [next_group_key (replace-keycodes opts.cycle_group_fwd_key)
             prev_group_key (replace-keycodes opts.cycle_group_bwd_key)]
@@ -1398,7 +1384,8 @@ sub-table containing label-target k-v pairs for these targets."
                                  (exit-early))
                         [in3 group-offset]
                         (match (when-not op-mode?
-                                 (get-followup-action in3 from-reverse-cold-repeat?)) ; instant repeat
+                                 (get-followup-action in3 :sx x-mode? instant-repeat?
+                                                      from-reverse-cold-repeat?))
                           action (let [idx (match action
                                              :repeat (min (inc curr-idx) (length targets))
                                              :revert (max (dec curr-idx) 1))]
