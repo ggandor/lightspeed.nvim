@@ -1209,14 +1209,17 @@ sub-table containing label-target k-v pairs for these targets."
                                                           (not instant-repeat?))
                                    : reverse?
                                    :inclusive-motion? (and x-mode? (not reverse?))
-                                   :adjust (if (and x-mode? (not before-newline?))
-                                               (do (when reverse? (push-cursor! :fwd))
-                                                   (when-not to-newline? (push-cursor! :fwd)))
+                                   :adjust (if to-newline?
+                                               (when op-mode? (push-cursor! :fwd))
 
-                                               (and op-mode?
-                                                    (or to-newline?
-                                                        (and reverse? before-newline?)))
-                                               (push-cursor! :fwd))})]
+                                               before-newline?
+                                               (when (and op-mode? x-mode?)
+                                                 (push-cursor! :fwd))
+
+                                               x-mode?
+                                               (do (push-cursor! :fwd)
+                                                   (when reverse?
+                                                     (push-cursor! :fwd))))})]
                  (set first-jump? false)
                  adjusted-pos))))
 
