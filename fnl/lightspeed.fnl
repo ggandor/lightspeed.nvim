@@ -655,20 +655,18 @@ interrupted change-operation."
         in-mapped-to (maparg-expr in mode)
         repeat-plug-key (.. "<Plug>Lightspeed_;_" kind)
         revert-plug-key (.. "<Plug>Lightspeed_,_" kind)]
-    (if (or (when opts.repeat_ft_with_target_char (= in ?target-char))
-            (= in <backspace>)
-            (= in-mapped-to (get-plug-key kind false x-or-t?))
-            (string.find in-mapped-to (if from-reverse-cold-repeat?
-                                          revert-plug-key
-                                          repeat-plug-key)))
+    (if (or (= in <backspace>)
+            (and (= kind :ft) opts.repeat_ft_with_target_char (= in ?target-char))
+            (one-of? in-mapped-to
+              (get-plug-key kind false x-or-t?)
+              (if from-reverse-cold-repeat? revert-plug-key repeat-plug-key)))
         :repeat
 
-        (when instant-repeat?
-          (or (= in "\t")
-              (= in-mapped-to (get-plug-key kind true x-or-t?))
-              (string.find in-mapped-to (if from-reverse-cold-repeat?
-                                            repeat-plug-key
-                                            revert-plug-key))))
+        (and instant-repeat?
+             (or (= in "\t")
+                 (one-of? in-mapped-to
+                   (get-plug-key kind true x-or-t?)
+                   (if from-reverse-cold-repeat? repeat-plug-key revert-plug-key))))
         :revert)))
 
 
