@@ -1,4 +1,4 @@
-*lightspeed.txt*     For Neovim version 0.5.0      Last change: 2021 December 06
+*lightspeed.txt*     For Neovim version 0.5.0      Last change: 2021 December 13
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -72,12 +72,12 @@ forward direction the motion becomes |inclusive| (the cursor position will be
 included in the operation).
 
                                                           *lightspeed-eol-match*
-The newline character is represented by `<enter>` in the search patterns. For
+The newline character is represented by `<enter>` in search patterns. For
 example, `f<enter>` is equivalent to `$`, and will move the cursor to the end
-of the line, while `s<enter>` will label all EOL positions, providing an easy
-way to move to blank lines. Likewise, in s/x mode, a character before <EOL>
-can be targeted by pressing `<enter>` after it (indicated by `¬` in the
-highlighted match).
+of the line. `s<enter>` will label all EOL positions, including off-screen
+ones (labeled as `<{label}` or `{label}>`), providing an easy way to move to
+blank lines. Likewise, a character before EOL can be targeted by
+`s{char}<enter>` (`\n` in the match is highlighted as `¬` by default).
 
                                                  *lightspeed-1-character-search*
 Lightspeed also overrides the native `f`/`F`/`t`/`T` motions with enhanced

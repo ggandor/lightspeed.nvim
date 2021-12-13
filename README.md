@@ -134,6 +134,8 @@ obvious atomic alternative - like `w`, `{`, or `%` - available.
   jumps to the first match if the remaining matches can be covered by a limited
   set of "safe" target labels, but stays in place, and switches to an extended,
   more comfortable label set otherwise
+* **linewise operations** are possible without limitations via the same uniform
+  interface, by targeting (potentially off-screen) EOL characters
 * flawless **dot-repeat support** for operators (with
   [repeat.vim](https://github.com/tpope/vim-repeat) installed)
 * skips folds
@@ -358,10 +360,10 @@ same way as the native ones.
 
 The newline character is represented by `<enter>` in search patterns. For
 example, `f<enter>` is equivalent to `$`, and will move the cursor to the end of
-the line, while `s<enter>` will label all EOL positions, providing an easy way
-to move to blank lines. Likewise, in s/x mode, a character before EOL can be
-targeted by pressing `<enter>` after it (indicated by `¬` in the highlighted
-match).
+the line. `s<enter>` will label all EOL positions, including off-screen ones
+(labeled as `<{label}` or `{label}>`), providing an easy way to move to blank
+lines. Likewise, a character before EOL can be targeted by `s{char}<enter>`
+(`\n` in the match is highlighted as `¬` by default).
 
 ### Repeating motions
 

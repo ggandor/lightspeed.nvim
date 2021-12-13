@@ -470,7 +470,7 @@ types properly."
     [left-bound right-bound]))  ; screen columns (TODO: multibyte?)
 
 
-(fn onscreen-match-positions [pattern reverse? {: ft-search? : limit}]
+(fn onscreen-match-positions [pattern reverse? {: to-eol? : ft-search? : limit}]
   "Returns an iterator streaming the return values of `searchpos` for
 the given pattern, stopping at the window edge; in case of 2-character
 search, folds and offscreen parts of non-wrapped lines are skipped too.
@@ -518,7 +518,8 @@ early termination in loops."
                 (match (skip-to-fold-edge!)
                   :moved-the-cursor (recur false)
                   :not-in-fold
-                  (if (or vim.wo.wrap (<= left-bound col right-bound))  ; = on-screen
+                  (if (or vim.wo.wrap (<= left-bound col right-bound)  ; = on-screen
+                          to-eol?)
                     (do (++ match-count) pos)
                     (match (skip-to-next-in-window-pos!)
                       :moved-the-cursor (recur true)  ; true, as we might be _on_ a match
@@ -750,13 +751,13 @@ interrupted change-operation."
                  in in))
       in1
       (do
-        (local to-newline? (= in1 "\r"))
+        (local to-eol? (= in1 "\r"))
         (when-not repeat-invoc
           (set self.state.cold {:in in1 : reverse? : t-mode?}))  ; endnote #1
         (var jump-pos nil)
         (var match-count 0)
         (let [next-pos (vim.fn.searchpos "\\_." (if reverse? :nWb :nW))
-              pattern (if to-newline? "\\n" (.. "\\V" (in1:gsub "\\" "\\\\")))
+              pattern (if to-eol? "\\n" (.. "\\V" (in1:gsub "\\" "\\\\")))
               limit (+ count (get-num-of-matches-to-be-highlighted))]
           (each [[line col &as pos]
                  (onscreen-match-positions pattern reverse? {:ft-search? true : limit})]
@@ -780,7 +781,7 @@ interrupted change-operation."
                             :inclusive-motion? true  ; just like the native f/t
                             :adjust (when t-mode?
                                       (push-cursor! (if reverse? :fwd :bwd))
-                                      (when (and to-newline?
+                                      (when (and to-eol?
                                                  (not reverse?)
                                                  (= (vim.fn.mode) :n))
                                         (push-cursor! :fwd)))}))
@@ -869,18 +870,18 @@ ones might be set by subsequent functions):
   ?beacon      : [col-offset [[char hl-group]]]
 "
   (local targets [])
-  (local to-newline? (= ch1 "\r"))
+  (local to-eol? (= ch1 "\r"))
   (var prev-match {})
   (var added-prev-match? nil)
-  (let [pattern (if to-newline? "\\n"           ; we should send in a literal \n, for searchpos
+  (let [pattern (if to-eol? "\\n"           ; we should send in a literal \n, for searchpos
                     (.. "\\V\\C"                ; force matching case (for the moment)
                         (ch1:gsub "\\" "\\\\")  ; backslash still needs to be escaped for \V
                         "\\_."))]               ; match anything (including EOL) after ch1
-    (each [[line col &as pos] (onscreen-match-positions pattern reverse? {})]
-      (if to-newline? (table.insert targets {:pos pos :pair ["\n" ""]})
+    (each [[line col &as pos] (onscreen-match-positions pattern reverse? {: to-eol?})]
+      (if to-eol? (table.insert targets {:pos pos :pair ["\n" ""]})
           (let [ch2 (or (char-at-pos pos {:char-offset 1})
                         "\r")  ; <enter> is the expected input for line breaks
-                before-eol? (= ch2 "\r")
+                to-pre-eol? (= ch2 "\r")
                 overlaps-prev-match? (and (= line prev-match.line)
                                           (= col ((if reverse? dec inc) prev-match.col)))
                 same-char-triplet? (and overlaps-prev-match? (= ch2 prev-match.ch2))
@@ -910,7 +911,7 @@ ones might be set by subsequent functions):
                                                             (- prev-col col)
                                                             (- col prev-col))]
                                                     (<= col-delta match-width))))]
-                  (when before-eol? (tset target :squeezed? true))
+                  (when to-pre-eol? (tset target :squeezed? true))
                   (when touches-prev-target?
                     (tset (if reverse? target prev-target) :squeezed? true))
                   (when overlaps-prev-target?
@@ -933,14 +934,15 @@ char separately."
     (table.insert (. targets :sublists ch2) target)))
 
 
-(fn get-labels [sublist]
-  (if (or (not opts.labels) (empty? opts.labels))
-      (do (when (= sublist.autojump? nil) (tset sublist :autojump? true))
-          opts.safe_labels)
-
-      (or (not opts.safe_labels) (empty? opts.safe_labels))
+(fn get-labels [sublist to-eol?]
+  (when to-eol? (tset sublist :autojump? false))
+  (if (or (not opts.safe_labels) (empty? opts.safe_labels))
       (do (when (= sublist.autojump? nil) (tset sublist :autojump? false))
           opts.labels)
+    
+      (or (not opts.labels) (empty? opts.labels))
+      (do (when (= sublist.autojump? nil) (tset sublist :autojump? true))
+          opts.safe_labels)
 
       (match sublist.autojump?
         true opts.safe_labels
@@ -956,13 +958,14 @@ char separately."
                 (get-labels sublist)))))
 
 
-(fn set-labels [targets]
+(fn set-labels [targets to-eol?]
   "Assign label characters to targets. Note: `label` is a fixed,
 implicit attribute of the target - whether and how it should actually be
 displayed depends on `label-state`."
   (each [_ sublist (pairs targets.sublists)]
     (when (> (length sublist) 1)  ; else we'll jump automatically anyway
-      (let [labels (get-labels sublist)]  ; sets :autojump? (!)
+      ; Note: We could also get `to-eol?` by checking the sublist key (ch2).
+      (let [labels (get-labels sublist to-eol?)]  ; sets :autojump? (!)
         (each [i target (ipairs sublist)]
           (tset target
                 :label
@@ -1031,7 +1034,8 @@ sub-table containing label-target k-v pairs for these targets."
                  : label : label-state : squeezed? : overlapped? : shortcut?
                  &as target}
                 repeat]
-  (let [to-newline? (and (= ch1 "\n") (= ch2 ""))
+  (let [to-eol? (and (= ch1 "\n") (= ch2 ""))
+        [left-bound right-bound] (get-horizontal-bounds {:match-width 1})
         [ch1 ch2] (map #(or (. opts.substitute_chars $) $) [ch1 ch2])
         masked-char$ [ch2 hl.group.masked-ch]
         label$ [label hl.group.label]
@@ -1047,7 +1051,7 @@ sub-table containing label-target k-v pairs for these targets."
            ; unlabeled matches when repeating, as we have the full input
            ; sequence available then, and we will have jumped to the first
            ; match already, if it was on the "winning" sublist.)
-           nil (when-not (or repeat to-newline?)
+           nil (when-not (or repeat to-eol?)
                  (if overlapped?
                      [1 [[ch2 hl.group.unlabeled-match]]]
                      [0 [[(.. ch1 ch2) hl.group.unlabeled-match]]]))
@@ -1055,7 +1059,17 @@ sub-table containing label-target k-v pairs for these targets."
            ; Note: `repeat` is also mutually exclusive with both
            ; `overlapped?` and `shortcut?`.
            :active-primary
-           (if to-newline? [0 [shortcut$]]
+           (if to-eol? (if (or vim.wo.wrap 
+                               (and (<= col right-bound) (>= col left-bound)))
+                           [0 [shortcut$]]
+
+                           (> col right-bound)
+                           [(dec (- right-bound col))
+                            [shortcut$ [">" hl.group.one-char-match]]]
+
+                           (< col left-bound)
+                           [0 [["<" hl.group.one-char-match] shortcut$]
+                            :left-off])
                repeat [(if squeezed? 1 2) [shortcut$]]
                shortcut? (if overlapped?
                              [1 [overlapped-shortcut$]]
@@ -1067,7 +1081,18 @@ sub-table containing label-target k-v pairs for these targets."
                [2 [label$]])
 
            :active-secondary
-           (if to-newline? [0 [distant-label$]]
+           (if to-eol? (if (or vim.wo.wrap 
+                               (and (<= col right-bound) (>= col left-bound)))
+                           [0 [distant-label$]]
+                         
+                           ; TODO: New hl group (~ no-underline distant label).
+                           (> col right-bound)
+                           [(dec (- right-bound col))
+                            [distant-label$ [">" hl.group.unlabeled-match]]]
+
+                           (< col left-bound)
+                           [0 [["<" hl.group.unlabeled-match] distant-label$]
+                            :left-off])
                repeat [(if squeezed? 1 2) [distant-label$]]
                overlapped? [1 [overlapped-distant-label$]]
                squeezed? [0 [masked-char$ distant-label$]]
@@ -1085,11 +1110,12 @@ sub-table containing label-target k-v pairs for these targets."
   (for [i (or ?start-idx 1) (length target-list)]
     (let [{:pos [line col] : beacon} (. target-list i)]
       (match beacon  ; might be nil, if the state is inactive
-        [offset chunks]
+        [offset chunks ?left-off?]
         (hl:set-extmark (dec line)
                         (dec (+ col offset))
                         {:virt_text chunks
-                         :virt_text_pos "overlay"})))))
+                         :virt_text_pos "overlay"
+                         :virt_text_win_col (when ?left-off? 0)})))))
 
 
 (fn get-target-with-active-primary-label [target-list input]
@@ -1141,8 +1167,8 @@ sub-table containing label-target k-v pairs for these targets."
 
     (var new-search? (not repeat-invoc))
     (var backspace-repeat? nil)
-    (var to-newline? nil)
-    (var before-newline? nil)
+    (var to-eol? nil)
+    (var to-pre-eol? nil)
 
     ; Helpers ///
 
@@ -1159,7 +1185,7 @@ sub-table containing label-target k-v pairs for these targets."
 
     (macro with-highlight-chores [...]
       `(do (when (and opts.grey_out_search_area
-                      (not (or cold-repeat? instant-repeat?)))
+                      (not (or cold-repeat? instant-repeat? to-eol?)))
              (grey-out-search-area reverse?))
            (do ,...)
            (highlight-cursor)
@@ -1199,18 +1225,18 @@ sub-table containing label-target k-v pairs for these targets."
     ; itself, so setting up a closure here.
     (local jump-to!
            (do (var first-jump? true)
-               (fn [target ?before-newline?]
-                 (let [before-newline? (or ?before-newline? before-newline?)
+               (fn [target ?to-pre-eol?]
+                 (let [to-pre-eol? (or ?to-pre-eol? to-pre-eol?)
                        adjusted-pos
                        (jump-to!* target
                                   {:add-to-jumplist? (and first-jump?
                                                           (not instant-repeat?))
                                    : reverse?
                                    :inclusive-motion? (and x-mode? (not reverse?))
-                                   :adjust (if to-newline?
+                                   :adjust (if to-eol?
                                                (when op-mode? (push-cursor! :fwd))
 
-                                               before-newline?
+                                               to-pre-eol?
                                                (when (and op-mode? x-mode?)
                                                  (push-cursor! :fwd))
 
@@ -1310,7 +1336,7 @@ sub-table containing label-target k-v pairs for these targets."
 
     (match (get-first-input)
       in1
-      (let [_ (set to-newline? (= in1 "\r"))
+      (let [_ (set to-eol? (= in1 "\r"))
             from-pos (get-cursor-pos)
             update-state (update-state* in1)
             prev-in2 (if instant-repeat? instant-state.in2
@@ -1340,15 +1366,15 @@ sub-table containing label-target k-v pairs for these targets."
             (when-not instant-repeat?
               (doto targets
                 (populate-sublists)
-                (set-labels)
+                (set-labels to-eol?)
                 (set-label-states)))
-            (when (and new-search? (not to-newline?))
+            (when (and new-search? (not to-eol?))
               (doto targets
                 (set-shortcuts-and-populate-shortcuts-map)
                 (set-beacons {:repeat nil}))
               (with-highlight-chores (light-up-beacons targets)))
             (match (or prev-in2
-                       (when to-newline? "")
+                       (when to-eol? "")
                        (with-highlight-cleanup (get-input))
                        (exit-early))
               in2
@@ -1359,7 +1385,7 @@ sub-table containing label-target k-v pairs for these targets."
 
                 _
                 (do
-                  (set before-newline? (= in2 "\r"))
+                  (set to-pre-eol? (= in2 "\r"))
                   (update-state {:cold {: in2}})  ; endnote #1
                   (match (or (?. instant-state :sublist)
                              (get-sublist targets in2)
