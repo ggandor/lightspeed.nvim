@@ -35,23 +35,24 @@
 
 ; Nvim utils ///1
 
-(fn replace-keycodes [s]
-  (api.nvim_replace_termcodes s true false true))
-
 (fn echo [msg]
   (vim.cmd :redraw) (api.nvim_echo [[msg]] false []))
 
+(fn replace-keycodes [s]
+  (api.nvim_replace_termcodes s true false true))
+
+(local <backspace> (replace-keycodes "<bs>"))
+(local <ctrl-v> (replace-keycodes "<c-v>"))
+
+(fn get-motion-force [mode]
+  (match (when (mode:match :o) (mode:sub -1))
+    last-ch (when (one-of? last-ch <ctrl-v> :V :v) last-ch)))
+
 (fn operator-pending-mode? []
-  (-> (. (api.nvim_get_mode) :mode) (string.match :o)))
+  (-> (api.nvim_get_mode) (. :mode) (string.match :o)))
 
-(fn is-current-operation? [op-ch]
-  (and (operator-pending-mode?) (= vim.v.operator op-ch)))
-
-(fn change-operation? [] (is-current-operation? :c))
-(fn delete-operation? [] (is-current-operation? :d))
-
-(fn dot-repeatable-operation? []
-  (and (operator-pending-mode?) (not= vim.v.operator :y)))
+(fn change-operation? []
+  (and (operator-pending-mode?) (= vim.v.operator :c)))
 
 (fn get-cursor-pos [] [(vim.fn.line ".") (vim.fn.col ".")])
 
@@ -69,6 +70,7 @@ character instead."
       (vim.fn.nr2char char-nr))))
 
 
+; For pre-0.6 compatibility.
 (fn leftmost-editable-wincol []
   ; Note: This will not have a visible effect if not forcing a redraw.
   (local view (vim.fn.winsaveview))
@@ -330,31 +332,27 @@ character instead."
 (fn highlight-range [hl-group
                      [startline startcol &as start]
                      [endline endcol &as end]
-                     {: forced-motion : inclusive-motion?}]
+                     {: motion-force : inclusive-motion?}]
   "A wrapper around `vim.highlight.range` that handles forced motion
 types properly."
-  (let [ctrl-v (replace-keycodes "<c-v>")
-        hl-range (fn [start end end-inclusive?]
+  (let [hl-range (fn [start end end-inclusive?]
                    (vim.highlight.range
                      0 hl.ns hl-group start end nil end-inclusive?))]
-    (match forced-motion
-      ctrl-v (let [[startcol endcol] [(min startcol endcol)
-                                      (max startcol endcol)]]
-               (for [line startline endline]
-                 ; Blockwise operations make the motion inclusive on
-                 ; both ends, unconditionally.
-                 (hl-range [line startcol] [line endcol] true)))
+    (match motion-force
+      <ctrl-v> (let [[startcol endcol] [(min startcol endcol)
+                                        (max startcol endcol)]]
+                 (for [line startline endline]
+                   ; Blockwise operations make the motion inclusive on
+                   ; both ends, unconditionally.
+                   (hl-range [line startcol] [line endcol] true)))
       :V (hl-range [startline 0] [endline -1])
       ; We are in OP mode, doing chairwise motion, so 'v' _flips_ its
       ; inclusive/exclusive behaviour (:h o_v).
       :v (hl-range start end (not inclusive-motion?))
-      _ (hl-range start end inclusive-motion?))))
+      nil (hl-range start end inclusive-motion?))))
 
 
 ; Common ///1
-
-(local <backspace> (replace-keycodes "<bs>"))
-
 
 (fn echo-no-prev-search [] (echo "no previous search"))
 
@@ -389,8 +387,10 @@ types properly."
   (vim.cmd "silent! doautocmd matchup_matchparen CursorMoved"))
 
 
-(macro jump-to!* [target {: add-to-jumplist? : reverse? : inclusive-motion? : adjust}]
-  `(let [op-mode?# (operator-pending-mode?)
+(macro jump-to!* [target {: mode : reverse? : inclusive-motion?
+                          : add-to-jumplist? : adjust}]
+  `(let [op-mode?# (string.match ,mode :o)
+         motion-force# (get-motion-force ,mode)
          ; Needs to be here, inside the returned form, as we need to get
          ; `vim.o.virtualedit` at runtime.
          restore-virtualedit-autocmd#
@@ -416,7 +416,7 @@ types properly."
          ; (This is only relevant in the forward direction.)
          (when (and (not ,reverse?) ,inclusive-motion?)
            ; Check for modifiers forcing motion types. (:h forced-motion)
-           (match (string.sub (vim.fn.mode :t) -1)
+           (match motion-force#
              ; Note that we should _never_ push the cursor in the linewise case,
              ; as we might push it beyond EOL, and that would add another line
              ; to the selection.
@@ -433,13 +433,13 @@ types properly."
 
              ; Else, in the normal case (no modifier), we should push the cursor
              ; forward (next column as exclusive = target column as inclusive).
-             :o (if (not (cursor-before-eof?)) (push-cursor! :fwd)
-                    ; The EOF edge case requires some hackery.
-                    ; (Note: The cursor will be moved to the end of the operated
-                    ; area anyway, no need to undo the `l` afterwards.)
-                    (do (vim.cmd "set virtualedit=onemore")
-                        (vim.cmd "norm! l")
-                        (vim.cmd restore-virtualedit-autocmd#))))))
+             nil (if (not (cursor-before-eof?)) (push-cursor! :fwd)
+                     ; The EOF edge case requires some hackery.
+                     ; (Note: The cursor will be moved to the end of the operated
+                     ; area anyway, no need to undo the `l` afterwards.)
+                     (do (vim.cmd "set virtualedit=onemore")
+                         (vim.cmd "norm! l")
+                         (vim.cmd restore-virtualedit-autocmd#))))))
      adjusted-pos#))
 
 
@@ -574,7 +574,7 @@ interrupted change-operation."
 ; VimL functions can be dangerous, they might return 0 for example, like
 ; `feedkey`, and with that they can screw up Fennel match forms in a breeze,
 ; resulting in misterious bugs, so it's better to be paranoid.)
-(macro exit-template [mode early-exit? ...]
+(macro exit-template [search-mode early-exit? ...]
   `(do
      ; Be sure _not_ to call the macro twice accidentally,
      ; `handle-interrupted-change-op!` might move the cursor twice then!
@@ -586,7 +586,7 @@ interrupted change-operation."
      ; (Note: I'd like to understand why it's necessary to wrap the varargs in
      ; an additional `do` - else only sees the first item.)
      (do ,...)
-     ,(match mode
+     ,(match search-mode
         :ft `(doau-when-exists :LightspeedFtLeave)
         :sx `(doau-when-exists :LightspeedSxLeave))
      (doau-when-exists :LightspeedLeave)
@@ -615,27 +615,25 @@ interrupted change-operation."
 ; (see the docs in the script:
 ; https://github.com/tpope/vim-repeat/blob/master/autoload/repeat.vim)
 (fn set-dot-repeat [cmd ?count]
-  (when (operator-pending-mode?)
-    (local op vim.v.operator)
-    (when (not= op :y)
-      (let [change (when (= op :c)
-                     ; We cannot getreg('.') at this point, since the
-                     ; change has not happened yet - therefore the
-                     ; below hack (thx Sneak).
-                     (replace-keycodes "<c-r>.<esc>"))
-            seq (.. op (or ?count "") cmd (or change ""))]
-        ; Using pcall, since vim-repeat might not be installed.
-        ; Use the same register for the repeated operation.
-        (pcall vim.fn.repeat#setreg seq vim.v.register)
-        ; Note: we're feeding count inside the seq itself.
-        (pcall vim.fn.repeat#set seq -1)))))
+  ; Note: dot-repeatable (i.e. non-yank) operation is assumed, we're not
+  ; checking it here.
+  (let [op vim.v.operator
+        ; We cannot getreg('.') at this point, since the change has not
+        ; happened yet - therefore the below hack (thx Sneak).
+        change (when (= op :c) (replace-keycodes "<c-r>.<esc>"))
+        seq (.. op (or ?count "") cmd (or change ""))]
+    ; Using pcall, since vim-repeat might not be installed.
+    ; Use the same register for the repeated operation.
+    (pcall vim.fn.repeat#setreg seq vim.v.register)
+    ; Note: we're feeding count inside the seq itself.
+    (pcall vim.fn.repeat#set seq -1)))
 
 
-(fn get-plug-key [kind reverse? x-or-t? repeat-invoc]
+(fn get-plug-key [search-mode reverse? x/t? repeat-invoc]
   (.. "<Plug>Lightspeed_"
       (match repeat-invoc :dot "dotrepeat_" _ "")
       ; Forcing to bools with not-not, as those values can be nils.
-      (match [kind (not (not reverse?)) (not (not x-or-t?))]
+      (match [search-mode (not (not reverse?)) (not (not x/t?))]
         [:ft false false] "f" 
         [:ft true  false] "F"
         [:ft false true ] "t"
@@ -649,24 +647,24 @@ interrupted change-operation."
 ; TODO: Handle <a-?> keys, i.e., those with multibyte representation
 ; (`maparg` will not work with them, and we cannot convert `in` _to_
 ; a keycode(-sequence), so it's not trivial. Related: Vim #1810.)
-(fn get-repeat-action [in kind x-or-t? instant-repeat?
+(fn get-repeat-action [in search-mode x/t? instant-repeat?
                        from-reverse-cold-repeat? ?target-char]
   (let [mode (if (= (vim.fn.mode) :n) :n :x)  ; vim-cutlass compat (#28)
                                               ; (note: non-OP mode assumed)
         in-mapped-to (maparg-expr in mode)
-        repeat-plug-key (.. "<Plug>Lightspeed_;_" kind)
-        revert-plug-key (.. "<Plug>Lightspeed_,_" kind)]
+        repeat-plug-key (.. "<Plug>Lightspeed_;_" search-mode)
+        revert-plug-key (.. "<Plug>Lightspeed_,_" search-mode)]
     (if (or (= in <backspace>)
-            (and (= kind :ft) opts.repeat_ft_with_target_char (= in ?target-char))
+            (and (= search-mode :ft) opts.repeat_ft_with_target_char (= in ?target-char))
             (one-of? in-mapped-to
-              (get-plug-key kind false x-or-t?)
+              (get-plug-key search-mode false x/t?)
               (if from-reverse-cold-repeat? revert-plug-key repeat-plug-key)))
         :repeat
 
         (and instant-repeat?
              (or (= in "\t")
                  (one-of? in-mapped-to
-                   (get-plug-key kind true x-or-t?)
+                   (get-plug-key search-mode true x/t?)
                    (if from-reverse-cold-repeat? repeat-plug-key revert-plug-key))))
         :revert)))
 
@@ -691,7 +689,9 @@ interrupted change-operation."
 
 (fn ft.go [self reverse? t-mode? repeat-invoc]
   "Entry point for 1-character search."
-  (let [op-mode? (operator-pending-mode?)
+  (let [mode (. (api.nvim_get_mode) :mode)  ; endnote #4
+        op-mode? (mode:match :o)
+        dot-repeatable-op? (and op-mode? (not= vim.v.operator :y))
         instant-repeat? (= (type repeat-invoc) :table)
         instant-state (when instant-repeat? repeat-invoc)
         reverted-instant-repeat? (?. instant-state :reverted?)
@@ -776,17 +776,16 @@ interrupted change-operation."
             (do
               (when-not reverted-instant-repeat?
                 (jump-to!* jump-pos
-                           {:add-to-jumplist? (not instant-repeat?)
+                           {: mode
                             : reverse?
                             :inclusive-motion? true  ; just like the native f/t
+                            :add-to-jumplist? (not instant-repeat?)
                             :adjust (when t-mode?
                                       (push-cursor! (if reverse? :fwd :bwd))
-                                      (when (and to-eol?
-                                                 (not reverse?)
-                                                 (= (vim.fn.mode) :n))
+                                      (when (and to-eol? (not reverse?) (mode:match :n))
                                         (push-cursor! :fwd)))}))
               (if op-mode?
-                  (exit (when (dot-repeatable-operation?)
+                  (exit (when dot-repeatable-op?
                           (set self.state.dot {:in in1})
                           (set-dot-repeat (replace-keycodes
                                             (get-plug-key :ft reverse? t-mode? :dot))
@@ -1148,10 +1147,11 @@ sub-table containing label-target k-v pairs for these targets."
 
 (fn sx.go [self reverse? x-mode? repeat-invoc]
   "Entry point for 2-character search."
-  (let [op-mode? (operator-pending-mode?)
-        change-op? (change-operation?)
-        delete-op? (delete-operation?)
-        dot-repeatable-op? (dot-repeatable-operation?)
+  (let [mode (. (api.nvim_get_mode) :mode)  ; endnote #4
+        op-mode? (mode:match :o)
+        change-op? (and op-mode? (= vim.v.operator :c))
+        delete-op? (and op-mode? (= vim.v.operator :d))
+        dot-repeatable-op? (and op-mode? (not= vim.v.operator :y))
         ; TODO: DRY
         instant-repeat? (= (type repeat-invoc) :table)
         instant-state (when instant-repeat? repeat-invoc)
@@ -1229,10 +1229,11 @@ sub-table containing label-target k-v pairs for these targets."
                  (let [to-pre-eol? (or ?to-pre-eol? to-pre-eol?)
                        adjusted-pos
                        (jump-to!* target
-                                  {:add-to-jumplist? (and first-jump?
-                                                          (not instant-repeat?))
+                                  {: mode
                                    : reverse?
                                    :inclusive-motion? (and x-mode? (not reverse?))
+                                   :add-to-jumplist? (and first-jump?
+                                                          (not instant-repeat?))
                                    :adjust (if to-eol?
                                                (when op-mode? (push-cursor! :fwd))
 
@@ -1254,10 +1255,10 @@ sub-table containing label-target k-v pairs for these targets."
     ; to provide visual feedback, to tell the user that the target has been
     ; found, and they can continue editing.
     (fn highlight-new-curpos-and-op-area [from-pos to-pos]  ; 1,1
-      (let [forced-motion (string.sub (vim.fn.mode :t) -1)
-            blockwise? (= forced-motion (replace-keycodes "<c-v>"))
+      (let [motion-force (get-motion-force mode)
+            blockwise? (= motion-force <ctrl-v>)
             ; Preliminary boundaries of the highlighted - operated - area
-            ; (forced-motion might affect these).
+            ; (motion-force might affect these).
             [startline startcol &as start] (if reverse? to-pos from-pos)
             [_ endcol &as end] (if reverse? from-pos to-pos)
             top-left [startline (min startcol endcol)]
@@ -1271,7 +1272,7 @@ sub-table containing label-target k-v pairs for these targets."
           (highlight-range hl.group.pending-op-area
                            (map dec start)
                            (map dec end)
-                           {: forced-motion
+                           {: motion-force
                             :inclusive-motion? (and x-mode? (not reverse?))}))
         (vim.cmd :redraw)))
 
@@ -1347,12 +1348,7 @@ sub-table containing label-target k-v pairs for these targets."
                    (exit-early (echo-not-found (.. in1 (or prev-in2 "")))))
           [{:pair [_ ch2] &as only} nil]
           (if (or new-search? (= ch2 prev-in2))
-              (exit (update-state
-                      ; Note: In OP mode, we _always_ use `opts.labels` (no
-                      ; autojump), so the problem of non-deterministic label
-                      ; assignment does not arise - that is, for dot-repeat, we
-                      ; can safely save either an item from `opts.labels` or the
-                      ; actual user input from here on.
+              (exit (update-state  ; endnote #5
                       {:cold {:in2 ch2} :dot {:in2 ch2 :in3 (. opts.labels 1)}})
                     (local to-pos (jump-to! only.pos (= ch2 "\r")))
                     (when new-search?  ; i.e. user is actually typing the pattern
@@ -1599,6 +1595,14 @@ sub-table containing label-target k-v pairs for these targets."
 ;     Note: `save-state-for-repeat` only executes on new searches - if
 ;     we're currently dot-repeating, then it won't overwrite the state,
 ;     we can safely get `self.state.dot.in3` for the previous value.
+
+; (4) We need to save the mode here, because the `:normal` command in
+;     `jump-to!*` can change the state. Related: vim/vim#9332.
+
+; (5) In OP mode, we _always_ use `opts.labels` (no autojump), so the
+;     problem of non-deterministic label assignment does not arise -
+;     that is, for dot-repeat, we can safely save either an item from
+;     `opts.labels` or the actual user input from here on.
 
 
 ; Module ///1
