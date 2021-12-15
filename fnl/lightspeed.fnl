@@ -364,9 +364,10 @@ types properly."
   (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW")))
 
 
-(fn cursor-before-eof? []
-  (and (= (vim.fn.line ".") (vim.fn.line "$"))
-       (= (vim.fn.virtcol ".") (dec (vim.fn.virtcol "$")))))
+(fn get-restore-virtualedit-autocmd []
+  (.. "autocmd "
+      "CursorMoved,WinLeave,BufLeave,InsertEnter,CmdlineEnter,CmdwinEnter"
+      " * ++once set virtualedit=" vim.o.virtualedit))
 
 
 (fn force-matchparen-refresh []
@@ -387,60 +388,57 @@ types properly."
   (vim.cmd "silent! doautocmd matchup_matchparen CursorMoved"))
 
 
-(macro jump-to!* [target {: mode : reverse? : inclusive-motion?
-                          : add-to-jumplist? : adjust}]
-  `(let [op-mode?# (string.match ,mode :o)
-         motion-force# (get-motion-force ,mode)
-         ; Needs to be here, inside the returned form, as we need to get
-         ; `vim.o.virtualedit` at runtime.
-         restore-virtualedit-autocmd#
-         (.. "autocmd CursorMoved,WinLeave,BufLeave"
-             ",InsertEnter,CmdlineEnter,CmdwinEnter"
-             " * ++once set virtualedit="
-             vim.o.virtualedit)]
-     ; <C-o> will unfortunately ignore this if the line has not changed.
-     ; See https://github.com/neovim/neovim/issues/9874
-     (when ,add-to-jumplist? (vim.cmd "norm! m`"))
-     (vim.fn.cursor ,target)
-     ; Adjust position after the jump (for t-motion or x-mode).
-     ,adjust
-     ; We should get this before the (possible) hacks below.
-     (local adjusted-pos# (get-cursor-pos))
+(fn cursor-before-eof? []
+  (and (= (vim.fn.line ".") (vim.fn.line "$"))
+       (= (vim.fn.virtcol ".") (dec (vim.fn.virtcol "$")))))
 
-     (if (not op-mode?#) (force-matchparen-refresh)
-         ; Simulating inclusive/exclusive behaviour for operator-pending mode by
-         ; adjusting the cursor position.
-         ; For operators, our jump is always interpreted by Vim as an exclusive
-         ; motion, so whenever we'd like to behave as an inclusive one, an
-         ; additional push is needed to even that out (:h inclusive).
-         ; (This is only relevant in the forward direction.)
-         (when (and (not ,reverse?) ,inclusive-motion?)
-           ; Check for modifiers forcing motion types. (:h forced-motion)
-           (match motion-force#
-             ; Note that we should _never_ push the cursor in the linewise case,
-             ; as we might push it beyond EOL, and that would add another line
-             ; to the selection.
 
-             ; Blockwise (<c-v>) itself makes the motion inclusive, we're done.
-
-             ; We want the `v` modifier to behave in the native way, that is, to
-             ; toggle between inclusive/exclusive if applied to a charwise
-             ; motion (:h o_v). As our jump is technically - i.e., from Vim's
-             ; perspective - an exclusive motion, `v` will change it to
-             ; _inclusive_, so we should push the cursor back to "undo" that.
-             ; (Previous column as inclusive = target column as exclusive.)
-             :v (push-cursor! :bwd)
-
-             ; Else, in the normal case (no modifier), we should push the cursor
-             ; forward (next column as exclusive = target column as inclusive).
-             nil (if (not (cursor-before-eof?)) (push-cursor! :fwd)
-                     ; The EOF edge case requires some hackery.
-                     ; (Note: The cursor will be moved to the end of the operated
-                     ; area anyway, no need to undo the `l` afterwards.)
-                     (do (vim.cmd "set virtualedit=onemore")
-                         (vim.cmd "norm! l")
-                         (vim.cmd restore-virtualedit-autocmd#))))))
-     adjusted-pos#))
+(fn jump-to!* [target {: mode : reverse? : inclusive-motion?
+                       : add-to-jumplist? : adjust}]
+  (let [op-mode? (string.match mode :o)
+        motion-force (get-motion-force mode)
+        restore-virtualedit-autocmd (get-restore-virtualedit-autocmd)]
+    ; <C-o> will unfortunately ignore this if the line has not changed.
+    ; See neovim#9874.
+    (when add-to-jumplist?
+      (vim.cmd "norm! m`"))
+    (vim.fn.cursor target)
+    ; Adjust position after the jump (for t-mode or x-mode).
+    (adjust)
+    (when-not op-mode?
+      (force-matchparen-refresh))
+    ; We should get this before the (possible) hacks below.
+    (local adjusted-pos (get-cursor-pos))
+    ; Simulating inclusive/exclusive behaviour for operator-pending mode by
+    ; adjusting the cursor position.
+    ; For operators, our jump is always interpreted by Vim as an exclusive
+    ; motion, so whenever we'd like to behave as an inclusive one, an
+    ; additional push is needed to even that out (:h inclusive).
+    ; (This is only relevant in the forward direction.)
+    (when (and op-mode? (not reverse?) inclusive-motion?)
+      (match motion-force
+        ; In the normal case (no modifier), we should push the cursor forward
+        ; (next column as exclusive = target column as inclusive).
+        nil (if (not (cursor-before-eof?)) (push-cursor! :fwd)
+                ; The EOF edge case requires some hackery.
+                ; Note: No need to undo the `l` afterwards, as the cursor will
+                ; be moved to the end of the operated area anyway.
+                (do (vim.cmd "set virtualedit=onemore")
+                    (vim.cmd "norm! l")
+                    (vim.cmd restore-virtualedit-autocmd)))
+        ; We should _never_ push the cursor in the linewise case, as we might
+        ; push it beyond EOL, and that would add another line to the selection.
+        :V nil
+        ; Blockwise (<c-v>) itself makes the motion inclusive, we're done.
+        <ctrl-v> nil
+        ; We want the `v` modifier to behave in the native way, that is, to
+        ; toggle between inclusive/exclusive if applied to a charwise
+        ; motion (:h o_v). As our jump is technically - i.e., from Vim's
+        ; perspective - an exclusive motion, `v` will change it to
+        ; _inclusive_, so we should push the cursor back to "undo" that.
+        ; (Previous column as inclusive = target column as exclusive.)
+        :v (push-cursor! :bwd)))
+    adjusted-pos))
 
 
 (fn get-onscreen-lines [{: reverse? : skip-folds?}]
@@ -776,14 +774,13 @@ interrupted change-operation."
             (do
               (when-not reverted-instant-repeat?
                 (jump-to!* jump-pos
-                           {: mode
-                            : reverse?
+                           {: mode : reverse?
                             :inclusive-motion? true  ; just like the native f/t
                             :add-to-jumplist? (not instant-repeat?)
-                            :adjust (when t-mode?
-                                      (push-cursor! (if reverse? :fwd :bwd))
-                                      (when (and to-eol? (not reverse?) (mode:match :n))
-                                        (push-cursor! :fwd)))}))
+                            :adjust #(when t-mode?
+                                       (push-cursor! (if reverse? :fwd :bwd))
+                                       (when (and to-eol? (not reverse?) (mode:match :n))
+                                         (push-cursor! :fwd)))}))
               (if op-mode?
                   (exit (when dot-repeatable-op?
                           (set self.state.dot {:in in1})
@@ -1229,22 +1226,21 @@ sub-table containing label-target k-v pairs for these targets."
                  (let [to-pre-eol? (or ?to-pre-eol? to-pre-eol?)
                        adjusted-pos
                        (jump-to!* target
-                                  {: mode
-                                   : reverse?
+                                  {: mode : reverse?
                                    :inclusive-motion? (and x-mode? (not reverse?))
                                    :add-to-jumplist? (and first-jump?
                                                           (not instant-repeat?))
-                                   :adjust (if to-eol?
-                                               (when op-mode? (push-cursor! :fwd))
+                                   :adjust #(if to-eol?
+                                                (when op-mode? (push-cursor! :fwd))
 
-                                               to-pre-eol?
-                                               (when (and op-mode? x-mode?)
-                                                 (push-cursor! :fwd))
+                                                to-pre-eol?
+                                                (when (and op-mode? x-mode?)
+                                                  (push-cursor! :fwd))
 
-                                               x-mode?
-                                               (do (push-cursor! :fwd)
-                                                   (when reverse?
-                                                     (push-cursor! :fwd))))})]
+                                                x-mode?
+                                                (do (push-cursor! :fwd)
+                                                    (when reverse?
+                                                      (push-cursor! :fwd))))})]
                  (set first-jump? false)
                  adjusted-pos))))
 
