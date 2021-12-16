@@ -1851,9 +1851,9 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
     end
     _410_ = (_412_() or get_targets(in1, reverse_3f0) or _414_())
     if ((type(_410_) == "table") and ((type((_410_)[1]) == "table") and ((type(((_410_)[1]).pair) == "table") and true and (nil ~= (((_410_)[1]).pair)[2]))) and ((_410_)[2] == nil)) then
+      local only = (_410_)[1]
       local _0 = (((_410_)[1]).pair)[1]
       local ch2 = (((_410_)[1]).pair)[2]
-      local only = (_410_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           if dot_repeatable_op_3f then
@@ -1943,9 +1943,9 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
           _430_ = t_431_
         end
         if ((type(_430_) == "table") and ((type((_430_).pair) == "table") and true and (nil ~= ((_430_).pair)[2]))) then
+          local shortcut = _430_
           local _0 = ((_430_).pair)[1]
           local ch2 = ((_430_).pair)[2]
-          local shortcut = _430_
           do
             if dot_repeatable_op_3f then
               set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f0, x_mode_3f0, "dot")))
@@ -2042,7 +2042,7 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
               local in3 = (_447_)[1]
               local group_offset = (_447_)[2]
               local _451_
-              if not op_mode_3f then
+              if not (op_mode_3f or (group_offset > 0)) then
                 _451_ = get_repeat_action(in3, "sx", x_mode_3f0, instant_repeat_3f, from_reverse_cold_repeat_3f)
               else
               _451_ = nil

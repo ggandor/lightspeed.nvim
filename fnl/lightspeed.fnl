@@ -1402,7 +1402,7 @@ sub-table containing label-target k-v pairs for these targets."
                                  (get-last-input sublist (inc curr-idx))
                                  (exit-early))
                         [in3 group-offset]
-                        (match (when-not op-mode?
+                        (match (when-not (or op-mode? (> group-offset 0))
                                  (get-repeat-action in3 :sx x-mode? instant-repeat?
                                                     from-reverse-cold-repeat?))
                           action (let [idx (match action
