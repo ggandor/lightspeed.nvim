@@ -941,7 +941,7 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
       if to_eol_3f then
         pattern = "\\n"
       else
-        pattern = ("\\V" .. in1:gsub("\\", "\\\\"))
+        pattern = ("\\V\\C" .. in1:gsub("\\", "\\\\"))
       end
       local limit = (count0 + get_num_of_matches_to_be_highlighted())
       for _221_ in onscreen_match_positions(pattern, reverse_3f0, {["ft-search?"] = true, limit = limit}) do
@@ -1851,9 +1851,9 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
     end
     _410_ = (_412_() or get_targets(in1, reverse_3f0) or _414_())
     if ((type(_410_) == "table") and ((type((_410_)[1]) == "table") and ((type(((_410_)[1]).pair) == "table") and true and (nil ~= (((_410_)[1]).pair)[2]))) and ((_410_)[2] == nil)) then
-      local only = (_410_)[1]
       local _0 = (((_410_)[1]).pair)[1]
       local ch2 = (((_410_)[1]).pair)[2]
+      local only = (_410_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           if dot_repeatable_op_3f then
@@ -1943,9 +1943,9 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
           _430_ = t_431_
         end
         if ((type(_430_) == "table") and ((type((_430_).pair) == "table") and true and (nil ~= ((_430_).pair)[2]))) then
-          local shortcut = _430_
           local _0 = ((_430_).pair)[1]
           local ch2 = ((_430_).pair)[2]
+          local shortcut = _430_
           do
             if dot_repeatable_op_3f then
               set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f0, x_mode_3f0, "dot")))

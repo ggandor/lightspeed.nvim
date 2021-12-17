@@ -755,7 +755,7 @@ interrupted change-operation."
         (var jump-pos nil)
         (var match-count 0)
         (let [next-pos (vim.fn.searchpos "\\_." (if reverse? :nWb :nW))
-              pattern (if to-eol? "\\n" (.. "\\V" (in1:gsub "\\" "\\\\")))
+              pattern (if to-eol? "\\n" (.. "\\V\\C" (in1:gsub "\\" "\\\\")))
               limit (+ count (get-num-of-matches-to-be-highlighted))]
           (each [[line col &as pos]
                  (onscreen-match-positions pattern reverse? {:ft-search? true : limit})]
