@@ -117,7 +117,7 @@ local opts
 do
   local safe_labels = {"s", "f", "n", "u", "t", "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
   local labels = {"s", "f", "n", "j", "k", "l", "o", "i", "w", "e", "h", "g", "u", "t", "m", "v", "c", "a", ".", "z", "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
-  opts = {cycle_group_bwd_key = "<tab>", cycle_group_fwd_key = "<space>", exit_after_idle_msecs = {labeled = nil, unlabeled = 1000}, grey_out_search_area = true, highlight_unique_chars = true, jump_on_partial_input_safety_timeout = 400, labels = labels, limit_ft_matches = 4, match_only_the_start_of_same_char_seqs = true, repeat_ft_with_target_char = false, safe_labels = safe_labels, substitute_chars = {["\13"] = "\194\172"}}
+  opts = {cycle_group_bwd_key = "<tab>", cycle_group_fwd_key = "<space>", exit_after_idle_msecs = {labeled = nil, unlabeled = 1000}, grey_out_search_area = true, highlight_unique_chars = true, ignore_case = false, jump_on_partial_input_safety_timeout = 400, labels = labels, limit_ft_matches = 4, match_only_the_start_of_same_char_seqs = true, repeat_ft_with_target_char = false, safe_labels = safe_labels, substitute_chars = {["\13"] = "\194\172"}}
 end
 local deprecated_opts = {"jump_to_first_match", "instant_repeat_fwd_key", "instant_repeat_bwd_key", "x_mode_prefix_key", "full_inclusive_prefix_key"}
 local function get_deprec_msg(arg_fields)
@@ -941,14 +941,20 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
       if to_eol_3f then
         pattern = "\\n"
       else
-        pattern = ("\\V\\C" .. in1:gsub("\\", "\\\\"))
+        local _220_
+        if opts.ignore_case then
+          _220_ = "\\c"
+        else
+          _220_ = "\\C"
+        end
+        pattern = ("\\V" .. _220_ .. in1:gsub("\\", "\\\\"))
       end
       local limit = (count0 + get_num_of_matches_to_be_highlighted())
-      for _221_ in onscreen_match_positions(pattern, reverse_3f0, {["ft-search?"] = true, limit = limit}) do
-        local _each_222_ = _221_
-        local line = _each_222_[1]
-        local col = _each_222_[2]
-        local pos = _each_222_
+      for _223_ in onscreen_match_positions(pattern, reverse_3f0, {["ft-search?"] = true, limit = limit}) do
+        local _each_224_ = _223_
+        local line = _each_224_[1]
+        local col = _each_224_[2]
+        local pos = _each_224_
         if not ((match_count == 0) and cold_repeat_3f and t_mode_3f0 and same_pos_3f(pos, next_pos)) then
           if (match_count <= dec(count0)) then
             jump_pos = pos
@@ -973,22 +979,22 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
       return nil
     else
       if not reverted_instant_repeat_3f then
-        local function _227_()
+        local function _229_()
           if t_mode_3f0 then
-            local function _228_()
+            local function _230_()
               if reverse_3f0 then
                 return "fwd"
               else
                 return "bwd"
               end
             end
-            push_cursor_21(_228_())
+            push_cursor_21(_230_())
             if (to_eol_3f and not reverse_3f0 and mode:match("n")) then
               return push_cursor_21("fwd")
             end
           end
         end
-        jump_to_21_2a(jump_pos, {["add-to-jumplist?"] = not instant_repeat_3f, ["inclusive-motion?"] = true, ["reverse?"] = reverse_3f0, adjust = _227_, mode = mode})
+        jump_to_21_2a(jump_pos, {["add-to-jumplist?"] = not instant_repeat_3f, ["inclusive-motion?"] = true, ["reverse?"] = reverse_3f0, adjust = _229_, mode = mode})
       end
       if op_mode_3f then
         do
@@ -1003,8 +1009,8 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
       else
         highlight_cursor()
         vim.cmd("redraw")
-        local _233_
-        local function _234_()
+        local _235_
+        local function _236_()
           local res_2_auto
           do
             res_2_auto = get_input(opts.exit_after_idle_msecs.unlabeled)
@@ -1012,46 +1018,46 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
           hl:cleanup()
           return res_2_auto
         end
-        local function _235_()
+        local function _237_()
           do
           end
           doau_when_exists("LightspeedFtLeave")
           doau_when_exists("LightspeedLeave")
           return nil
         end
-        _233_ = (_234_() or _235_())
-        if (nil ~= _233_) then
-          local in2 = _233_
+        _235_ = (_236_() or _237_())
+        if (nil ~= _235_) then
+          local in2 = _235_
           local stack
-          local function _237_()
-            local t_236_ = instant_state
-            if (nil ~= t_236_) then
-              t_236_ = (t_236_).stack
+          local function _239_()
+            local t_238_ = instant_state
+            if (nil ~= t_238_) then
+              t_238_ = (t_238_).stack
             end
-            return t_236_
+            return t_238_
           end
-          stack = (_237_() or {})
+          stack = (_239_() or {})
           local from_reverse_cold_repeat_3f
           if instant_repeat_3f then
             from_reverse_cold_repeat_3f = instant_state["from-reverse-cold-repeat?"]
           else
             from_reverse_cold_repeat_3f = (cold_repeat_3f and invoked_as_reverse_3f)
           end
-          local _240_ = get_repeat_action(in2, "ft", t_mode_3f0, instant_repeat_3f, from_reverse_cold_repeat_3f, in1)
-          if (_240_ == "repeat") then
+          local _242_ = get_repeat_action(in2, "ft", t_mode_3f0, instant_repeat_3f, from_reverse_cold_repeat_3f, in1)
+          if (_242_ == "repeat") then
             table.insert(stack, get_cursor_pos())
             return ft:go(reverse_3f0, t_mode_3f0, {["from-reverse-cold-repeat?"] = from_reverse_cold_repeat_3f, ["in"] = in1, ["reverted?"] = false, stack = stack})
-          elseif (_240_ == "revert") then
+          elseif (_242_ == "revert") then
             do
-              local _241_ = table.remove(stack)
-              if _241_ then
-                vim.fn.cursor(_241_)
+              local _243_ = table.remove(stack)
+              if _243_ then
+                vim.fn.cursor(_243_)
               else
               end
             end
             return ft:go(reverse_3f0, t_mode_3f0, {["from-reverse-cold-repeat?"] = from_reverse_cold_repeat_3f, ["in"] = in1, ["reverted?"] = true, stack = stack})
           else
-            local _ = _240_
+            local _ = _242_
             do
               vim.fn.feedkeys(in2, "i")
             end
@@ -1066,21 +1072,21 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
 end
 do
   local deprec_msg = {{"ligthspeed.nvim", "Question"}, {": You're trying to access deprecated fields in the lightspeed.ft table.\n"}, {"There are dedicated <Plug> keys available for native-like "}, {";", "Visual"}, {" and "}, {",", "Visual"}, {" functionality now.\n"}, {"See "}, {":h lightspeed-custom-mappings", "Visual"}, {"."}}
-  local function _248_(t, k)
+  local function _250_(t, k)
     if ((k == "instant-repeat?") or (k == "prev-t-like?")) then
       return api.nvim_echo(deprec_msg, true, {})
     end
   end
-  setmetatable(ft, {__index = _248_})
+  setmetatable(ft, {__index = _250_})
 end
 local function highlight_unique_chars(reverse_3f)
   local unique_chars = {}
-  local _let_250_ = get_horizontal_bounds({["match-width"] = 2})
-  local left_bound = _let_250_[1]
-  local right_bound = _let_250_[2]
-  local _let_251_ = get_cursor_pos()
-  local curline = _let_251_[1]
-  local curcol = _let_251_[2]
+  local _let_252_ = get_horizontal_bounds({["match-width"] = 2})
+  local left_bound = _let_252_[1]
+  local right_bound = _let_252_[2]
+  local _let_253_ = get_cursor_pos()
+  local curline = _let_253_[1]
+  local curcol = _let_253_[2]
   for lnum, line in pairs(get_onscreen_lines({["reverse?"] = reverse_3f, ["skip-folds?"] = true})) do
     local on_curline_3f = (lnum == curline)
     local startcol
@@ -1098,60 +1104,73 @@ local function highlight_unique_chars(reverse_3f)
     for col = startcol, endcol do
       if (vim.wo.wrap or ((col >= left_bound) and (col <= right_bound))) then
         local ch = line:sub(col, col)
-        local _255_
+        local ch0
+        if opts.ignore_case then
+          ch0 = ch:lower()
+        else
+          ch0 = ch
+        end
+        local _258_
         do
-          local _254_ = unique_chars[ch]
-          if (nil ~= _254_) then
-            local pos_already_there = _254_
-            _255_ = false
+          local _257_ = unique_chars[ch0]
+          if (nil ~= _257_) then
+            local pos_already_there = _257_
+            _258_ = false
           else
-            local _ = _254_
-            _255_ = {lnum, col}
+            local _ = _257_
+            _258_ = {lnum, col}
           end
         end
-        unique_chars[ch] = _255_
+        unique_chars[ch0] = _258_
       end
     end
   end
   for ch, pos in pairs(unique_chars) do
-    local _260_ = pos
-    if ((type(_260_) == "table") and (nil ~= (_260_)[1]) and (nil ~= (_260_)[2])) then
-      local lnum = (_260_)[1]
-      local col = (_260_)[2]
+    local _263_ = pos
+    if ((type(_263_) == "table") and (nil ~= (_263_)[1]) and (nil ~= (_263_)[2])) then
+      local lnum = (_263_)[1]
+      local col = (_263_)[2]
       hl["add-hl"](hl, hl.group["unique-ch"], dec(lnum), dec(col), col)
     end
   end
   return nil
 end
-local function get_targets(ch1, reverse_3f)
+local function get_targets(input, reverse_3f)
   local targets = {}
-  local to_eol_3f = (ch1 == "\13")
+  local to_eol_3f = (input == "\13")
   local prev_match = {}
   local added_prev_match_3f = nil
   local pattern
   if to_eol_3f then
     pattern = "\\n"
   else
-    pattern = ("\\V\\C" .. ch1:gsub("\\", "\\\\") .. "\\_.")
+    local _265_
+    if opts.ignore_case then
+      _265_ = "\\c"
+    else
+      _265_ = "\\C"
+    end
+    pattern = ("\\V" .. _265_ .. input:gsub("\\", "\\\\") .. "\\_.")
   end
-  for _263_ in onscreen_match_positions(pattern, reverse_3f, {["to-eol?"] = to_eol_3f}) do
-    local _each_264_ = _263_
-    local line = _each_264_[1]
-    local col = _each_264_[2]
-    local pos = _each_264_
+  for _268_ in onscreen_match_positions(pattern, reverse_3f, {["to-eol?"] = to_eol_3f}) do
+    local _each_269_ = _268_
+    local line = _each_269_[1]
+    local col = _each_269_[2]
+    local pos = _each_269_
     if to_eol_3f then
       table.insert(targets, {pair = {"\n", ""}, pos = pos})
     else
+      local ch1 = char_at_pos(pos, {})
       local ch2 = (char_at_pos(pos, {["char-offset"] = 1}) or "\13")
       local to_pre_eol_3f = (ch2 == "\13")
       local overlaps_prev_match_3f
-      local _265_
+      local _270_
       if reverse_3f then
-        _265_ = dec
+        _270_ = dec
       else
-        _265_ = inc
+        _270_ = inc
       end
-      overlaps_prev_match_3f = ((line == prev_match.line) and (col == _265_(prev_match.col)))
+      overlaps_prev_match_3f = ((line == prev_match.line) and (col == _270_(prev_match.col)))
       local same_char_triplet_3f = (overlaps_prev_match_3f and (ch2 == prev_match.ch2))
       local overlaps_prev_target_3f = (overlaps_prev_match_3f and added_prev_match_3f)
       prev_match = {ch2 = ch2, col = col, line = line}
@@ -1163,11 +1182,11 @@ local function get_targets(ch1, reverse_3f)
         local match_width = 2
         local touches_prev_target_3f
         do
-          local _267_ = prev_target
-          if ((type(_267_) == "table") and ((type((_267_).pos) == "table") and (nil ~= ((_267_).pos)[1]) and (nil ~= ((_267_).pos)[2]))) then
-            local prev_line = ((_267_).pos)[1]
-            local prev_col = ((_267_).pos)[2]
-            local function _269_()
+          local _272_ = prev_target
+          if ((type(_272_) == "table") and ((type((_272_).pos) == "table") and (nil ~= ((_272_).pos)[1]) and (nil ~= ((_272_).pos)[2]))) then
+            local prev_line = ((_272_).pos)[1]
+            local prev_col = ((_272_).pos)[2]
+            local function _274_()
               local col_delta
               if reverse_3f then
                 col_delta = (prev_col - col)
@@ -1176,7 +1195,7 @@ local function get_targets(ch1, reverse_3f)
               end
               return (col_delta <= match_width)
             end
-            touches_prev_target_3f = ((line == prev_line) and _269_())
+            touches_prev_target_3f = ((line == prev_line) and _274_())
           else
           touches_prev_target_3f = nil
           end
@@ -1185,22 +1204,22 @@ local function get_targets(ch1, reverse_3f)
           target["squeezed?"] = true
         end
         if touches_prev_target_3f then
-          local _272_
+          local _277_
           if reverse_3f then
-            _272_ = target
+            _277_ = target
           else
-            _272_ = prev_target
+            _277_ = prev_target
           end
-          _272_["squeezed?"] = true
+          _277_["squeezed?"] = true
         end
         if overlaps_prev_target_3f then
-          local _275_
+          local _280_
           if reverse_3f then
-            _275_ = prev_target
+            _280_ = prev_target
           else
-            _275_ = target
+            _280_ = target
           end
-          _275_["overlapped?"] = true
+          _280_["overlapped?"] = true
         end
         table.insert(targets, target)
         added_prev_match_3f = true
@@ -1213,16 +1232,28 @@ local function get_targets(ch1, reverse_3f)
 end
 local function populate_sublists(targets)
   targets["sublists"] = {}
-  for _, _281_ in ipairs(targets) do
-    local _each_282_ = _281_
-    local target = _each_282_
-    local _each_283_ = _each_282_["pair"]
-    local _0 = _each_283_[1]
-    local ch2 = _each_283_[2]
-    if not targets.sublists[ch2] then
-      targets["sublists"][ch2] = {}
+  if opts.ignore_case then
+    local function _286_(self, k)
+      return rawget(self, k:lower())
     end
-    table.insert(targets.sublists[ch2], target)
+    setmetatable(targets.sublists, {__index = _286_})
+  end
+  for _, _288_ in ipairs(targets) do
+    local _each_289_ = _288_
+    local target = _each_289_
+    local _each_290_ = _each_289_["pair"]
+    local _0 = _each_290_[1]
+    local ch2 = _each_290_[2]
+    local k
+    if opts.ignore_case then
+      k = ch2:lower()
+    else
+      k = ch2
+    end
+    if not targets.sublists[k] then
+      targets["sublists"][k] = {}
+    end
+    table.insert(targets.sublists[k], target)
   end
   return nil
 end
@@ -1241,12 +1272,12 @@ local function get_labels(sublist, to_eol_3f)
     end
     return opts.safe_labels
   else
-    local _288_ = sublist["autojump?"]
-    if (_288_ == true) then
+    local _296_ = sublist["autojump?"]
+    if (_296_ == true) then
       return opts.safe_labels
-    elseif (_288_ == false) then
+    elseif (_296_ == false) then
       return opts.labels
-    elseif (_288_ == nil) then
+    elseif (_296_ == nil) then
       sublist["autojump?"] = (not operator_pending_mode_3f() and (dec(#sublist) <= #opts.safe_labels))
       return get_labels(sublist)
     end
@@ -1257,63 +1288,63 @@ local function set_labels(targets, to_eol_3f)
     if (#sublist > 1) then
       local labels = get_labels(sublist, to_eol_3f)
       for i, target in ipairs(sublist) do
-        local _291_
+        local _299_
         if not (sublist["autojump?"] and (i == 1)) then
-          local _292_
-          local _294_
+          local _300_
+          local _302_
           if sublist["autojump?"] then
-            _294_ = dec(i)
+            _302_ = dec(i)
           else
-            _294_ = i
+            _302_ = i
           end
-          _292_ = (_294_ % #labels)
-          if (_292_ == 0) then
-            _291_ = last(labels)
-          elseif (nil ~= _292_) then
-            local n = _292_
-            _291_ = labels[n]
+          _300_ = (_302_ % #labels)
+          if (_300_ == 0) then
+            _299_ = last(labels)
+          elseif (nil ~= _300_) then
+            local n = _300_
+            _299_ = labels[n]
           else
-          _291_ = nil
+          _299_ = nil
           end
         else
-        _291_ = nil
+        _299_ = nil
         end
-        target["label"] = _291_
+        target["label"] = _299_
       end
     end
   end
   return nil
 end
-local function set_label_states_for_sublist(sublist, _301_)
-  local _arg_302_ = _301_
-  local group_offset = _arg_302_["group-offset"]
+local function set_label_states_for_sublist(sublist, _309_)
+  local _arg_310_ = _309_
+  local group_offset = _arg_310_["group-offset"]
   local labels = get_labels(sublist)
   local _7clabels_7c = #labels
   local offset = (group_offset * _7clabels_7c)
   local primary_start
-  local _303_
+  local _311_
   if sublist["autojump?"] then
-    _303_ = 2
+    _311_ = 2
   else
-    _303_ = 1
+    _311_ = 1
   end
-  primary_start = (offset + _303_)
+  primary_start = (offset + _311_)
   local primary_end = (primary_start + dec(_7clabels_7c))
   local secondary_end = (primary_end + _7clabels_7c)
   for i, target in ipairs(sublist) do
-    local _305_
+    local _313_
     if target.label then
       if ((i < primary_start) or (i > secondary_end)) then
-        _305_ = "inactive"
+        _313_ = "inactive"
       elseif (i <= primary_end) then
-        _305_ = "active-primary"
+        _313_ = "active-primary"
       else
-        _305_ = "active-secondary"
+        _313_ = "active-secondary"
       end
     else
-    _305_ = nil
+    _313_ = nil
     end
-    target["label-state"] = _305_
+    target["label-state"] = _313_
   end
   return nil
 end
@@ -1329,21 +1360,21 @@ local function set_shortcuts_and_populate_shortcuts_map(targets)
   do
     local tbl_9_auto = {}
     for ch2, _ in pairs(targets.sublists) do
-      local _308_, _309_ = ch2, true
-      if ((nil ~= _308_) and (nil ~= _309_)) then
-        local k_10_auto = _308_
-        local v_11_auto = _309_
+      local _316_, _317_ = ch2, true
+      if ((nil ~= _316_) and (nil ~= _317_)) then
+        local k_10_auto = _316_
+        local v_11_auto = _317_
         tbl_9_auto[k_10_auto] = v_11_auto
       end
     end
     potential_2nd_inputs = tbl_9_auto
   end
   local labels_used_up_as_shortcut = {}
-  for _, _311_ in ipairs(targets) do
-    local _each_312_ = _311_
-    local target = _each_312_
-    local label = _each_312_["label"]
-    local label_state = _each_312_["label-state"]
+  for _, _319_ in ipairs(targets) do
+    local _each_320_ = _319_
+    local target = _each_320_
+    local label = _each_320_["label"]
+    local label_state = _each_320_["label-state"]
     if (label_state == "active-primary") then
       if not ((potential_2nd_inputs)[label] or labels_used_up_as_shortcut[label]) then
         target["shortcut?"] = true
@@ -1354,30 +1385,30 @@ local function set_shortcuts_and_populate_shortcuts_map(targets)
   end
   return nil
 end
-local function set_beacon(_315_, _repeat)
-  local _arg_316_ = _315_
-  local target = _arg_316_
-  local label = _arg_316_["label"]
-  local label_state = _arg_316_["label-state"]
-  local overlapped_3f = _arg_316_["overlapped?"]
-  local _arg_317_ = _arg_316_["pair"]
-  local ch1 = _arg_317_[1]
-  local ch2 = _arg_317_[2]
-  local _arg_318_ = _arg_316_["pos"]
-  local _ = _arg_318_[1]
-  local col = _arg_318_[2]
-  local shortcut_3f = _arg_316_["shortcut?"]
-  local squeezed_3f = _arg_316_["squeezed?"]
+local function set_beacon(_323_, _repeat)
+  local _arg_324_ = _323_
+  local target = _arg_324_
+  local label = _arg_324_["label"]
+  local label_state = _arg_324_["label-state"]
+  local overlapped_3f = _arg_324_["overlapped?"]
+  local _arg_325_ = _arg_324_["pair"]
+  local ch1 = _arg_325_[1]
+  local ch2 = _arg_325_[2]
+  local _arg_326_ = _arg_324_["pos"]
+  local _ = _arg_326_[1]
+  local col = _arg_326_[2]
+  local shortcut_3f = _arg_324_["shortcut?"]
+  local squeezed_3f = _arg_324_["squeezed?"]
   local to_eol_3f = ((ch1 == "\n") and (ch2 == ""))
-  local _let_319_ = get_horizontal_bounds({["match-width"] = 1})
-  local left_bound = _let_319_[1]
-  local right_bound = _let_319_[2]
-  local function _321_(_241)
+  local _let_327_ = get_horizontal_bounds({["match-width"] = 1})
+  local left_bound = _let_327_[1]
+  local right_bound = _let_327_[2]
+  local function _329_(_241)
     return (opts.substitute_chars[_241] or _241)
   end
-  local _let_320_ = map(_321_, {ch1, ch2})
-  local ch10 = _let_320_[1]
-  local ch20 = _let_320_[2]
+  local _let_328_ = map(_329_, {ch1, ch2})
+  local ch10 = _let_328_[1]
+  local ch20 = _let_328_[2]
   local masked_char_24 = {ch20, hl.group["masked-ch"]}
   local label_24 = {label, hl.group.label}
   local shortcut_24 = {label, hl.group.shortcut}
@@ -1386,8 +1417,8 @@ local function set_beacon(_315_, _repeat)
   local overlapped_shortcut_24 = {label, hl.group["shortcut-overlapped"]}
   local overlapped_distant_label_24 = {label, hl.group["label-distant-overlapped"]}
   do
-    local _322_ = label_state
-    if (_322_ == nil) then
+    local _330_ = label_state
+    if (_330_ == nil) then
       if not (_repeat or to_eol_3f) then
         if overlapped_3f then
           target.beacon = {1, {{ch20, hl.group["unlabeled-match"]}}}
@@ -1397,7 +1428,7 @@ local function set_beacon(_315_, _repeat)
       else
       target.beacon = nil
       end
-    elseif (_322_ == "active-primary") then
+    elseif (_330_ == "active-primary") then
       if to_eol_3f then
         if (vim.wo.wrap or ((col <= right_bound) and (col >= left_bound))) then
           target.beacon = {0, {shortcut_24}}
@@ -1409,13 +1440,13 @@ local function set_beacon(_315_, _repeat)
         target.beacon = nil
         end
       elseif _repeat then
-        local _326_
+        local _334_
         if squeezed_3f then
-          _326_ = 1
+          _334_ = 1
         else
-          _326_ = 2
+          _334_ = 2
         end
-        target.beacon = {_326_, {shortcut_24}}
+        target.beacon = {_334_, {shortcut_24}}
       elseif shortcut_3f then
         if overlapped_3f then
           target.beacon = {1, {overlapped_shortcut_24}}
@@ -1433,7 +1464,7 @@ local function set_beacon(_315_, _repeat)
       else
         target.beacon = {2, {label_24}}
       end
-    elseif (_322_ == "active-secondary") then
+    elseif (_330_ == "active-secondary") then
       if to_eol_3f then
         if (vim.wo.wrap or ((col <= right_bound) and (col >= left_bound))) then
           target.beacon = {0, {distant_label_24}}
@@ -1445,13 +1476,13 @@ local function set_beacon(_315_, _repeat)
         target.beacon = nil
         end
       elseif _repeat then
-        local _332_
+        local _340_
         if squeezed_3f then
-          _332_ = 1
+          _340_ = 1
         else
-          _332_ = 2
+          _340_ = 2
         end
-        target.beacon = {_332_, {distant_label_24}}
+        target.beacon = {_340_, {distant_label_24}}
       elseif overlapped_3f then
         target.beacon = {1, {overlapped_distant_label_24}}
       elseif squeezed_3f then
@@ -1459,7 +1490,7 @@ local function set_beacon(_315_, _repeat)
       else
         target.beacon = {2, {distant_label_24}}
       end
-    elseif (_322_ == "inactive") then
+    elseif (_330_ == "inactive") then
       target.beacon = nil
     else
     target.beacon = nil
@@ -1467,9 +1498,9 @@ local function set_beacon(_315_, _repeat)
   end
   return nil
 end
-local function set_beacons(target_list, _336_)
-  local _arg_337_ = _336_
-  local _repeat = _arg_337_["repeat"]
+local function set_beacons(target_list, _344_)
+  local _arg_345_ = _344_
+  local _repeat = _arg_345_["repeat"]
   for _, target in ipairs(target_list) do
     set_beacon(target, _repeat)
   end
@@ -1477,34 +1508,34 @@ local function set_beacons(target_list, _336_)
 end
 local function light_up_beacons(target_list, _3fstart_idx)
   for i = (_3fstart_idx or 1), #target_list do
-    local _let_338_ = target_list[i]
-    local beacon = _let_338_["beacon"]
-    local _let_339_ = _let_338_["pos"]
-    local line = _let_339_[1]
-    local col = _let_339_[2]
-    local _340_ = beacon
-    if ((type(_340_) == "table") and (nil ~= (_340_)[1]) and (nil ~= (_340_)[2]) and true) then
-      local offset = (_340_)[1]
-      local chunks = (_340_)[2]
-      local _3fleft_off_3f = (_340_)[3]
-      local _341_
+    local _let_346_ = target_list[i]
+    local beacon = _let_346_["beacon"]
+    local _let_347_ = _let_346_["pos"]
+    local line = _let_347_[1]
+    local col = _let_347_[2]
+    local _348_ = beacon
+    if ((type(_348_) == "table") and (nil ~= (_348_)[1]) and (nil ~= (_348_)[2]) and true) then
+      local offset = (_348_)[1]
+      local chunks = (_348_)[2]
+      local _3fleft_off_3f = (_348_)[3]
+      local _349_
       if _3fleft_off_3f then
-        _341_ = 0
+        _349_ = 0
       else
-      _341_ = nil
+      _349_ = nil
       end
-      hl["set-extmark"](hl, dec(line), dec((col + offset)), {virt_text = chunks, virt_text_pos = "overlay", virt_text_win_col = _341_})
+      hl["set-extmark"](hl, dec(line), dec((col + offset)), {virt_text = chunks, virt_text_pos = "overlay", virt_text_win_col = _349_})
     end
   end
   return nil
 end
 local function get_target_with_active_primary_label(target_list, input)
   local res = nil
-  for _, _344_ in ipairs(target_list) do
-    local _each_345_ = _344_
-    local target = _each_345_
-    local label = _each_345_["label"]
-    local label_state = _each_345_["label-state"]
+  for _, _352_ in ipairs(target_list) do
+    local _each_353_ = _352_
+    local target = _each_353_
+    local label = _each_353_["label"]
+    local label_state = _each_353_["label-state"]
     if res then break end
     if ((label == input) and (label_state == "active-primary")) then
       res = target
@@ -1513,9 +1544,9 @@ local function get_target_with_active_primary_label(target_list, input)
   return res
 end
 local function ignore_input_until_timeout(char_to_ignore)
-  local _347_ = get_input(opts.jump_on_partial_input_safety_timeout)
-  if (nil ~= _347_) then
-    local input = _347_
+  local _355_ = get_input(opts.jump_on_partial_input_safety_timeout)
+  if (nil ~= _355_) then
+    local input = _355_
     if (input ~= char_to_ignore) then
       return vim.fn.feedkeys(input, "i")
     end
@@ -1540,14 +1571,14 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
   local invoked_as_reverse_3f = reverse_3f
   local reverse_3f0
   if cold_repeat_3f then
-    local function _351_(_241)
+    local function _359_(_241)
       if invoked_as_reverse_3f then
         return not _241
       else
         return _241
       end
     end
-    reverse_3f0 = _351_(self.state.cold["reverse?"])
+    reverse_3f0 = _359_(self.state.cold["reverse?"])
   else
     reverse_3f0 = reverse_3f
   end
@@ -1569,8 +1600,8 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
     elseif cold_repeat_3f then
       return self.state.cold.in1
     else
-      local _355_
-      local function _356_()
+      local _363_
+      local function _364_()
         local res_2_auto
         do
           res_2_auto = get_input()
@@ -1578,7 +1609,7 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
         hl:cleanup()
         return res_2_auto
       end
-      local function _357_()
+      local function _365_()
         if change_operation_3f() then
           handle_interrupted_change_op_21()
         end
@@ -1588,11 +1619,11 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
         doau_when_exists("LightspeedLeave")
         return nil
       end
-      _355_ = (_356_() or _357_())
-      if (_355_ == _3cbackspace_3e) then
+      _363_ = (_364_() or _365_())
+      if (_363_ == _3cbackspace_3e) then
         backspace_repeat_3f = true
         new_search_3f = false
-        local function _359_()
+        local function _367_()
           if change_operation_3f() then
             handle_interrupted_change_op_21()
           end
@@ -1603,48 +1634,48 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
           doau_when_exists("LightspeedLeave")
           return nil
         end
-        return (self.state.cold.in1 or _359_())
-      elseif (nil ~= _355_) then
-        local _in = _355_
+        return (self.state.cold.in1 or _367_())
+      elseif (nil ~= _363_) then
+        local _in = _363_
         return _in
       end
     end
   end
   local function update_state_2a(in1)
-    local function _365_(_363_)
-      local _arg_364_ = _363_
-      local cold = _arg_364_["cold"]
-      local dot = _arg_364_["dot"]
+    local function _373_(_371_)
+      local _arg_372_ = _371_
+      local cold = _arg_372_["cold"]
+      local dot = _arg_372_["dot"]
       if new_search_3f then
         if cold then
-          local _366_ = cold
-          _366_["in1"] = in1
-          _366_["x-mode?"] = x_mode_3f0
-          _366_["reverse?"] = reverse_3f0
-          self.state.cold = _366_
+          local _374_ = cold
+          _374_["in1"] = in1
+          _374_["x-mode?"] = x_mode_3f0
+          _374_["reverse?"] = reverse_3f0
+          self.state.cold = _374_
         end
         if dot then
           if dot_repeatable_op_3f then
             do
-              local _368_ = dot
-              _368_["in1"] = in1
-              _368_["x-mode?"] = x_mode_3f0
-              self.state.dot = _368_
+              local _376_ = dot
+              _376_["in1"] = in1
+              _376_["x-mode?"] = x_mode_3f0
+              self.state.dot = _376_
             end
             return nil
           end
         end
       end
     end
-    return _365_
+    return _373_
   end
   local jump_to_21
   do
     local first_jump_3f = true
-    local function _372_(target, _3fto_pre_eol_3f)
+    local function _380_(target, _3fto_pre_eol_3f)
       local to_pre_eol_3f0 = (_3fto_pre_eol_3f or to_pre_eol_3f)
       local adjusted_pos
-      local function _373_()
+      local function _381_()
         if to_eol_3f then
           if op_mode_3f then
             return push_cursor_21("fwd")
@@ -1660,37 +1691,37 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
           end
         end
       end
-      adjusted_pos = jump_to_21_2a(target, {["add-to-jumplist?"] = (first_jump_3f and not instant_repeat_3f), ["inclusive-motion?"] = (x_mode_3f0 and not reverse_3f0), ["reverse?"] = reverse_3f0, adjust = _373_, mode = mode})
+      adjusted_pos = jump_to_21_2a(target, {["add-to-jumplist?"] = (first_jump_3f and not instant_repeat_3f), ["inclusive-motion?"] = (x_mode_3f0 and not reverse_3f0), ["reverse?"] = reverse_3f0, adjust = _381_, mode = mode})
       first_jump_3f = false
       return adjusted_pos
     end
-    jump_to_21 = _372_
+    jump_to_21 = _380_
   end
   local function highlight_new_curpos_and_op_area(from_pos, to_pos)
     local motion_force = get_motion_force(mode)
     local blockwise_3f = (motion_force == _3cctrl_v_3e)
-    local function _379_()
+    local function _387_()
       if reverse_3f0 then
         return to_pos
       else
         return from_pos
       end
     end
-    local _let_378_ = _379_()
-    local startline = _let_378_[1]
-    local startcol = _let_378_[2]
-    local start = _let_378_
-    local function _381_()
+    local _let_386_ = _387_()
+    local startline = _let_386_[1]
+    local startcol = _let_386_[2]
+    local start = _let_386_
+    local function _389_()
       if reverse_3f0 then
         return from_pos
       else
         return to_pos
       end
     end
-    local _let_380_ = _381_()
-    local _ = _let_380_[1]
-    local endcol = _let_380_[2]
-    local _end = _let_380_
+    local _let_388_ = _389_()
+    local _ = _let_388_[1]
+    local endcol = _let_388_[2]
+    local _end = _let_388_
     local top_left = {startline, min(startcol, endcol)}
     local new_curpos
     if op_mode_3f then
@@ -1711,15 +1742,15 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
     return vim.cmd("redraw")
   end
   local function get_sublist(targets, ch)
-    local _386_ = targets.sublists[ch]
-    if (nil ~= _386_) then
-      local sublist = _386_
-      local _let_387_ = sublist
-      local _let_388_ = _let_387_[1]
-      local _let_389_ = _let_388_["pos"]
-      local line = _let_389_[1]
-      local col = _let_389_[2]
-      local rest = {(table.unpack or unpack)(_let_387_, 2)}
+    local _394_ = targets.sublists[ch]
+    if (nil ~= _394_) then
+      local sublist = _394_
+      local _let_395_ = sublist
+      local _let_396_ = _let_395_[1]
+      local _let_397_ = _let_396_["pos"]
+      local line = _let_397_[1]
+      local col = _let_397_[2]
+      local rest = {(table.unpack or unpack)(_let_395_, 2)}
       local target_tail = {line, inc(col)}
       local prev_pos = vim.fn.searchpos("\\_.", "nWb")
       local cursor_touches_first_target_3f = same_pos_3f(target_tail, prev_pos)
@@ -1736,15 +1767,15 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
     local next_group_key = replace_keycodes(opts.cycle_group_fwd_key)
     local prev_group_key = replace_keycodes(opts.cycle_group_bwd_key)
     local function recur(group_offset, initial_invoc_3f)
-      local _393_
+      local _401_
       if (cold_repeat_3f or backspace_repeat_3f) then
-        _393_ = "cold"
+        _401_ = "cold"
       elseif instant_repeat_3f then
-        _393_ = "instant"
+        _401_ = "instant"
       else
-      _393_ = nil
+      _401_ = nil
       end
-      set_beacons(sublist, {["repeat"] = _393_})
+      set_beacons(sublist, {["repeat"] = _401_})
       do
         if (opts.grey_out_search_area and not (cold_repeat_3f or instant_repeat_3f or to_eol_3f)) then
           grey_out_search_area(reverse_3f0)
@@ -1755,22 +1786,22 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
         highlight_cursor()
         vim.cmd("redraw")
       end
-      local _396_
+      local _404_
       do
         local res_2_auto
         do
-          local function _397_()
+          local function _405_()
             if initial_invoc_3f then
               return opts.exit_after_idle_msecs.labeled
             end
           end
-          res_2_auto = get_input(_397_())
+          res_2_auto = get_input(_405_())
         end
         hl:cleanup()
-        _396_ = res_2_auto
+        _404_ = res_2_auto
       end
-      if (nil ~= _396_) then
-        local input = _396_
+      if (nil ~= _404_) then
+        local input = _404_
         if (sublist["autojump?"] and opts.labels and not empty_3f(opts.labels)) then
           return {input, 0}
         elseif (((input == next_group_key) or (input == prev_group_key)) and not instant_repeat_3f) then
@@ -1778,17 +1809,17 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
           local num_of_groups = ceil((#sublist / #labels))
           local max_offset = dec(num_of_groups)
           local group_offset_2a
-          local _399_
+          local _407_
           do
-            local _398_ = input
-            if (_398_ == next_group_key) then
-              _399_ = inc
+            local _406_ = input
+            if (_406_ == next_group_key) then
+              _407_ = inc
             else
-              local _ = _398_
-              _399_ = dec
+              local _ = _406_
+              _407_ = dec
             end
           end
-          group_offset_2a = clamp(_399_(group_offset), 0, max_offset)
+          group_offset_2a = clamp(_407_(group_offset), 0, max_offset)
           set_label_states_for_sublist(sublist, {["group-offset"] = group_offset_2a})
           return recur(group_offset_2a)
         else
@@ -1812,9 +1843,9 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
     highlight_cursor()
     vim.cmd("redraw")
   end
-  local _408_ = get_first_input()
-  if (nil ~= _408_) then
-    local in1 = _408_
+  local _416_ = get_first_input()
+  if (nil ~= _416_) then
+    local in1 = _416_
     local _
     to_eol_3f = (in1 == "\13")
     _ = nil
@@ -1830,15 +1861,15 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
     else
     prev_in2 = nil
     end
-    local _410_
-    local function _412_()
-      local t_411_ = instant_state
-      if (nil ~= t_411_) then
-        t_411_ = (t_411_).sublist
+    local _418_
+    local function _420_()
+      local t_419_ = instant_state
+      if (nil ~= t_419_) then
+        t_419_ = (t_419_).sublist
       end
-      return t_411_
+      return t_419_
     end
-    local function _414_()
+    local function _422_()
       if change_operation_3f() then
         handle_interrupted_change_op_21()
       end
@@ -1849,11 +1880,11 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
       doau_when_exists("LightspeedLeave")
       return nil
     end
-    _410_ = (_412_() or get_targets(in1, reverse_3f0) or _414_())
-    if ((type(_410_) == "table") and ((type((_410_)[1]) == "table") and ((type(((_410_)[1]).pair) == "table") and true and (nil ~= (((_410_)[1]).pair)[2]))) and ((_410_)[2] == nil)) then
-      local _0 = (((_410_)[1]).pair)[1]
-      local ch2 = (((_410_)[1]).pair)[2]
-      local only = (_410_)[1]
+    _418_ = (_420_() or get_targets(in1, reverse_3f0) or _422_())
+    if ((type(_418_) == "table") and ((type((_418_)[1]) == "table") and ((type(((_418_)[1]).pair) == "table") and true and (nil ~= (((_418_)[1]).pair)[2]))) and ((_418_)[2] == nil)) then
+      local _0 = (((_418_)[1]).pair)[1]
+      local ch2 = (((_418_)[1]).pair)[2]
+      local only = (_418_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           if dot_repeatable_op_3f then
@@ -1884,19 +1915,19 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
         doau_when_exists("LightspeedLeave")
         return nil
       end
-    elseif (nil ~= _410_) then
-      local targets = _410_
+    elseif (nil ~= _418_) then
+      local targets = _418_
       if not instant_repeat_3f then
-        local _420_ = targets
-        populate_sublists(_420_)
-        set_labels(_420_, to_eol_3f)
-        set_label_states(_420_)
+        local _428_ = targets
+        populate_sublists(_428_)
+        set_labels(_428_, to_eol_3f)
+        set_label_states(_428_)
       end
       if (new_search_3f and not to_eol_3f) then
         do
-          local _422_ = targets
-          set_shortcuts_and_populate_shortcuts_map(_422_)
-          set_beacons(_422_, {["repeat"] = nil})
+          local _430_ = targets
+          set_shortcuts_and_populate_shortcuts_map(_430_)
+          set_beacons(_430_, {["repeat"] = nil})
         end
         if (opts.grey_out_search_area and not (cold_repeat_3f or instant_repeat_3f or to_eol_3f)) then
           grey_out_search_area(reverse_3f0)
@@ -1907,13 +1938,13 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
         highlight_cursor()
         vim.cmd("redraw")
       end
-      local _425_
-      local function _426_()
+      local _433_
+      local function _434_()
         if to_eol_3f then
           return ""
         end
       end
-      local function _427_()
+      local function _435_()
         local res_2_auto
         do
           res_2_auto = get_input()
@@ -1921,7 +1952,7 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
         hl:cleanup()
         return res_2_auto
       end
-      local function _428_()
+      local function _436_()
         if change_operation_3f() then
           handle_interrupted_change_op_21()
         end
@@ -1931,21 +1962,21 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
         doau_when_exists("LightspeedLeave")
         return nil
       end
-      _425_ = (prev_in2 or _426_() or _427_() or _428_())
-      if (nil ~= _425_) then
-        local in2 = _425_
-        local _430_
+      _433_ = (prev_in2 or _434_() or _435_() or _436_())
+      if (nil ~= _433_) then
+        local in2 = _433_
+        local _438_
         do
-          local t_431_ = targets.shortcuts
-          if (nil ~= t_431_) then
-            t_431_ = (t_431_)[in2]
+          local t_439_ = targets.shortcuts
+          if (nil ~= t_439_) then
+            t_439_ = (t_439_)[in2]
           end
-          _430_ = t_431_
+          _438_ = t_439_
         end
-        if ((type(_430_) == "table") and ((type((_430_).pair) == "table") and true and (nil ~= ((_430_).pair)[2]))) then
-          local _0 = ((_430_).pair)[1]
-          local ch2 = ((_430_).pair)[2]
-          local shortcut = _430_
+        if ((type(_438_) == "table") and ((type((_438_).pair) == "table") and true and (nil ~= ((_438_).pair)[2]))) then
+          local _0 = ((_438_).pair)[1]
+          local ch2 = ((_438_).pair)[2]
+          local shortcut = _438_
           do
             if dot_repeatable_op_3f then
               set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f0, x_mode_3f0, "dot")))
@@ -1957,18 +1988,18 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
           doau_when_exists("LightspeedLeave")
           return nil
         else
-          local _0 = _430_
+          local _0 = _438_
           to_pre_eol_3f = (in2 == "\13")
           update_state({cold = {in2 = in2}})
-          local _434_
-          local function _436_()
-            local t_435_ = instant_state
-            if (nil ~= t_435_) then
-              t_435_ = (t_435_).sublist
+          local _442_
+          local function _444_()
+            local t_443_ = instant_state
+            if (nil ~= t_443_) then
+              t_443_ = (t_443_).sublist
             end
-            return t_435_
+            return t_443_
           end
-          local function _438_()
+          local function _446_()
             if change_operation_3f() then
               handle_interrupted_change_op_21()
             end
@@ -1979,9 +2010,9 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
             doau_when_exists("LightspeedLeave")
             return nil
           end
-          _434_ = (_436_() or get_sublist(targets, in2) or _438_())
-          if ((type(_434_) == "table") and (nil ~= (_434_)[1]) and ((_434_)[2] == nil)) then
-            local only = (_434_)[1]
+          _442_ = (_444_() or get_sublist(targets, in2) or _446_())
+          if ((type(_442_) == "table") and (nil ~= (_442_)[1]) and ((_442_)[2] == nil)) then
+            local only = (_442_)[1]
             do
               if dot_repeatable_op_3f then
                 set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f0, x_mode_3f0, "dot")))
@@ -1992,26 +2023,26 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
             doau_when_exists("LightspeedSxLeave")
             doau_when_exists("LightspeedLeave")
             return nil
-          elseif ((type(_434_) == "table") and (nil ~= (_434_)[1])) then
-            local first = (_434_)[1]
-            local sublist = _434_
+          elseif ((type(_442_) == "table") and (nil ~= (_442_)[1])) then
+            local first = (_442_)[1]
+            local sublist = _442_
             local autojump_3f = sublist["autojump?"]
             local curr_idx
-            local function _442_()
-              local t_441_ = instant_state
-              if (nil ~= t_441_) then
-                t_441_ = (t_441_).idx
+            local function _450_()
+              local t_449_ = instant_state
+              if (nil ~= t_449_) then
+                t_449_ = (t_449_).idx
               end
-              return t_441_
+              return t_449_
             end
-            local function _444_()
+            local function _452_()
               if autojump_3f then
                 return 1
               else
                 return 0
               end
             end
-            curr_idx = (_442_() or _444_())
+            curr_idx = (_450_() or _452_())
             local from_reverse_cold_repeat_3f
             if instant_repeat_3f then
               from_reverse_cold_repeat_3f = instant_state["from-reverse-cold-repeat?"]
@@ -2021,13 +2052,13 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
             if (autojump_3f and not instant_repeat_3f) then
               jump_to_21(first.pos)
             end
-            local _447_
-            local function _448_()
+            local _455_
+            local function _456_()
               if (dot_repeat_3f and self.state.dot.in3) then
                 return {self.state.dot.in3, 0}
               end
             end
-            local function _449_()
+            local function _457_()
               if change_operation_3f() then
                 handle_interrupted_change_op_21()
               end
@@ -2037,24 +2068,24 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
               doau_when_exists("LightspeedLeave")
               return nil
             end
-            _447_ = (_448_() or get_last_input(sublist, inc(curr_idx)) or _449_())
-            if ((type(_447_) == "table") and (nil ~= (_447_)[1]) and (nil ~= (_447_)[2])) then
-              local in3 = (_447_)[1]
-              local group_offset = (_447_)[2]
-              local _451_
+            _455_ = (_456_() or get_last_input(sublist, inc(curr_idx)) or _457_())
+            if ((type(_455_) == "table") and (nil ~= (_455_)[1]) and (nil ~= (_455_)[2])) then
+              local in3 = (_455_)[1]
+              local group_offset = (_455_)[2]
+              local _459_
               if not (op_mode_3f or (group_offset > 0)) then
-                _451_ = get_repeat_action(in3, "sx", x_mode_3f0, instant_repeat_3f, from_reverse_cold_repeat_3f)
+                _459_ = get_repeat_action(in3, "sx", x_mode_3f0, instant_repeat_3f, from_reverse_cold_repeat_3f)
               else
-              _451_ = nil
+              _459_ = nil
               end
-              if (nil ~= _451_) then
-                local action = _451_
+              if (nil ~= _459_) then
+                local action = _459_
                 local idx
                 do
-                  local _453_ = action
-                  if (_453_ == "repeat") then
+                  local _461_ = action
+                  if (_461_ == "repeat") then
                     idx = min(inc(curr_idx), #targets)
-                  elseif (_453_ == "revert") then
+                  elseif (_461_ == "revert") then
                     idx = max(dec(curr_idx), 1)
                   else
                   idx = nil
@@ -2063,28 +2094,28 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
                 jump_to_21(sublist[idx].pos)
                 return sx:go(reverse_3f0, x_mode_3f0, {["from-reverse-cold-repeat?"] = from_reverse_cold_repeat_3f, idx = idx, in1 = in1, in2 = in2, sublist = sublist})
               else
-                local _1 = _451_
-                local _455_ = get_target_with_active_primary_label(sublist, in3)
-                if (nil ~= _455_) then
-                  local target = _455_
+                local _1 = _459_
+                local _463_ = get_target_with_active_primary_label(sublist, in3)
+                if (nil ~= _463_) then
+                  local target = _463_
                   do
                     if dot_repeatable_op_3f then
                       set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f0, x_mode_3f0, "dot")))
                     end
-                    local _457_
+                    local _465_
                     if (group_offset > 0) then
-                      _457_ = nil
+                      _465_ = nil
                     else
-                      _457_ = in3
+                      _465_ = in3
                     end
-                    update_state({dot = {in2 = in2, in3 = _457_}})
+                    update_state({dot = {in2 = in2, in3 = _465_}})
                     jump_to_21(target.pos)
                   end
                   doau_when_exists("LightspeedSxLeave")
                   doau_when_exists("LightspeedLeave")
                   return nil
                 else
-                  local _2 = _455_
+                  local _2 = _463_
                   if autojump_3f then
                     do
                       if dot_repeatable_op_3f then
@@ -2118,26 +2149,26 @@ local temporary_editor_opts = {["vim.bo.modeline"] = false, ["vim.wo.concealleve
 local saved_editor_opts = {}
 local function save_editor_opts()
   for opt, _ in pairs(temporary_editor_opts) do
-    local _let_470_ = vim.split(opt, ".", true)
-    local _0 = _let_470_[1]
-    local scope = _let_470_[2]
-    local name = _let_470_[3]
-    local _471_
+    local _let_478_ = vim.split(opt, ".", true)
+    local _0 = _let_478_[1]
+    local scope = _let_478_[2]
+    local name = _let_478_[3]
+    local _479_
     if (opt == "vim.wo.scrolloff") then
-      _471_ = api.nvim_eval("&l:scrolloff")
+      _479_ = api.nvim_eval("&l:scrolloff")
     else
-      _471_ = _G.vim[scope][name]
+      _479_ = _G.vim[scope][name]
     end
-    saved_editor_opts[opt] = _471_
+    saved_editor_opts[opt] = _479_
   end
   return nil
 end
 local function set_editor_opts(opts0)
   for opt, val in pairs(opts0) do
-    local _let_473_ = vim.split(opt, ".", true)
-    local _ = _let_473_[1]
-    local scope = _let_473_[2]
-    local name = _let_473_[3]
+    local _let_481_ = vim.split(opt, ".", true)
+    local _ = _let_481_[1]
+    local scope = _let_481_[2]
+    local name = _let_481_[3]
     _G.vim[scope][name] = val
   end
   return nil
@@ -2150,29 +2181,29 @@ local function restore_editor_opts()
 end
 local function set_plug_keys()
   local plug_keys = {{"<Plug>Lightspeed_s", "sx:go(false)"}, {"<Plug>Lightspeed_S", "sx:go(true)"}, {"<Plug>Lightspeed_x", "sx:go(false, true)"}, {"<Plug>Lightspeed_X", "sx:go(true, true)"}, {"<Plug>Lightspeed_f", "ft:go(false)"}, {"<Plug>Lightspeed_F", "ft:go(true)"}, {"<Plug>Lightspeed_t", "ft:go(false, true)"}, {"<Plug>Lightspeed_T", "ft:go(true, true)"}, {"<Plug>Lightspeed_;_sx", "sx:go(false, nil, 'cold')"}, {"<Plug>Lightspeed_,_sx", "sx:go(true, nil, 'cold')"}, {"<Plug>Lightspeed_;_ft", "ft:go(false, nil, 'cold')"}, {"<Plug>Lightspeed_,_ft", "ft:go(true, nil, 'cold')"}}
-  for _, _474_ in ipairs(plug_keys) do
-    local _each_475_ = _474_
-    local lhs = _each_475_[1]
-    local rhs_call = _each_475_[2]
+  for _, _482_ in ipairs(plug_keys) do
+    local _each_483_ = _482_
+    local lhs = _each_483_[1]
+    local rhs_call = _each_483_[2]
     for _0, mode in ipairs({"n", "x", "o"}) do
       api.nvim_set_keymap(mode, lhs, ("<cmd>lua require'lightspeed'." .. rhs_call .. "<cr>"), {noremap = true, silent = true})
     end
   end
-  for _, _476_ in ipairs({{"<Plug>Lightspeed_dotrepeat_s", "sx:go(false, false, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_S", "sx:go(true, false, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_x", "sx:go(false, true, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_X", "sx:go(true, true, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_f", "ft:go(false, false, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_F", "ft:go(true, false, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_t", "ft:go(false, true, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_T", "ft:go(true, true, 'dot')"}}) do
-    local _each_477_ = _476_
-    local lhs = _each_477_[1]
-    local rhs_call = _each_477_[2]
+  for _, _484_ in ipairs({{"<Plug>Lightspeed_dotrepeat_s", "sx:go(false, false, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_S", "sx:go(true, false, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_x", "sx:go(false, true, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_X", "sx:go(true, true, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_f", "ft:go(false, false, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_F", "ft:go(true, false, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_t", "ft:go(false, true, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_T", "ft:go(true, true, 'dot')"}}) do
+    local _each_485_ = _484_
+    local lhs = _each_485_[1]
+    local rhs_call = _each_485_[2]
     api.nvim_set_keymap("o", lhs, ("<cmd>lua require'lightspeed'." .. rhs_call .. "<cr>"), {noremap = true, silent = true})
   end
   return nil
 end
 local function set_default_keymaps()
   local default_keymaps = {{"n", "s", "<Plug>Lightspeed_s"}, {"n", "S", "<Plug>Lightspeed_S"}, {"x", "s", "<Plug>Lightspeed_s"}, {"x", "S", "<Plug>Lightspeed_S"}, {"o", "z", "<Plug>Lightspeed_s"}, {"o", "Z", "<Plug>Lightspeed_S"}, {"o", "x", "<Plug>Lightspeed_x"}, {"o", "X", "<Plug>Lightspeed_X"}, {"n", "f", "<Plug>Lightspeed_f"}, {"n", "F", "<Plug>Lightspeed_F"}, {"x", "f", "<Plug>Lightspeed_f"}, {"x", "F", "<Plug>Lightspeed_F"}, {"o", "f", "<Plug>Lightspeed_f"}, {"o", "F", "<Plug>Lightspeed_F"}, {"n", "t", "<Plug>Lightspeed_t"}, {"n", "T", "<Plug>Lightspeed_T"}, {"x", "t", "<Plug>Lightspeed_t"}, {"x", "T", "<Plug>Lightspeed_T"}, {"o", "t", "<Plug>Lightspeed_t"}, {"o", "T", "<Plug>Lightspeed_T"}, {"n", ";", "<Plug>Lightspeed_;_ft"}, {"x", ";", "<Plug>Lightspeed_;_ft"}, {"o", ";", "<Plug>Lightspeed_;_ft"}, {"n", ",", "<Plug>Lightspeed_,_ft"}, {"x", ",", "<Plug>Lightspeed_,_ft"}, {"o", ",", "<Plug>Lightspeed_,_ft"}}
-  for _, _478_ in ipairs(default_keymaps) do
-    local _each_479_ = _478_
-    local mode = _each_479_[1]
-    local lhs = _each_479_[2]
-    local rhs = _each_479_[3]
+  for _, _486_ in ipairs(default_keymaps) do
+    local _each_487_ = _486_
+    local mode = _each_487_[1]
+    local lhs = _each_487_[2]
+    local rhs = _each_487_[3]
     if ((vim.fn.mapcheck(lhs, mode) == "") and (vim.fn.hasmapto(rhs, mode) == 0)) then
       api.nvim_set_keymap(mode, lhs, rhs, {silent = true})
     end

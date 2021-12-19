@@ -425,6 +425,7 @@ defaults.)
 
 ```Lua
 require'lightspeed'.setup {
+  ignore_case = false,
   exit_after_idle_msecs = { labeled = nil, unlabeled = 1000 },
 
   -- s/x
@@ -616,14 +617,12 @@ nnoremap <expr> g/ '/<C-u>\%>'.(col(".")-v:count1).'v\%<'.(col(".")+v:count1).'v
 nnoremap <expr> g? '?<C-u>\%>'.(col(".")-v:count1).'v\%<'.(col(".")+v:count1).'v'
 ```
 
-### Case insensitivity for 2-character search?
+### Smart case?
 
-See [#64](https://github.com/ggandor/lightspeed.nvim/issues/64). TL;DR:
-`smartcase`-like behaviour would be super-useful, but is unfortunately
-impossible for this plugin, _by design_. At the same time, the value of a plain
-"ignore case" setting is questionable, because that would mean ignoring our
-clever "shortcutting" features too. Here, capitals can very frequently make you
-reach the target faster - so start using them!
+See [#64](https://github.com/ggandor/lightspeed.nvim/issues/64). It is
+unfortunately impossible for this plugin, _by design_. (Because of ahead-of-time
+labeling, it would require showing two different labels - corresponding to two
+different futures - at the same time.)
 
 ### Arbitrary-length search pattern?
 

@@ -1,4 +1,4 @@
-*lightspeed.txt*     For Neovim version 0.5.0      Last change: 2021 December 13
+*lightspeed.txt*     For Neovim version 0.5.0      Last change: 2021 December 19
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -153,6 +153,10 @@ Setting multiple options via the `setup` function: >
           not mentioned here are not disturbed.)
 
 Common options~
+
+`ignore_case = false`
+
+    Ignore case in search patterns.
 
 `exit_after_idle_msecs = { labeled = nil, unlabeled = 1000 }`
 

@@ -147,8 +147,8 @@ character instead."
                "u" "t"
                "m" "v" "c" "a" "." "z"
                "/" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
-       {:exit_after_idle_msecs {:labeled nil
-                                :unlabeled 1000}
+       {:ignore_case false
+        :exit_after_idle_msecs {:labeled nil :unlabeled 1000}
         ; s/x
         :grey_out_search_area true
         :highlight_unique_chars true
@@ -755,7 +755,9 @@ interrupted change-operation."
         (var jump-pos nil)
         (var match-count 0)
         (let [next-pos (vim.fn.searchpos "\\_." (if reverse? :nWb :nW))
-              pattern (if to-eol? "\\n" (.. "\\V\\C" (in1:gsub "\\" "\\\\")))
+              pattern (if to-eol? "\\n"
+                          (.. "\\V" (if opts.ignore_case "\\c" "\\C")
+                              (in1:gsub "\\" "\\\\")))
               limit (+ count (get-num-of-matches-to-be-highlighted))]
           (each [[line col &as pos]
                  (onscreen-match-positions pattern reverse? {:ft-search? true : limit})]
@@ -839,7 +841,8 @@ interrupted change-operation."
         (for [col startcol endcol]
           (when (or vim.wo.wrap (and (>= col left-bound) (<= col right-bound)))
             ; TODO: multibyte?
-            (let [ch (line:sub col col)]
+            (let [ch (line:sub col col)
+                  ch (if opts.ignore_case (ch:lower) ch)]
               (tset unique-chars ch (match (. unique-chars ch)
                                       pos-already-there false
                                       _ [lnum col])))))))
@@ -849,9 +852,9 @@ interrupted change-operation."
         (hl:add-hl hl.group.unique-ch (dec lnum) (dec col) col)))))
 
 
-(fn get-targets [ch1 reverse?]
+(fn get-targets [input reverse?]
   "Return a table that will store the positions and other metadata of
-all on-screen pairs that start with `ch1`, in the order of discovery
+all on-screen pairs that start with `input`, in the order of discovery
 (i.e., distance from cursor).
 
 A target element in its final form has the following fields (the latter
@@ -866,17 +869,21 @@ ones might be set by subsequent functions):
   ?beacon      : [col-offset [[char hl-group]]]
 "
   (local targets [])
-  (local to-eol? (= ch1 "\r"))
+  (local to-eol? (= input "\r"))
   (var prev-match {})
   (var added-prev-match? nil)
-  (let [pattern (if to-eol? "\\n"           ; we should send in a literal \n, for searchpos
-                    (.. "\\V\\C"                ; force matching case (for the moment)
-                        (ch1:gsub "\\" "\\\\")  ; backslash still needs to be escaped for \V
-                        "\\_."))]               ; match anything (including EOL) after ch1
+  (let [pattern (if to-eol? "\\n"  ; we should send in a literal \n, for searchpos
+                    (.. "\\V"
+                        (if opts.ignore_case "\\c" "\\C")
+                        (input:gsub "\\" "\\\\")  ; backslash still needs to be escaped for \V
+                        "\\_."))]                 ; match anything (including EOL) after it
     (each [[line col &as pos] (onscreen-match-positions pattern reverse? {: to-eol?})]
       (if to-eol? (table.insert targets {:pos pos :pair ["\n" ""]})
-          (let [ch2 (or (char-at-pos pos {:char-offset 1})
-                        "\r")  ; <enter> is the expected input for line breaks
+          (let [ch1 (char-at-pos pos {})  ; not necessarily = `input` (if case-insensitive)
+                ch2 (or (char-at-pos pos {:char-offset 1})
+                        ; <enter> is the expected input for line breaks, so
+                        ; let's return the key for the sublist right away.
+                        "\r")
                 to-pre-eol? (= ch2 "\r")
                 overlaps-prev-match? (and (= line prev-match.line)
                                           (= col ((if reverse? dec inc) prev-match.col)))
@@ -924,10 +931,15 @@ ones might be set by subsequent functions):
 easy iteration through each subset of targets with a given successor
 char separately."
   (tset targets :sublists {})
+  (when opts.ignore_case
+    (setmetatable targets.sublists
+                  {:__index (fn [self k]
+                              (rawget self (k:lower)))}))
   (each [_ {:pair [_ ch2] &as target} (ipairs targets)]
-    (when-not (. targets :sublists ch2)
-      (tset targets :sublists ch2 []))
-    (table.insert (. targets :sublists ch2) target)))
+    (let [k (if opts.ignore_case (ch2:lower) ch2)]
+      (when-not (. targets :sublists k)
+        (tset targets :sublists k []))
+      (table.insert (. targets :sublists k) target))))
 
 
 (fn get-labels [sublist to-eol?]
