@@ -149,6 +149,7 @@ character instead."
                "/" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
        {:ignore_case false
         :exit_after_idle_msecs {:labeled nil :unlabeled 1000}
+        :disable-default-mappings true
         ; s/x
         :grey_out_search_area true
         :highlight_unique_chars true
@@ -232,6 +233,8 @@ character instead."
 
 
 (fn setup [user-opts]
+  (when-not (:disable-default-mappings user-opts)
+    (set-default-keymaps))
   (set opts (-> (normalize-opts user-opts)
                 (setmetatable {:__index opts}))))
 
@@ -1565,7 +1568,7 @@ sub-table containing label-target k-v pairs for these targets."
 
 (init-highlight)
 (set-plug-keys)
-(set-default-keymaps)
+
 
 ; Colorscheme plugins might clear out our highlight definitions, without
 ; defining their own.
