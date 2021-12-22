@@ -420,24 +420,24 @@ introduction](#-an-in-depth-introduction-of-the-key-features).
 Lightspeed exposes a configuration table (`opts`), that can be set directly, or
 via a `setup` function that updates the current settings with the values given
 in its argument table. 
-(Note: There is no need to call `setup` at all, if you are fine with the
-defaults.)
 
 ```Lua
+-- Note: This is just illustration - there is no need to copy/paste the
+-- defaults, or call `setup` at all, if you do not want to change anything.
 require'lightspeed'.setup {
   ignore_case = false,
-  exit_after_idle_msecs = { labeled = nil, unlabeled = 1000 },
+  exit_after_idle_msecs = { unlabeled = 1000, labeled = nil },
 
   -- s/x
   grey_out_search_area = true,
   highlight_unique_chars = true,
-  match_only_the_start_of_same_char_seqs = true,
   jump_on_partial_input_safety_timeout = 400,
+  match_only_the_start_of_same_char_seqs = true,
   substitute_chars = { ['\r'] = '¬' },
   -- Leaving the appropriate list empty effectively disables
   -- "smart" mode, and forces auto-jump to be on or off.
-  safe_labels = { ... },
-  labels = { ... },
+  safe_labels = { . . . },
+  labels = { . . . },
   cycle_group_fwd_key = '<space>',
   cycle_group_bwd_key = '<tab>',
 
@@ -466,36 +466,45 @@ enhancing the built-in motions - `f`, `F`, `t`, `T`, `;`, `,` (all modes).
 
 That said, Lightspeed will check for conflicts with any custom mappings created
 by you or other plugins, and will not overwite them, unless explicitly told so.
-To set alternative keymaps, you can use the following `<Plug>` keys in all modes
-(pattern length, direction, motion/operation semantics):
-
-```
-<Plug>Lightspeed_s      2-character  forward   /-like (0,  exclusive op)
-<Plug>Lightspeed_S      2-character  backward  ?-like (0,  exclusive op)
-<Plug>Lightspeed_x      2-character  forward          (+1, inclusive op)
-<Plug>Lightspeed_X      2-character  backward         (+2, exclusive op)
-                                                                        
-<Plug>Lightspeed_f      1-character  forward   f-like (0,  inclusive op)
-<Plug>Lightspeed_F      1-character  backward  F-like (0,  exclusive op)
-<Plug>Lightspeed_t      1-character  forward   t-like (-1, inclusive op)
-<Plug>Lightspeed_T      1-character  backward  T-like (+1, exclusive op)
-
-Repeat, or revert the opposite key
-<Plug>Lightspeed_;_sx
-<Plug>Lightspeed_;_ft
-
-Repeat in the reverse direction, or revert the opposite key
-<Plug>Lightspeed_,_sx
-<Plug>Lightspeed_,_ft
-```
+To set alternative keymaps, you can use the below listed `<Plug>` keys,
+available in all modes.
 
 (Note: Be sure to use `-map`, and not `-noremap`, for `<Plug>` mappings, as they
 should be used recursively, by design.)
 
-#### Using the repeat `<Plug>` keys for instant repeat only
+Basic motions (pattern length, direction, motion/operation semantics):
+```
+<Plug>Lightspeed_s    2-character  forward   /-like (0,  exclusive op)
+<Plug>Lightspeed_S    2-character  backward  ?-like (0,  exclusive op)
+<Plug>Lightspeed_x    2-character  forward          (+1, inclusive op)
+<Plug>Lightspeed_X    2-character  backward         (+2, exclusive op)
+                                                                      
+<Plug>Lightspeed_f    1-character  forward   f-like (0,  inclusive op)
+<Plug>Lightspeed_F    1-character  backward  F-like (0,  exclusive op)
+<Plug>Lightspeed_t    1-character  forward   t-like (-1, inclusive op)
+<Plug>Lightspeed_T    1-character  backward  T-like (+1, exclusive op)
+```
 
-That can be achieved easily with an expression mapping. See `h:
+Repeat, or revert the opposite key:
+```
+<Plug>Lightspeed_;_sx
+<Plug>Lightspeed_;_ft
+```
+
+Repeat in the reverse direction, or revert the opposite key:
+```
+<Plug>Lightspeed_,_sx
+<Plug>Lightspeed_,_ft
+```
+
+#### Setting keys to repeat the last lightspeed motion (s/x/f/t)
+
+That can be achieved easily with autocommands and expression mappings. See `h:
 lightspeed-custom-mappings`.
+
+#### Using the repeat keys for instant repeat only
+
+Likewise, see `:h lightspeed-custom-mappings` for an example snippet.
 
 #### Why `s`/`S`?
 
@@ -620,7 +629,7 @@ nnoremap <expr> g? '?<C-u>\%>'.(col(".")-v:count1).'v\%<'.(col(".")+v:count1).'v
 ### Smart case?
 
 See [#64](https://github.com/ggandor/lightspeed.nvim/issues/64). It is
-unfortunately impossible for this plugin, _by design_. (Because of ahead-of-time
+unfortunately impossible for this plugin, by design. (Because of ahead-of-time
 labeling, it would require showing two different labels - corresponding to two
 different futures - at the same time.)
 
