@@ -1,3 +1,9 @@
+# Temporary fork
+This fork was created just to allow disabling default bindings
+It will be kept updated with upstream until either:
+- Proper default binding settings are implemented upstream
+- I'm not using it anymore
+
 # 🌌 lightspeed.nvim
 
 Lightspeed is a cutting-edge motion plugin for [Neovim](https://neovim.io/),
