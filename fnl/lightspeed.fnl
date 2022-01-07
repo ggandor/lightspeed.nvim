@@ -1565,7 +1565,8 @@ sub-table containing label-target k-v pairs for these targets."
 
 (init-highlight)
 (set-plug-keys)
-(set-default-keymaps)
+(when-not vim.g.lightspeed_no_default_keymaps
+  (set-default-keymaps))
 
 ; Colorscheme plugins might clear out our highlight definitions, without
 ; defining their own.

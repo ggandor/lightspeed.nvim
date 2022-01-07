@@ -520,6 +520,10 @@ mode of the plugin at all; but in that case, all they have to do is to unmap the
 relevant keys after the plugin has been sourced (`noremap f f` or `silent! unmap
 f` for each).
 
+Alternatively, the global flag `g:lightspeed_no_default_keymaps` could be set to
+some truthy value before sourcing the plugin, to prevent the creation of any
+keymaps.
+
 ### User events
 
 Lightspeed triggers `User` events on entering/exiting, so that you can set

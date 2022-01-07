@@ -1,4 +1,4 @@
-*lightspeed.txt*     For Neovim version 0.5.0      Last change: 2021 December 19
+*lightspeed.txt*      For Neovim version 0.5.0      Last change: 2022 January 07
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -391,6 +391,9 @@ for example f/F/t/T, simply unmap the given keys after the plugin has been
 loaded (either `noremap f f` or `silent! unmap f`, for each), or equivalently,
 map anything unused to the corresponding <Plug> keys, before the plugin has
 been loaded.
+Alternatively, the global flag `g:lightspeed_no_default_keymaps` could be set
+to some truthy value before sourcing the plugin, to prevent the creation of
+any keymaps.
 
 ==============================================================================
 HIGHLIGHTING                                              *lightspeed-highlight*
