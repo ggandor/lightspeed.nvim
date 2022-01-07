@@ -677,14 +677,7 @@ to the first match, an extremely convenient feature.)
 
 ### Multi-window search?
 
-That, in itself, is actually not that bad an idea. Maybe the only feature of
-EasyMotion that I envy a bit. Would be fun to use together with Lightspeed's
-incremental labeling. But it seems almost impossible to be implemented, by
-design; it goes too much against Lightspeed's basic tenets. What about
-directions? What do we do when there are not enough labels?
-
-(In any case, I humbly suggest mapping `<C-w>h/j/k/l` to `<A-h/j/k/l>` first, if
-you have not done that already.)
+It is on the roadmap.
 
 ## 🌜 Contributing
 
