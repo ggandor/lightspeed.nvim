@@ -155,6 +155,7 @@ character instead."
         :match_only_the_start_of_same_char_seqs true
         :jump_on_partial_input_safety_timeout 400
         :substitute_chars {"\r" "¬"}  ; 0x00AC
+        :force_beacons_into_match_width false
         :safe_labels safe-labels
         :labels labels
         :cycle_group_fwd_key "<space>"
@@ -1045,6 +1046,7 @@ sub-table containing label-target k-v pairs for these targets."
   (let [to-eol? (and (= ch1 "\n") (= ch2 ""))
         [left-bound right-bound] (get-horizontal-bounds {:match-width 1})
         [ch1 ch2] (map #(or (. opts.substitute_chars $) $) [ch1 ch2])
+        squeezed? (or opts.force_beacons_into_match_width squeezed?)
         masked-char$ [ch2 hl.group.masked-ch]
         label$ [label hl.group.label]
         shortcut$ [label hl.group.shortcut]

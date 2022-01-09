@@ -117,7 +117,7 @@ local opts
 do
   local safe_labels = {"s", "f", "n", "u", "t", "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
   local labels = {"s", "f", "n", "j", "k", "l", "o", "i", "w", "e", "h", "g", "u", "t", "m", "v", "c", "a", ".", "z", "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
-  opts = {cycle_group_bwd_key = "<tab>", cycle_group_fwd_key = "<space>", exit_after_idle_msecs = {labeled = nil, unlabeled = 1000}, grey_out_search_area = true, highlight_unique_chars = true, ignore_case = false, jump_on_partial_input_safety_timeout = 400, labels = labels, limit_ft_matches = 4, match_only_the_start_of_same_char_seqs = true, repeat_ft_with_target_char = false, safe_labels = safe_labels, substitute_chars = {["\13"] = "\194\172"}}
+  opts = {cycle_group_bwd_key = "<tab>", cycle_group_fwd_key = "<space>", exit_after_idle_msecs = {labeled = nil, unlabeled = 1000}, force_beacons_into_match_width = false, grey_out_search_area = true, highlight_unique_chars = true, ignore_case = false, jump_on_partial_input_safety_timeout = 400, labels = labels, limit_ft_matches = 4, match_only_the_start_of_same_char_seqs = true, repeat_ft_with_target_char = false, safe_labels = safe_labels, substitute_chars = {["\13"] = "\194\172"}}
 end
 local deprecated_opts = {"jump_to_first_match", "instant_repeat_fwd_key", "instant_repeat_bwd_key", "x_mode_prefix_key", "full_inclusive_prefix_key"}
 local function get_deprec_msg(arg_fields)
@@ -1409,6 +1409,7 @@ local function set_beacon(_323_, _repeat)
   local _let_328_ = map(_329_, {ch1, ch2})
   local ch10 = _let_328_[1]
   local ch20 = _let_328_[2]
+  local squeezed_3f0 = (opts.force_beacons_into_match_width or squeezed_3f)
   local masked_char_24 = {ch20, hl.group["masked-ch"]}
   local label_24 = {label, hl.group.label}
   local shortcut_24 = {label, hl.group.shortcut}
@@ -1441,7 +1442,7 @@ local function set_beacon(_323_, _repeat)
         end
       elseif _repeat then
         local _334_
-        if squeezed_3f then
+        if squeezed_3f0 then
           _334_ = 1
         else
           _334_ = 2
@@ -1451,7 +1452,7 @@ local function set_beacon(_323_, _repeat)
         if overlapped_3f then
           target.beacon = {1, {overlapped_shortcut_24}}
         else
-          if squeezed_3f then
+          if squeezed_3f0 then
             target.beacon = {0, {masked_char_24, shortcut_24}}
           else
             target.beacon = {2, {shortcut_24}}
@@ -1459,7 +1460,7 @@ local function set_beacon(_323_, _repeat)
         end
       elseif overlapped_3f then
         target.beacon = {1, {overlapped_label_24}}
-      elseif squeezed_3f then
+      elseif squeezed_3f0 then
         target.beacon = {0, {masked_char_24, label_24}}
       else
         target.beacon = {2, {label_24}}
@@ -1477,7 +1478,7 @@ local function set_beacon(_323_, _repeat)
         end
       elseif _repeat then
         local _340_
-        if squeezed_3f then
+        if squeezed_3f0 then
           _340_ = 1
         else
           _340_ = 2
@@ -1485,7 +1486,7 @@ local function set_beacon(_323_, _repeat)
         target.beacon = {_340_, {distant_label_24}}
       elseif overlapped_3f then
         target.beacon = {1, {overlapped_distant_label_24}}
-      elseif squeezed_3f then
+      elseif squeezed_3f0 then
         target.beacon = {0, {masked_char_24, distant_label_24}}
       else
         target.beacon = {2, {distant_label_24}}
@@ -1882,9 +1883,9 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
     end
     _418_ = (_420_() or get_targets(in1, reverse_3f0) or _422_())
     if ((type(_418_) == "table") and ((type((_418_)[1]) == "table") and ((type(((_418_)[1]).pair) == "table") and true and (nil ~= (((_418_)[1]).pair)[2]))) and ((_418_)[2] == nil)) then
+      local only = (_418_)[1]
       local _0 = (((_418_)[1]).pair)[1]
       local ch2 = (((_418_)[1]).pair)[2]
-      local only = (_418_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           if dot_repeatable_op_3f then
@@ -1974,9 +1975,9 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc)
           _438_ = t_439_
         end
         if ((type(_438_) == "table") and ((type((_438_).pair) == "table") and true and (nil ~= ((_438_).pair)[2]))) then
+          local shortcut = _438_
           local _0 = ((_438_).pair)[1]
           local ch2 = ((_438_).pair)[2]
-          local shortcut = _438_
           do
             if dot_repeatable_op_3f then
               set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f0, x_mode_3f0, "dot")))

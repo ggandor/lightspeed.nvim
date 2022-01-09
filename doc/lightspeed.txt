@@ -196,6 +196,12 @@ s/x-specific options~
     the given characters. This way whitespace characters can be made visible,
     and pairs containing them more easily targetable.
 
+`force_beacons_into_match_width = false`
+
+    If turned on, beacons will always appear as `{masked-char}{label}`, not
+    sticking out of the match, even if there would be enough space to show the
+    label next to it.
+
 `safe_labels` >
     {"s", "f", "n"
      "u", "t"
