@@ -1179,8 +1179,8 @@ local function get_targets(input, reverse_3f)
       else
         local target = {pair = {ch1, ch2}, pos = pos}
         local prev_target = last(targets)
-        local match_width = 2
-        local touches_prev_target_3f
+        local min_delta_to_prevent_squeezing = 4
+        local close_to_prev_target_3f
         do
           local _272_ = prev_target
           if ((type(_272_) == "table") and ((type((_272_).pos) == "table") and (nil ~= ((_272_).pos)[1]) and (nil ~= ((_272_).pos)[2]))) then
@@ -1193,17 +1193,17 @@ local function get_targets(input, reverse_3f)
               else
                 col_delta = (col - prev_col)
               end
-              return (col_delta <= match_width)
+              return (col_delta < min_delta_to_prevent_squeezing)
             end
-            touches_prev_target_3f = ((line == prev_line) and _274_())
+            close_to_prev_target_3f = ((line == prev_line) and _274_())
           else
-          touches_prev_target_3f = nil
+          close_to_prev_target_3f = nil
           end
         end
         if to_pre_eol_3f then
           target["squeezed?"] = true
         end
-        if touches_prev_target_3f then
+        if close_to_prev_target_3f then
           local _277_
           if reverse_3f then
             _277_ = target

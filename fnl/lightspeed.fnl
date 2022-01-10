@@ -897,26 +897,26 @@ ones might be set by subsequent functions):
                 (set added-prev-match? false)
                 (let [target {: pos :pair [ch1 ch2]}
                       prev-target (last targets)
-                      ; Let 'ab' a match:
-                      ; [a][b][c][d][e]
-                      ;  0  1  2  3  4
-                      ; Usually, the beacon would look like this:
-                      ; [a][b]>>[label]<<[c] ...
-                      ; When 'cd' is another match, the beacon of 'ab' should
-                      ; be squeezed back into the 2-column box of the match:
-                      ; >>[b*][label]<<[ ]      b* = with special highlight
-                      ;     0    1      2
-                      match-width 2
-                      touches-prev-target? (match prev-target
-                                             {:pos [prev-line prev-col]}
-                                             (and (= line prev-line)
-                                                  (let [col-delta 
-                                                        (if reverse?
-                                                            (- prev-col col)
-                                                            (- col prev-col))]
-                                                    (<= col-delta match-width))))]
+                      ; Experience shows that a beacon "touching" an
+                      ; unhighlighted match can confuse the eye...
+                      ; [a][b][label1][d][e][label2]
+                      ; ...so it's better to be avoided, whenever possible.
+                      ; A 4-column delta as a condition forces a gap between the
+                      ; beacon and the next one, when the former is not
+                      ; "squeezed" back into its 2-column box, i.e., when the
+                      ; label is displayed over position 'c':
+                      ; [a][b][label1][_][e][f][label2]
+                      min-delta-to-prevent-squeezing 4
+                      close-to-prev-target?
+                      (match prev-target
+                        {:pos [prev-line prev-col]}
+                        (and (= line prev-line)
+                             (let [col-delta (if reverse?
+                                                 (- prev-col col)
+                                                 (- col prev-col))]
+                               (< col-delta min-delta-to-prevent-squeezing))))]
                   (when to-pre-eol? (tset target :squeezed? true))
-                  (when touches-prev-target?
+                  (when close-to-prev-target?
                     (tset (if reverse? target prev-target) :squeezed? true))
                   (when overlaps-prev-target?
                     ; Just the opposite: the _label_ should remain visible
