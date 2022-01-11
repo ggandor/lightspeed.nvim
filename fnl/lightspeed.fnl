@@ -935,12 +935,13 @@ char separately."
   (when opts.ignore_case
     (setmetatable targets.sublists
                   {:__index (fn [self k]
-                              (rawget self (k:lower)))}))
+                              (rawget self (k:lower)))
+                   :__newindex (fn [self k v]
+                                 (rawset self (k:lower) v))}))
   (each [_ {:pair [_ ch2] &as target} (ipairs targets)]
-    (let [k (if opts.ignore_case (ch2:lower) ch2)]
-      (when-not (. targets :sublists k)
-        (tset targets :sublists k []))
-      (table.insert (. targets :sublists k) target))))
+    (when-not (. targets :sublists ch2)
+      (tset targets :sublists ch2 []))
+    (table.insert (. targets :sublists ch2) target)))
 
 
 (fn get-labels [sublist to-eol?]

@@ -1236,24 +1236,21 @@ local function populate_sublists(targets)
     local function _286_(self, k)
       return rawget(self, k:lower())
     end
-    setmetatable(targets.sublists, {__index = _286_})
+    local function _287_(self, k, v)
+      return rawset(self, k:lower(), v)
+    end
+    setmetatable(targets.sublists, {__index = _286_, __newindex = _287_})
   end
-  for _, _288_ in ipairs(targets) do
-    local _each_289_ = _288_
-    local target = _each_289_
-    local _each_290_ = _each_289_["pair"]
-    local _0 = _each_290_[1]
-    local ch2 = _each_290_[2]
-    local k
-    if opts.ignore_case then
-      k = ch2:lower()
-    else
-      k = ch2
+  for _, _289_ in ipairs(targets) do
+    local _each_290_ = _289_
+    local target = _each_290_
+    local _each_291_ = _each_290_["pair"]
+    local _0 = _each_291_[1]
+    local ch2 = _each_291_[2]
+    if not targets.sublists[ch2] then
+      targets["sublists"][ch2] = {}
     end
-    if not targets.sublists[k] then
-      targets["sublists"][k] = {}
-    end
-    table.insert(targets.sublists[k], target)
+    table.insert(targets.sublists[ch2], target)
   end
   return nil
 end
