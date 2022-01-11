@@ -165,17 +165,17 @@ character instead."
         :repeat_ft_with_target_char false}))
 
 
-(local deprecated-opts [:jump_to_first_match
-                        :instant_repeat_fwd_key
-                        :instant_repeat_bwd_key
-                        :x_mode_prefix_key
-                        :full_inclusive_prefix_key])
+(local removed-opts [:jump_to_first_match
+                     :instant_repeat_fwd_key
+                     :instant_repeat_bwd_key
+                     :x_mode_prefix_key
+                     :full_inclusive_prefix_key])
 
 
-(fn get-deprec-msg [arg-fields]
+(fn get-warning-msg [arg-fields]
   (let [msg [["ligthspeed.nvim\n" :Question]
-             ["You are trying to set or access deprecated fields in the "]
-             ["opts" :Visual] [" table:\n\n"]]
+             ["The following fields in the "] ["opts" :Visual]
+             [" table has been renamed or removed:\n\n"]]
 
         field-names (icollect [_ field (ipairs arg-fields)]
                       [(.. "\t" field "\n")])
@@ -212,23 +212,23 @@ character instead."
   msg))
 
 
-; Prevent setting or accessing deprecated fields directly.
+; Prevent setting or accessing removed fields directly.
 (let [guard (fn [t k]
-              (when (contains? deprecated-opts k)
-                (api.nvim_echo (get-deprec-msg [k]) true {})))]
+              (when (contains? removed-opts k)
+                (api.nvim_echo (get-warning-msg [k]) true {})))]
   (setmetatable opts {:__index guard
                       :__newindex guard}))
 
 
-; Prevent setting deprecated fields via the `setup` function.
+; Prevent setting removed fields via the `setup` function.
 (fn normalize-opts [opts]
-  (let [deprecated-arg-opts []]
+  (let [removed-arg-opts []]
     (each [k v (pairs opts)]
-      (when (contains? deprecated-opts k)
-        (table.insert deprecated-arg-opts k)
+      (when (contains? removed-opts k)
+        (table.insert removed-arg-opts k)
         (tset opts k nil)))
-    (when-not (empty? deprecated-arg-opts)
-      (api.nvim_echo (get-deprec-msg deprecated-arg-opts) true {}))
+    (when-not (empty? removed-arg-opts)
+      (api.nvim_echo (get-warning-msg removed-arg-opts) true {}))
     opts))
 
 
@@ -814,17 +814,6 @@ interrupted change-operation."
                                              {:in in1 : stack :reverted? true
                                               : from-reverse-cold-repeat?}))
                           _ (exit (vim.fn.feedkeys in2 :i)))))))))))))
-
-
-; The workaround described in :h lightspeed-custom-ft-repeat-mappings used these fields.
-(let [deprec-msg [["ligthspeed.nvim" :Question]
-                  [": You're trying to access deprecated fields in the lightspeed.ft table.\n"]
-                  ["There are dedicated <Plug> keys available for native-like "]
-                  [";" :Visual] [" and "] ["," :Visual] [" functionality now.\n"]
-                  ["See "] [":h lightspeed-custom-mappings" :Visual] ["."]]]
-  (setmetatable ft {:__index (fn [t k]
-                               (when (one-of? k :instant-repeat? :prev-t-like?)
-                                 (api.nvim_echo deprec-msg true {})))}))
 
 
 ; 2-character search ///1
