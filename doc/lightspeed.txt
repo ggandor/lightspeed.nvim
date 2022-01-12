@@ -1,4 +1,4 @@
-*lightspeed.txt*      For Neovim version 0.5.0      Last change: 2022 January 07
+*lightspeed.txt*      For Neovim version 0.5.0      Last change: 2022 January 12
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -145,7 +145,7 @@ Setting an individual option via the `opts` table directly:
 Setting multiple options via the `setup` function: >
 
     require'lightspeed'.setup { 
-        grey_out_search_area = false,
+        repeat_ft_with_target_char = true,
         highlight_unique_chars = false,
     }
 <
@@ -165,13 +165,6 @@ Common options~
     disabled by setting the given value to `nil`.
 
 s/x-specific options~
-
-`grey_out_search_area = true`
-
-    If turned on, all syntax highlighting is washed out to a uniform, neutral
-    grey in the search direction, so that the various marks of Lightspeed are
-    clearly visible. If you decide to turn this off, make sure to configure
-    your custom |lightspeed-highlighting| to fit the colorscheme being used.
 
 `highlight_unique_chars = true`
 

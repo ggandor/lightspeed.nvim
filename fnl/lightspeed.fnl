@@ -150,7 +150,6 @@ character instead."
        {:ignore_case false
         :exit_after_idle_msecs {:labeled nil :unlabeled 1000}
         ; s/x
-        :grey_out_search_area true
         :highlight_unique_chars true
         :match_only_the_start_of_same_char_seqs true
         :jump_on_partial_input_safety_timeout 400
@@ -169,7 +168,8 @@ character instead."
                      :instant_repeat_fwd_key
                      :instant_repeat_bwd_key
                      :x_mode_prefix_key
-                     :full_inclusive_prefix_key])
+                     :full_inclusive_prefix_key
+                     :grey_out_search_area])
 
 
 (fn get-warning-msg [arg-fields]
@@ -190,6 +190,11 @@ character instead."
         [["Use "] ["<Plug>Lightspeed_x" :Visual] [" and "] ["<Plug>Lightspeed_X" :Visual]
          [" instead."]]
 
+        msg-for-grey-out
+        [["This flag has been removed. To turn the 'greywash' feature off, "]
+         ["just set all attributes of the corresponding highlight group to 'none': "]
+         [":hi LightspeedGreywash guifg=none guibg=none ..." :Visual]]
+
         spec-messages
         {:jump_to_first_match 
          [["The plugin implements \"smart\" auto-jump now, that you can fine-tune via "]
@@ -199,7 +204,8 @@ character instead."
          :instant_repeat_fwd_key msg-for-instant-repeat-keys
          :instant_repeat_bwd_key msg-for-instant-repeat-keys
          :x_mode_prefix_key msg-for-x-prefix
-         :full_inclusive_prefix_key msg-for-x-prefix}]
+         :full_inclusive_prefix_key msg-for-x-prefix
+         :grey_out_search_area msg-for-grey-out}]
     (each [_ field-name-chunk (ipairs field-names)]
       (table.insert msg field-name-chunk))
     (table.insert msg ["\n"])
@@ -1185,8 +1191,7 @@ sub-table containing label-target k-v pairs for these targets."
     (macro exit-early [...] `(exit-template :sx true ,...))
 
     (macro with-highlight-chores [...]
-      `(do (when (and opts.grey_out_search_area
-                      (not (or cold-repeat? instant-repeat? to-eol?)))
+      `(do (when-not (or cold-repeat? instant-repeat? to-eol?)
              (grey-out-search-area reverse?))
            (do ,...)
            (highlight-cursor)
