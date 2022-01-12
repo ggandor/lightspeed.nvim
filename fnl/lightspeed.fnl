@@ -150,9 +150,8 @@ character instead."
        {:ignore_case false
         :exit_after_idle_msecs {:labeled nil :unlabeled 1000}
         ; s/x
-        :highlight_unique_chars true
+        :jump_to_unique_chars {:safety_timeout 400}
         :match_only_the_start_of_same_char_seqs true
-        :jump_on_partial_input_safety_timeout 400
         :substitute_chars {"\r" "¬"}  ; 0x00AC
         :force_beacons_into_match_width false
         :safe_labels safe-labels
@@ -169,7 +168,9 @@ character instead."
                      :instant_repeat_bwd_key
                      :x_mode_prefix_key
                      :full_inclusive_prefix_key
-                     :grey_out_search_area])
+                     :grey_out_search_area
+                     :highlight_unique_chars
+                     :jump_on_partial_input_safety_timeout])
 
 
 (fn get-warning-msg [arg-fields]
@@ -195,6 +196,10 @@ character instead."
          ["just set all attributes of the corresponding highlight group to 'none': "]
          [":hi LightspeedGreywash guifg=none guibg=none ..." :Visual]]
 
+        msg-for-hl-unique-chars
+        [["Use "] ["jump_to_unique_chars" :Visual] [" instead. See "]
+         [":h lightspeed-config" :Visual] [" for details."]]
+
         spec-messages
         {:jump_to_first_match 
          [["The plugin implements \"smart\" auto-jump now, that you can fine-tune via "]
@@ -205,7 +210,9 @@ character instead."
          :instant_repeat_bwd_key msg-for-instant-repeat-keys
          :x_mode_prefix_key msg-for-x-prefix
          :full_inclusive_prefix_key msg-for-x-prefix
-         :grey_out_search_area msg-for-grey-out}]
+         :grey_out_search_area msg-for-grey-out
+         :highlight_unique_chars msg-for-hl-unique-chars
+         :jump_on_partial_input_safety_timeout msg-for-hl-unique-chars}]
     (each [_ field-name-chunk (ipairs field-names)]
       (table.insert msg field-name-chunk))
     (table.insert msg ["\n"])
@@ -1134,9 +1141,11 @@ sub-table containing label-target k-v pairs for these targets."
 
 
 (fn ignore-input-until-timeout [char-to-ignore]
-  (match (get-input opts.jump_on_partial_input_safety_timeout)
-    input (when (not= input char-to-ignore)
-            (vim.fn.feedkeys input :i))))
+  (match opts.jump_to_unique_chars 
+    {:safety_timeout timeout}
+    (match (get-input timeout)
+      input (when (not= input char-to-ignore)
+              (vim.fn.feedkeys input :i)))))
 
 
 ; //> Helpers
@@ -1337,7 +1346,7 @@ sub-table containing label-target k-v pairs for these targets."
     (when-not repeat-invoc
       (echo "")  ; clean up the command line
       (with-highlight-chores
-        (when opts.highlight_unique_chars
+        (when opts.jump_to_unique_chars
           (highlight-unique-chars reverse?))))
 
     (match (get-first-input)
@@ -1351,7 +1360,8 @@ sub-table containing label-target k-v pairs for these targets."
         (match (or (?. instant-state :sublist)
                    (get-targets in1 reverse?)
                    (exit-early (echo-not-found (.. in1 (or prev-in2 "")))))
-          [{:pair [_ ch2] &as only} nil]
+          (where [{:pair [_ ch2] &as only} nil]
+                 opts.jump_to_unique_chars)
           (if (or new-search? (= ch2 prev-in2))
               (exit (update-state  ; endnote #5
                       {:cold {:in2 ch2} :dot {:in2 ch2 :in3 (. opts.labels 1)}})

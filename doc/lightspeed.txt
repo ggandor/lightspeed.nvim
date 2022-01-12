@@ -140,13 +140,13 @@ CONFIGURATION                                                *lightspeed-config*
 
 Setting an individual option via the `opts` table directly:
 
-`   require'lightspeed'.opts.highlight_unique_chars = false`
+`   require'lightspeed'.opts.jump_to_unique_chars = false`
 
 Setting multiple options via the `setup` function: >
 
     require'lightspeed'.setup { 
+        jump_to_unique_chars = false,
         repeat_ft_with_target_char = true,
-        highlight_unique_chars = false,
     }
 <
     Note: These will be merged with the current/default settings. (Settings
@@ -166,22 +166,19 @@ Common options~
 
 s/x-specific options~
 
-`highlight_unique_chars = true`
+`jump_to_unique_chars = { safety_timeout = 400 }`
 
-    Highlight unique characters in the search direction, before entering the
-    first input.
+    Whether to jump right after the first input, if the target character is
+    unique in the search direction. The value can be either `nil`/`false`, or
+    a table with the field `safety_timeout`; it sets a timeout value, in
+    milliseconds, until the character in the next position is ignored (see
+    |lightspeed-jump-on-partial-input|).
 
 `match_only_the_start_of_same_char_seqs = true`
 
     This can be useful, so that e.g. a separator line will not snatch up all the
     available labels when you want to jump to a `==` or `--` beyond that. Also
     convenient for working with hex color codes.
-
-`jump_on_partial_input_safety_timeout = 400`
-
-    Timeout value, in milliseconds, until the follow-up character is
-    "swallowed", when jumping to a unique character right after the first
-    input (see |lightspeed-jump-on-partial-input|).
 
 `substitute_chars = { ['\r'] = '¬' }`
 
