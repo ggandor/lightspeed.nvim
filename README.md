@@ -422,25 +422,30 @@ via a `setup` function that updates the current settings with the values given
 in its argument table. 
 
 ```Lua
--- Note: This is just illustration - there is no need to copy/paste the
+-- NOTE! This is just illustration - there is no need to copy/paste the
 -- defaults, or call `setup` at all, if you do not want to change anything.
+
 require'lightspeed'.setup {
   ignore_case = false,
   exit_after_idle_msecs = { unlabeled = 1000, labeled = nil },
 
-  -- s/x
+  --- s/x ---
   jump_to_unique_chars = { safety_timeout = 400 },
   match_only_the_start_of_same_char_seqs = true,
   force_beacons_into_match_width = false,
+  -- Display characters in a custom way in the highlighted matches.
   substitute_chars = { ['\r'] = '¬' },
-  -- Leaving the appropriate list empty effectively disables
-  -- "smart" mode, and forces auto-jump to be on or off.
+  -- Leaving the appropriate list empty effectively disables "smart" mode,
+  -- and forces auto-jump to be on or off.
   safe_labels = { . . . },
   labels = { . . . },
-  cycle_group_fwd_key = '<space>',
-  cycle_group_bwd_key = '<tab>',
+  -- These keys are captured directly by the plugin at runtime.
+  special_keys = {
+    next_match_group = '<space>',
+    prev_match_group = '<tab>',
+  },
 
-  -- f/t
+  --- f/t ---
   limit_ft_matches = 4,
   repeat_ft_with_target_char = false,
 }
@@ -468,9 +473,6 @@ by you or other plugins, and will not overwite them, unless explicitly told so.
 To set alternative keymaps, you can use the below listed `<Plug>` keys,
 available in all modes.
 
-(Note: Be sure to use `-map`, and not `-noremap`, for `<Plug>` mappings, as they
-should be used recursively, by design.)
-
 Basic motions (pattern length, direction, motion/operation semantics):
 ```
 <Plug>Lightspeed_s    2-character  forward   /-like (0,  exclusive op)
@@ -496,6 +498,9 @@ Repeat in the reverse direction, or revert the opposite key:
 <Plug>Lightspeed_,_ft
 ```
 
+(Note: Be sure to use `-map`, and not `-noremap`, for `<Plug>` mappings, as they
+should be used recursively, by design.)
+
 #### Setting keys to repeat the last lightspeed motion (s/x/f/t)
 
 That can be achieved easily with autocommands and expression mappings. See `h:
@@ -505,12 +510,6 @@ lightspeed-custom-mappings`.
 
 Likewise, see `:h lightspeed-custom-mappings` for an example snippet.
 
-#### Why `s`/`S`?
-
-Basic motions should have the absolute least friction among all commands, since
-they are the most frequent. The native `s` and `S` both have comfortable
-equivalents - `cl` and `cc`, respectively.
-
 #### Disabling features
 
 It is considered an exceptional request if one would like to revert to the
@@ -519,9 +518,15 @@ mode of the plugin at all; but in that case, all they have to do is to unmap the
 relevant keys after the plugin has been sourced (`noremap f f` or `silent! unmap
 f` for each).
 
-Alternatively, the global flag `g:lightspeed_no_default_keymaps` could be set to
+Alternatively, the global flag `g:lightspeed_no_default_keymaps` can be set to
 some truthy value before sourcing the plugin, to prevent the creation of any
 keymaps.
+
+#### Why `s`/`S`?
+
+Basic motions should have the absolute least friction among all commands, since
+they are the most frequent. The native `s` and `S` both have comfortable
+equivalents - `cl` and `cc`, respectively.
 
 ### User events
 

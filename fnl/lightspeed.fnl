@@ -156,8 +156,8 @@ character instead."
         :force_beacons_into_match_width false
         :safe_labels safe-labels
         :labels labels
-        :cycle_group_fwd_key "<space>"
-        :cycle_group_bwd_key "<tab>"
+        :special_keys {:next_match_group "<space>"
+                       :prev_match_group "<tab>"}
         ; f/t
         :limit_ft_matches 4
         :repeat_ft_with_target_char false}))
@@ -170,7 +170,9 @@ character instead."
                      :full_inclusive_prefix_key
                      :grey_out_search_area
                      :highlight_unique_chars
-                     :jump_on_partial_input_safety_timeout])
+                     :jump_on_partial_input_safety_timeout
+                     :cycle_group_fwd_key
+                     :cycle_group_bwd_key])
 
 
 (fn get-warning-msg [arg-fields]
@@ -181,6 +183,11 @@ character instead."
         field-names (icollect [_ field (ipairs arg-fields)]
                       [(.. "\t" field "\n")])
         
+        msg-for-jump-to-first-match
+        [["The plugin implements \"smart\" auto-jump now, that you can fine-tune via "]
+         ["opts.labels" :Visual] [" and "] ["opts.safe_labels" :Visual] [". See "]
+         [":h lightspeed-config" :Visual] [" for details."]]
+
         msg-for-instant-repeat-keys
         [["There are dedicated "] ["<Plug>" :Visual] [" keys available for native-like "]
          [";" :Visual] [" and "] ["," :Visual] [" functionality now, "]
@@ -200,19 +207,21 @@ character instead."
         [["Use "] ["jump_to_unique_chars" :Visual] [" instead. See "]
          [":h lightspeed-config" :Visual] [" for details."]]
 
-        spec-messages
-        {:jump_to_first_match 
-         [["The plugin implements \"smart\" auto-jump now, that you can fine-tune via "]
-          ["opts.labels" :Visual] [" and "] ["opts.safe_labels" :Visual] [". See "]
-          [":h lightspeed-config" :Visual] [" for details."]]
+        msg-for-cycle-keys
+        [["Use the "] ["opts.special_keys" :Visual] [" table instead. See "]
+         [":h lightspeed-config" :Visual] [" for details."]]
 
+        spec-messages
+        {:jump_to_first_match msg-for-jump-to-first-match
          :instant_repeat_fwd_key msg-for-instant-repeat-keys
          :instant_repeat_bwd_key msg-for-instant-repeat-keys
          :x_mode_prefix_key msg-for-x-prefix
          :full_inclusive_prefix_key msg-for-x-prefix
          :grey_out_search_area msg-for-grey-out
          :highlight_unique_chars msg-for-hl-unique-chars
-         :jump_on_partial_input_safety_timeout msg-for-hl-unique-chars}]
+         :jump_on_partial_input_safety_timeout msg-for-hl-unique-chars
+         :cycle_group_fwd_key msg-for-cycle-keys
+         :cycle_group_bwd_key msg-for-cycle-keys}]
     (each [_ field-name-chunk (ipairs field-names)]
       (table.insert msg field-name-chunk))
     (table.insert msg ["\n"])
@@ -1307,8 +1316,8 @@ sub-table containing label-target k-v pairs for these targets."
               sublist))))
 
     (fn get-last-input [sublist start-idx]
-      (let [next_group_key (replace-keycodes opts.cycle_group_fwd_key)
-            prev_group_key (replace-keycodes opts.cycle_group_bwd_key)]
+      (let [next_group_key (replace-keycodes opts.special_keys.next_match_group)
+            prev_group_key (replace-keycodes opts.special_keys.prev_match_group)]
         (fn recur [group-offset initial-invoc?]
           (set-beacons sublist {:repeat (if (or cold-repeat? backspace-repeat?) :cold
                                             instant-repeat? :instant)})

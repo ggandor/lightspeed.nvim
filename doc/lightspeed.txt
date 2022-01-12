@@ -232,9 +232,12 @@ Note: If you have mapped some keys to `<Plug>Lightspeed_;_sx` and
       `<Plug>Lightspeed_,_sx`, you should not use them as labels too,
       obviously.
 
-`cycle_group_fwd_key = '<space>'`
-`cycle_group_bwd_key = '<tab>'`
-
+`special_keys` >
+    { 
+      next_match_group = '<space>',
+      prev_match_group = '<tab>'
+    }
+<
     These keys switch to the next/previous group of matches, when there are
     more matches than labels available.
 
@@ -302,16 +305,10 @@ All modes~
 
 <Esc>                      Exit Lightspeed at any stage cleanly.
 
-2-character search~
+2-character search (after entering the full pattern)~
 
-<Tab> (or <Space>)         Cycle to the next group of labeled matches.
-<S-Tab> (or <Tab>)         Cycle to the previous group of labeled matches.
-
-                           When `jump_to_first_match` is set to `false`, and
-                           no custom mappings are given, the second - 
-                           presumably more comfortable - pair of mappings is
-                           used. Can be configured with `cycle_group_fwd_key`
-                           and `cycle_group_bwd_key`.
+<Space>                    Shift to the next group of labeled matches.
+<Tab>                      Shift to the previous group of labeled matches.
 
 1-character search~
 
@@ -377,8 +374,8 @@ Setting `;` and `,` to repeat the last Lightspeed motion (s/x or f/t):
     map <expr> ; g:lightspeed_last_motion == 'sx' ? "<Plug>Lightspeed_;_sx" : "<Plug>Lightspeed_;_ft"
     map <expr> , g:lightspeed_last_motion == 'sx' ? "<Plug>Lightspeed_,_sx" : "<Plug>Lightspeed_,_ft"
 <
-For 2-character search, the keys for cycling between groups of matches can be
-set in the `opts` table, see |lightspeed-config|.
+For 2-character search, the keys for switching between groups of matches can
+be set via `opts.special_keys` - see |lightspeed-config|.
 
                                            *lightspeed-disable-default-mappings*
 Lightspeed does not remap any keys for which there is a custom mapping already
@@ -387,9 +384,9 @@ for example f/F/t/T, simply unmap the given keys after the plugin has been
 loaded (either `noremap f f` or `silent! unmap f`, for each), or equivalently,
 map anything unused to the corresponding <Plug> keys, before the plugin has
 been loaded.
-Alternatively, the global flag `g:lightspeed_no_default_keymaps` could be set
-to some truthy value before sourcing the plugin, to prevent the creation of
-any keymaps.
+Alternatively, the global flag `g:lightspeed_no_default_keymaps` can be set to
+some truthy value before sourcing the plugin, to prevent the creation of any
+keymaps.
 
 ==============================================================================
 HIGHLIGHTING                                              *lightspeed-highlight*
