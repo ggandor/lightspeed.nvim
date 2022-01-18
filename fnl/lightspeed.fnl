@@ -135,9 +135,9 @@ character instead."
 
 ; Setup ///1
 
-(var opts 
+(var opts
      (do
-       (local safe-labels 
+       (local safe-labels
               ["s" "f" "n"
                "u" "t"
                "/" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
@@ -182,7 +182,7 @@ character instead."
 
         field-names (icollect [_ field (ipairs arg-fields)]
                       [(.. "\t" field "\n")])
-        
+
         msg-for-jump-to-first-match
         [["The plugin implements \"smart\" auto-jump now, that you can fine-tune via "]
          ["opts.labels" :Visual] [" and "] ["opts.safe_labels" :Visual] [". See "]
@@ -231,7 +231,7 @@ character instead."
         (each [_ chunk (ipairs spec-msg)]
           (table.insert msg chunk))
         (table.insert msg ["\n\n"])))
-  msg))
+   msg))
 
 
 ; Prevent setting or accessing removed fields directly.
@@ -349,7 +349,7 @@ character instead."
                          [[win-top 0] [curline curcol]]
                          [[curline (inc curcol)] [win-bot -1]])]
     ; Expects 0,0-indexed args; `finish` is exclusive.
-    (vim.highlight.range 0 hl.ns hl.group.greywash start finish)))
+    (vim.highlight.range 0 hl.ns hl.group.greywash start finish "v" false 150)))
 
 
 (fn highlight-range [hl-group
@@ -1268,8 +1268,8 @@ sub-table containing label-target k-v pairs for these targets."
                                                 (do (push-cursor! :fwd)
                                                     (when reverse?
                                                       (push-cursor! :fwd))))})]
-                 (set first-jump? false)
-                 adjusted-pos))))
+                  (set first-jump? false)
+                  adjusted-pos))))
 
     ; Jumping based on partial input is nice, but it's annoying that we
     ; don't see the actual changes right away (we are staying in the main
