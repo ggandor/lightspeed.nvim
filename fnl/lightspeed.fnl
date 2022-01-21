@@ -275,6 +275,7 @@ character instead."
            :pending-op-area          "LightspeedPendingOpArea"
            :greywash                 "LightspeedGreyWash"
            :cursor                   "LightspeedCursor"}
+   :priority {:cursor 65535 :label 65534 :greywash 65533}
    :ns (api.nvim_create_namespace "")
    :add-hl (fn [self hl-group line startcol endcol]
              (api.nvim_buf_add_highlight 0 self.ns hl-group line startcol endcol))
@@ -349,7 +350,9 @@ character instead."
                          [[win-top 0] [curline curcol]]
                          [[curline (inc curcol)] [win-bot -1]])]
     ; Expects 0,0-indexed args; `finish` is exclusive.
-    (vim.highlight.range 0 hl.ns hl.group.greywash start finish "v" false 150)))
+    (vim.highlight.range 0 hl.ns hl.group.greywash
+                         start finish :v false
+                         hl.priority.greywash)))
 
 
 (fn highlight-range [hl-group
@@ -359,8 +362,9 @@ character instead."
   "A wrapper around `vim.highlight.range` that handles forced motion
 types properly."
   (let [hl-range (fn [start end end-inclusive?]
-                   (vim.highlight.range
-                     0 hl.ns hl-group start end nil end-inclusive?))]
+                   (vim.highlight.range 0 hl.ns hl-group
+                                        start end :v end-inclusive?
+                                        hl.priority.label))]
     (match motion-force
       <ctrl-v> (let [[startcol endcol] [(min startcol endcol)
                                         (max startcol endcol)]]
@@ -558,7 +562,8 @@ so we set a temporary highlight on it to see where we are."
                     (dec col)
                     {:virt_text [[ch-at-curpos hl.group.cursor]]
                      :virt_text_pos "overlay"
-                     :hl_mode "combine"})))
+                     :hl_mode "combine"
+                     :priority hl.priority.cursor})))
 
 
 (fn handle-interrupted-change-op! []
@@ -1137,7 +1142,8 @@ sub-table containing label-target k-v pairs for these targets."
                         (dec (+ col offset))
                         {:virt_text chunks
                          :virt_text_pos "overlay"
-                         :virt_text_win_col (when ?left-off? 0)})))))
+                         :virt_text_win_col (when ?left-off? 0)
+                         :priority hl.priority.label})))))
 
 
 (fn get-target-with-active-primary-label [target-list input]
