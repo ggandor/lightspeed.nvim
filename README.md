@@ -20,8 +20,8 @@ So far we have more or less described what
 in Lightspeed is its "clairvoyant" ability: it maps possible futures, and shows
 you which keys you will need to press _before_ you actually need to do that, so
 despite the use of target labels, you can keep typing in a continuous manner.
-Over 95 percent of the time, you can reach the destination by at most - and very
-often less than - four keystrokes in total, that can be typed _in one go_.
+You can almost always reach the destination by at most - and very often less
+than - four keystrokes in total, that can be typed _in one go_.
 
 If this sounds cool enough, read on, or watch this [6-minute introductory video
 by DevOnDuty](https://youtu.be/ESyld9NCl1w) first.
@@ -152,14 +152,15 @@ about cohesion, conceptual integrity, and reliability. I think of [the latter]
 as the @tpope school."_
 ([justinmk](https://github.com/justinmk/vim-sneak/issues/62#issuecomment-34044380))
 
-* [80/20](https://youtu.be/Bt-vmPC_-Ho?t=1249): focus on features that are
-  applicable in all contexts; micro-optimisations for the most frequent tasks
-  accumulate more savings than vanity features that turn out to be rarely needed
-  in practice
+* [80/20 (leverage)](https://youtu.be/Bt-vmPC_-Ho?t=1249): focus on features
+  that are applicable in all contexts; micro-optimisations for the most frequent
+  tasks accumulate more savings than vanity features that turn out to be rarely
+  needed in practice
 
 * [Design is making
   decisions](https://www.infoq.com/presentations/Design-Composition-Performance/):
-  mitigate choice paralysis for the user, regarding both usage and configuration
+  mitigate choice paralysis for the user, regarding both usage (the kinds of
+  targeting methods provided) and configuration options
 
 * [Sharpen the saw](http://vimcasts.org/blog/2012/08/on-sharpening-the-saw/):
   the plugin should feel a natural extension to the core, with an interplay as
@@ -422,19 +423,18 @@ via a `setup` function that updates the current settings with the values given
 in its argument table. 
 
 ```Lua
--- NOTE! This is just illustration - there is no need to copy/paste the
+-- NOTE: This is just illustration - there is no need to copy/paste the
 -- defaults, or call `setup` at all, if you do not want to change anything.
 
 require'lightspeed'.setup {
   ignore_case = false,
   exit_after_idle_msecs = { unlabeled = 1000, labeled = nil },
-
   --- s/x ---
   jump_to_unique_chars = { safety_timeout = 400 },
   match_only_the_start_of_same_char_seqs = true,
   force_beacons_into_match_width = false,
   -- Display characters in a custom way in the highlighted matches.
-  substitute_chars = { ['\r'] = '¬' },
+  substitute_chars = { ['\r'] = '¬', },
   -- Leaving the appropriate list empty effectively disables "smart" mode,
   -- and forces auto-jump to be on or off.
   safe_labels = { . . . },
@@ -444,7 +444,6 @@ require'lightspeed'.setup {
     next_match_group = '<space>',
     prev_match_group = '<tab>',
   },
-
   --- f/t ---
   limit_ft_matches = 4,
   repeat_ft_with_target_char = false,
@@ -634,7 +633,7 @@ nnoremap <expr> g/ '/<C-u>\%>'.(col(".")-v:count1).'v\%<'.(col(".")+v:count1).'v
 nnoremap <expr> g? '?<C-u>\%>'.(col(".")-v:count1).'v\%<'.(col(".")+v:count1).'v'
 ```
 
-### Smart case?
+### Smart case-sensitivity?
 
 See [#64](https://github.com/ggandor/lightspeed.nvim/issues/64). It is
 unfortunately impossible for this plugin, by design. (Because of ahead-of-time
@@ -674,14 +673,12 @@ equals of the `s`/`x` motions.
 
 ### Bi-directional search?
 
-Wontfix. When you aim for a target, you know the direction to go, that's not
-something you have to consciously think about or something that slows you down
-at all. Consequently, it's utterly wasteful _not_ to use this information and
-encode it in the trigger key right away, to ease our lives, by - on average -
-halving the search area and thus doubling the number of available target labels,
-while creating less visual noise on screen. (Note that bi-directional search
-also makes it impossible - or at least very problematic - to automatically jump
-to the first match, an extremely convenient feature.)
+When you aim for a target, you know the direction to go, that's not something
+you have to consciously think about or something that slows you down at all.
+Consequently, it's utterly wasteful _not_ to use this information and encode it
+in the trigger key right away, to ease our lives, by - on average - halving the
+search area and thus doubling the number of available target labels, while
+creating less visual noise on screen.
 
 ### Multi-window search?
 
