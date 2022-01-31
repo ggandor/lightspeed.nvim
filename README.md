@@ -134,6 +134,7 @@ obvious atomic alternative - like `w`, `{`, or `%` - available.
   jumps to the first match if the remaining matches can be covered by a limited
   set of "safe" target labels, but stays in place, and switches to an extended,
   more comfortable label set otherwise
+* **cross-window** motions
 * **linewise operations** are possible without limitations via the same uniform
   interface, by targeting (potentially off-screen) EOL characters
 * flawless **dot-repeat support** for operators (with
@@ -464,41 +465,21 @@ Lightspeed aims to be part of an "extended native" layer, similar to such
 canonized Vim plugins like [surround.vim](https://github.com/tpope/vim-surround)
 or [targets.vim](https://github.com/wellle/targets.vim). Therefore it provides
 carefully thought-out defaults, mapping to the following keys: `s`, `S` (Normal
-and Visual mode), `z`, `Z`, `x`, `X` (Operator-pending mode), and - obviously,
-enhancing the built-in motions - `f`, `F`, `t`, `T`, `;`, `,` (all modes).
+and Visual mode), `gs`, `gS` (Normal mode), `z`, `Z`, `x`, `X`
+(Operator-pending mode), and - obviously, enhancing the built-in motions - `f`,
+`F`, `t`, `T`, `;`, `,` (all modes). See `:h lightspeed-default-mappings` for
+details.
 
 That said, Lightspeed will check for conflicts with any custom mappings created
 by you or other plugins, and will not overwite them, unless explicitly told so.
-To set alternative keymaps, you can use the below listed `<Plug>` keys,
-available in all modes.
+To set alternative keymaps, you can use the `<Plug>` keys listed in `:h
+lightspeed-custom-mappings`.
 
-Basic motions (pattern length, direction, motion/operation semantics):
-```
-<Plug>Lightspeed_s    2-character  forward   /-like (0,  exclusive op)
-<Plug>Lightspeed_S    2-character  backward  ?-like (0,  exclusive op)
-<Plug>Lightspeed_x    2-character  forward          (+1, inclusive op)
-<Plug>Lightspeed_X    2-character  backward         (+2, exclusive op)
-                                                                      
-<Plug>Lightspeed_f    1-character  forward   f-like (0,  inclusive op)
-<Plug>Lightspeed_F    1-character  backward  F-like (0,  exclusive op)
-<Plug>Lightspeed_t    1-character  forward   t-like (-1, inclusive op)
-<Plug>Lightspeed_T    1-character  backward  T-like (+1, exclusive op)
-```
+#### Why `s`/`S`?
 
-Repeat, or revert the opposite key:
-```
-<Plug>Lightspeed_;_sx
-<Plug>Lightspeed_;_ft
-```
-
-Repeat in the reverse direction, or revert the opposite key:
-```
-<Plug>Lightspeed_,_sx
-<Plug>Lightspeed_,_ft
-```
-
-(Note: Be sure to use `-map`, and not `-noremap`, for `<Plug>` mappings, as they
-should be used recursively, by design.)
+Basic motions should have the absolute least friction among all commands, since
+they are the most frequent. The native `s` and `S` both have comfortable
+equivalents - `cl` and `cc`, respectively.
 
 #### Setting keys to repeat the last lightspeed motion (s/x/f/t)
 
@@ -511,21 +492,7 @@ Likewise, see `:h lightspeed-custom-mappings` for an example snippet.
 
 #### Disabling features
 
-It is considered an exceptional request if one would like to revert to the
-native behaviour of certain keys, that is, would not like to use some search
-mode of the plugin at all; but in that case, all they have to do is to unmap the
-relevant keys after the plugin has been sourced (`noremap f f` or `silent! unmap
-f` for each).
-
-Alternatively, the global flag `g:lightspeed_no_default_keymaps` can be set to
-some truthy value before sourcing the plugin, to prevent the creation of any
-keymaps.
-
-#### Why `s`/`S`?
-
-Basic motions should have the absolute least friction among all commands, since
-they are the most frequent. The native `s` and `S` both have comfortable
-equivalents - `cl` and `cc`, respectively.
+See `:h lightspeed-disable-default-mappings`.
 
 ### User events
 
@@ -679,10 +646,6 @@ Consequently, it's utterly wasteful _not_ to use this information and encode it
 in the trigger key right away, to ease our lives, by - on average - halving the
 search area and thus doubling the number of available target labels, while
 creating less visual noise on screen.
-
-### Multi-window search?
-
-It is on the roadmap.
 
 ## 🌜 Contributing
 

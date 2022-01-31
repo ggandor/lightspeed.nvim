@@ -1,4 +1,4 @@
-*lightspeed.txt*      For Neovim version 0.5.0      Last change: 2022 January 21
+*lightspeed.txt*      For Neovim version 0.5.0      Last change: 2022 January 31
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -266,6 +266,11 @@ s{char}{char}              Jump to the first character of {char}{char}
 S{char}{char}              Jump to the first character of {char}{char}
                            in the backward direction.
 
+gs{char}{char}             Like `s`/`S`, but searches in the successor windows
+                           in the window tree (down/right).
+gS{char}{char}             Like `s`/`S`, but searches in the predecessor
+                           windows in the window tree (up/left).
+
 Visual mode~
 
 s{char}{char}              Extend visual selection up to and including the
@@ -340,6 +345,10 @@ motion/operation semantics):
 `<Plug>Lightspeed_F`  1-character  backward  F-like (0,  exclusive op)
 `<Plug>Lightspeed_t`  1-character  forward   t-like (-1, inclusive op)
 `<Plug>Lightspeed_T`  1-character  backward  T-like (+1, exclusive op)
+
+Cross-window versions of `s`/`S` (Normal mode only)
+`<Plug>Lightspeed_gs`  down/right (successors in the window tree)
+`<Plug>Lightspeed_gS`  up/left (predecessors in the window tree)
 
 Repeat (or revert the opposite key):
 `<Plug>Lightspeed_;_sx`

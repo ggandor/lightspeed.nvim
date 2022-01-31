@@ -277,11 +277,14 @@ character instead."
            :cursor                   "LightspeedCursor"}
    :priority {:cursor 65535 :label 65534 :greywash 65533}
    :ns (api.nvim_create_namespace "")
-   :add-hl (fn [self hl-group line startcol endcol]
-             (api.nvim_buf_add_highlight 0 self.ns hl-group line startcol endcol))
-   :set-extmark (fn [self line col opts]
-                  (api.nvim_buf_set_extmark 0 self.ns line col opts))
-   :cleanup (fn [self] (api.nvim_buf_clear_namespace 0 self.ns 0 -1))})
+   :cleanup (fn [self ?target-windows]
+              (when ?target-windows
+                (each [_ w (ipairs ?target-windows)]
+                  (api.nvim_buf_clear_namespace w.bufnr self.ns (dec w.topline) w.botline)))
+              ; We need to clean up the cursor highlight in the current window anyway.
+              (api.nvim_buf_clear_namespace 0 self.ns
+                                            (dec (vim.fn.line "w0"))
+                                            (vim.fn.line "w$")))})
 
 
 (fn init-highlight [force?]
@@ -343,16 +346,21 @@ character instead."
                  "link " from-group " " to-group))))
 
 
-(fn grey-out-search-area [reverse?]
-  (let [[curline curcol] (map dec (get-cursor-pos))
-        [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]
-        [start finish] (if reverse?
-                         [[win-top 0] [curline curcol]]
-                         [[curline (inc curcol)] [win-bot -1]])]
-    ; Expects 0,0-indexed args; `finish` is exclusive.
-    (vim.highlight.range 0 hl.ns hl.group.greywash
-                         start finish :v false
-                         hl.priority.greywash)))
+(fn grey-out-search-area [reverse? ?target-windows]
+  (if ?target-windows
+      (each [_ win (ipairs ?target-windows)]
+        (vim.highlight.range win.bufnr hl.ns hl.group.greywash
+                             [(dec win.topline) 0] [win.botline -1] :v false
+                             hl.priority.greywash))
+      (let [[curline curcol] (map dec (get-cursor-pos))
+            [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]
+            [start finish] (if reverse?
+                               [[win-top 0] [curline curcol]]
+                               [[curline (inc curcol)] [win-bot -1]])]
+        ; Expects 0,0-indexed args; `finish` is exclusive.
+        (vim.highlight.range 0 hl.ns hl.group.greywash
+                             start finish :v false
+                             hl.priority.greywash))))
 
 
 (fn highlight-range [hl-group
@@ -468,11 +476,12 @@ types properly."
     adjusted-pos))
 
 
-(fn get-onscreen-lines [{: reverse? : skip-folds?}]
+(fn get-onscreen-lines [{: get-full-window? : reverse? : skip-folds?}]
   (let [lines {}  ; {lnum : line-str}
         wintop (vim.fn.line "w0")
         winbot (vim.fn.line "w$")]
-    (var lnum (vim.fn.line "."))
+    (var lnum (if get-full-window? (if reverse? winbot wintop)
+                  (vim.fn.line ".")))
     (while (if reverse? (>= lnum wintop) (<= lnum winbot))
       (local fold-edge (get-fold-edge lnum reverse?))
       (if (and skip-folds? fold-edge)
@@ -485,17 +494,17 @@ types properly."
 (fn get-horizontal-bounds [{: match-width}]
   (let [textoff (or (. (vim.fn.getwininfo (vim.fn.win_getid)) 1 :textoff)  ; 0.6+
                     (dec (leftmost-editable-wincol)))
-        offset-in-win (vim.fn.wincol)
+        offset-in-win (dec (vim.fn.wincol))
         offset-in-editable-win (- offset-in-win textoff)
         ; I.e., screen-column of the first visible column in the editable area.
-        left-bound (- (vim.fn.virtcol ".") (dec offset-in-editable-win))
+        left-bound (- (vim.fn.virtcol ".") offset-in-editable-win)
         window-width (api.nvim_win_get_width 0)
         right-edge (+ left-bound (dec (- window-width textoff)))
         right-bound (- right-edge (dec match-width))]  ; the whole match should be visible
-    [left-bound right-bound]))  ; screen columns (TODO: multibyte?)
+    [left-bound right-bound]))  ; screen columns
 
 
-(fn onscreen-match-positions [pattern reverse? {: to-eol? : ft-search? : limit}]
+(fn onscreen-match-positions [pattern reverse? {: cross-window? : to-eol? : ft-search? : limit}]
   "Returns an iterator streaming the return values of `searchpos` for
 the given pattern, stopping at the window edge; in case of 2-character
 search, folds and offscreen parts of non-wrapped lines are skipped too.
@@ -505,10 +514,24 @@ early termination in loops."
   (let [view (vim.fn.winsaveview)
         cpo vim.o.cpo
         opts (if reverse? "b" "")
-        stopline (vim.fn.line (if reverse? "w0" "w$"))  ; top/bottom of window
+        wintop (vim.fn.line "w0")
+        winbot (vim.fn.line "w$")
+        stopline (if reverse? wintop winbot)
         cleanup #(do (vim.fn.winrestview view) (set vim.o.cpo cpo) nil)
         [left-bound right-bound] (get-horizontal-bounds
                                    {:match-width (if ft-search? 1 2)})]
+
+    ; HACK: vim.fn.cursor expects bytecol, but we want to put the cursor
+    ; to `right-bound` as virtcol (screen col); so simply start crawling
+    ; to the right, checking the virtcol... (When targeting the left
+    ; bound, we might undershoot too - the virtcol of a position is
+    ; always <= the bytecol of it -, but in that case it's no problem,
+    ; just some unnecessary work afterwards, as we're still outside the
+    ; on-screen area).
+    (fn reach-right-bound []
+      (while (and (< (vim.fn.virtcol ".") right-bound)
+                  (not (>= (vim.fn.col ".") (dec (vim.fn.col "$")))))  ; reached EOL
+        (vim.cmd "norm! l")))
 
     (fn skip-to-fold-edge! []
       (match ((if reverse? vim.fn.foldclosed vim.fn.foldclosedend)
@@ -520,35 +543,58 @@ early termination in loops."
                       :moved-the-cursor)))
 
     (fn skip-to-next-in-window-pos! []
-      (local [line col &as from-pos] (get-cursor-pos))
-      (match (if (< col left-bound) (if reverse? (when (>= (dec line) stopline)
-                                                   [(dec line) right-bound])
-                                        [line left-bound])
-                 (> col right-bound) (if reverse? [line right-bound]
-                                         (when (<= (inc line) stopline)
-                                           [(inc line) left-bound])))
+      ; virtcol = like `col`, starting from the beginning of the line in the
+      ; buffer, but every char counts as the #of screen columns it occupies
+      ; (or would occupy), instead of the #of bytes.
+      (local [line virtcol &as from-pos] [(vim.fn.line ".") (vim.fn.virtcol ".")])
+      (match (if (< virtcol left-bound)
+                 (if reverse?
+                     (when (>= (dec line) stopline)
+                       [(dec line) right-bound])
+                       [line left-bound])
+
+                 (> virtcol right-bound)
+                 (if reverse?
+                     [line right-bound]
+                     (when (<= (inc line) stopline)
+                       [(inc line) left-bound])))
         to-pos (when (not= from-pos to-pos)
                  (vim.fn.cursor to-pos)
+                 (when reverse? (reach-right-bound))
                  :moved-the-cursor)))
 
-    (set vim.o.cpo (cpo:gsub "c" ""))  ; do not skip overlapping matches
+    ; Do not skip overlapping matches.
+    (set vim.o.cpo (cpo:gsub "c" ""))
+    ; To be able to match the top-left or bottom-right corner (see below).
+    (var win-enter? nil)
     (var match-count 0)
+
+    (when cross-window?
+      (set win-enter? true)
+      (vim.fn.cursor (if reverse? [winbot right-bound] [wintop left-bound]))
+      (when reverse? (reach-right-bound)))
+
     (fn recur [match-at-curpos?]
+      (local match-at-curpos? (or match-at-curpos?
+                                  (when win-enter? (set win-enter? false) true)))
       (if (and limit (>= match-count limit)) (cleanup)
           (match (vim.fn.searchpos
                    pattern (.. opts (if match-at-curpos? "c" "")) stopline)
             [0 _] (cleanup)
             [line col &as pos]
-            (if ft-search? (do (++ match-count) pos)
+            (if ft-search?
+                (do (++ match-count) pos)
                 (match (skip-to-fold-edge!)
                   :moved-the-cursor (recur false)
                   :not-in-fold
-                  (if (or vim.wo.wrap (<= left-bound col right-bound)  ; = on-screen
-                          to-eol?)
-                    (do (++ match-count) pos)
-                    (match (skip-to-next-in-window-pos!)
-                      :moved-the-cursor (recur true)  ; true, as we might be _on_ a match
-                      _ (cleanup))))))))))
+                  (if (or vim.wo.wrap
+                          (<= left-bound col right-bound)
+                          to-eol?)  ; then we want the offscreen matches too
+                      (do (++ match-count) [line col left-bound right-bound])
+                      (match (skip-to-next-in-window-pos!)
+                        ; Arg = true, as we might be _on_ a match.
+                        :moved-the-cursor (recur true)
+                        _ (cleanup))))))))))
 
 
 (fn highlight-cursor [?pos]
@@ -558,12 +604,11 @@ so we set a temporary highlight on it to see where we are."
         ; nil means the cursor is on an empty line.
         ch-at-curpos (or (char-at-pos pos {}) " ")]  ; char-at-pos needs 1,1-idx
     ; (Ab)using extmarks even here, to be able to highlight the cursor on empty lines too.
-    (hl:set-extmark (dec line)
-                    (dec col)
-                    {:virt_text [[ch-at-curpos hl.group.cursor]]
-                     :virt_text_pos "overlay"
-                     :hl_mode "combine"
-                     :priority hl.priority.cursor})))
+    (api.nvim_buf_set_extmark 0 hl.ns (dec line) (dec col)
+                              {:virt_text [[ch-at-curpos hl.group.cursor]]
+                               :virt_text_pos "overlay"
+                               :hl_mode "combine"
+                               :priority hl.priority.cursor})))
 
 
 (fn handle-interrupted-change-op! []
@@ -794,7 +839,8 @@ interrupted change-operation."
             (when-not (and (= match-count 0) cold-repeat? t-mode? (same-pos? pos next-pos))
               (if (<= match-count (dec count)) (set jump-pos pos)
                   (when-not op-mode?
-                    (hl:add-hl hl.group.one-char-match (dec line) (dec col) col)))
+                    (api.nvim_buf_add_highlight 0 hl.ns hl.group.one-char-match
+                                                (dec line) (dec col) col)))
               (++ match-count))))
         (if (and (not reverted-instant-repeat?)
                  (or (= match-count 0)
@@ -847,29 +893,64 @@ interrupted change-operation."
 
 ; Helpers ///
 
-(fn highlight-unique-chars [reverse?]
+(fn get-targetable-windows [reverse?]
+  (let [curr-win-id (vim.fn.win_getid)
+        ; HACK!! The output of vim.fn.winlayout looks sg like:
+        ; ['col', [['leaf', 1002], ['row', [['leaf', 1003], ['leaf', 1001]]], ['leaf', 1000]]]
+        ; Instead of doing an in-order traversal of the window tree ourselves,
+        ; we simply split this _string_ on the current window id, and extract
+        ; the rest of the id-s, depending on the search direction.
+        [left right] (-> (vim.fn.string (vim.fn.winlayout))
+                         (vim.split (tostring curr-win-id)))
+        ids (string.gmatch (if reverse? left right) "%d+")
+        ; TODO: filter on certain window types?
+        visual-or-OP-mode? (not= (vim.fn.mode) :n)
+        buf api.nvim_win_get_buf
+        ids (icollect [id ids]
+              (when-not (and visual-or-OP-mode?
+                             (not= (buf id) (buf curr-win-id)))
+                id))
+        ids (if reverse? (vim.fn.reverse ids) ids)]
+    (map #(. (vim.fn.getwininfo $) 1) ids)))
+
+
+; TODO: multibyte issues?
+(fn highlight-unique-chars [reverse? ?target-windows]
   (let [unique-chars {}
-        [left-bound right-bound] (get-horizontal-bounds {:match-width 2})
+        curr-w (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
         [curline curcol] (get-cursor-pos)]
-    (each [lnum line (pairs (get-onscreen-lines {: reverse? :skip-folds? true}))]
-      (let [on-curline? (= lnum curline)
-            startcol (if (and on-curline? (not reverse?)) (inc curcol) 1)
-            endcol (if (and on-curline? reverse?) (dec curcol) (length line))]
-        (for [col startcol endcol]
-          (when (or vim.wo.wrap (and (>= col left-bound) (<= col right-bound)))
-            ; TODO: multibyte?
-            (let [ch (line:sub col col)
-                  ch (if opts.ignore_case (ch:lower) ch)]
-              (tset unique-chars ch (match (. unique-chars ch)
-                                      pos-already-there false
-                                      _ [lnum col])))))))
+    (each [_ w (ipairs (or ?target-windows [curr-w]))]
+      (when ?target-windows
+        (api.nvim_set_current_win w.winid))
+      (let [[left-bound right-bound] (get-horizontal-bounds {:match-width 2})
+            lines (get-onscreen-lines {:get-full-window? ?target-windows
+                                       : reverse? :skip-folds? true})]
+        (each [lnum line (pairs lines)]
+          (let [startcol (if (and (= lnum curline) (not reverse?)
+                                  (not ?target-windows))
+                             (inc curcol)
+                             1)
+                endcol (if (and (= lnum curline) reverse?
+                                (not ?target-windows))
+                           (dec curcol)
+                           (length line))]
+            (for [col startcol endcol]
+              (when (or vim.wo.wrap (and (>= col left-bound) (<= col right-bound)))
+                (let [ch (line:sub col col)
+                      ch (if opts.ignore_case (ch:lower) ch)]
+                  (tset unique-chars ch (match (. unique-chars ch)
+                                          pos-already-there false
+                                          _ [lnum col w])))))))))
+    (when ?target-windows
+      (api.nvim_set_current_win curr-w.winid))
     (each [ch pos (pairs unique-chars)]
       (match pos  ; don't try to destructure `false` values above
-        [lnum col] 
-        (hl:add-hl hl.group.unique-ch (dec lnum) (dec col) col)))))
+        [lnum col w]
+        (api.nvim_buf_add_highlight w.bufnr hl.ns hl.group.unique-ch
+                                    (dec lnum) (dec col) col)))))
+        
 
-
-(fn get-targets [input reverse?]
+(fn get-targets* [input reverse? ?wininfo ?targets]
   "Return a table that will store the positions and other metadata of
 all on-screen pairs that start with `input`, in the order of discovery
 (i.e., distance from cursor).
@@ -879,13 +960,14 @@ ones might be set by subsequent functions):
 
    pos         : [line col]
    pair        : [char char]
+  ?wininfo     : `vim.fn.getwininfo` dict
   ?squeezed?   : bool
   ?overlapped? : bool
   ?label       : char
   ?label-state : 'active-primary' | 'active-secondary' | 'inactive'
   ?beacon      : [col-offset [[char hl-group]]]
 "
-  (local targets [])
+  (local targets (or ?targets []))
   (local to-eol? (= input "\r"))
   (var prev-match {})
   (var added-prev-match? nil)
@@ -894,8 +976,12 @@ ones might be set by subsequent functions):
                         (if opts.ignore_case "\\c" "\\C")
                         (input:gsub "\\" "\\\\")  ; backslash still needs to be escaped for \V
                         "\\_."))]                 ; match anything (including EOL) after it
-    (each [[line col &as pos] (onscreen-match-positions pattern reverse? {: to-eol?})]
-      (if to-eol? (table.insert targets {:pos pos :pair ["\n" ""]})
+    (each [[line col &as pos] (onscreen-match-positions pattern reverse?
+                                                        {: to-eol?
+                                                         :cross-window? ?wininfo})]
+      (local target {: pos :wininfo ?wininfo})
+      (if to-eol? (do (tset target :pair ["\n" ""])
+                      (table.insert targets target))
           (let [ch1 (char-at-pos pos {})  ; not necessarily = `input` (if case-insensitive)
                 ch2 (or (char-at-pos pos {:char-offset 1})
                         ; <enter> is the expected input for line breaks, so
@@ -911,7 +997,7 @@ ones might be set by subsequent functions):
                      (or added-prev-match?  ; the 2nd 'xx' in 'xxx' is _always_ skipped
                          opts.match_only_the_start_of_same_char_seqs))
                 (set added-prev-match? false)
-                (let [target {: pos :pair [ch1 ch2]}
+                (let [_ (tset target :pair [ch1 ch2])
                       prev-target (last targets)
                       ; Experience shows that a beacon "touching" an
                       ; unhighlighted match can confuse the eye...
@@ -941,6 +1027,19 @@ ones might be set by subsequent functions):
                   (table.insert targets target)
                   (set added-prev-match? true))))))
     (when (next targets) targets)))
+
+
+(fn get-targets [input reverse? ?target-windows]
+  (if ?target-windows
+      (let [curr-w (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
+            targets []]
+        (each [_ w (ipairs ?target-windows)]
+          (api.nvim_set_current_win w.winid)
+          (get-targets* input reverse? w targets))
+        (api.nvim_set_current_win curr-w.winid)
+        (when (next targets)
+          targets))
+      (get-targets* input reverse?)))
 
 
 (fn populate-sublists [targets]
@@ -1056,12 +1155,11 @@ sub-table containing label-target k-v pairs for these targets."
 ; will not disappear before the labels in the second round. The look of a beacon
 ; only changes with group switching, when its active/passive or
 ; primary/secondary state changes.
-(fn set-beacon [{:pos [_ col] :pair [ch1 ch2]
+(fn set-beacon [{:pos [_ col left-bound right-bound] :pair [ch1 ch2]
                  : label : label-state : squeezed? : overlapped? : shortcut?
                  &as target}
                 repeat]
   (let [to-eol? (and (= ch1 "\n") (= ch2 ""))
-        [left-bound right-bound] (get-horizontal-bounds {:match-width 1})
         [ch1 ch2] (map #(or (. opts.substitute_chars $) $) [ch1 ch2])
         squeezed? (or opts.force_beacons_into_match_width squeezed?)
         masked-char$ [ch2 hl.group.masked-ch]
@@ -1135,15 +1233,15 @@ sub-table containing label-target k-v pairs for these targets."
 
 (fn light-up-beacons [target-list ?start-idx]
   (for [i (or ?start-idx 1) (length target-list)]
-    (let [{:pos [line col] : beacon} (. target-list i)]
+    (let [{:pos [line col] : beacon : wininfo} (. target-list i)]
       (match beacon  ; might be nil, if the state is inactive
         [offset chunks ?left-off?]
-        (hl:set-extmark (dec line)
-                        (dec (+ col offset))
-                        {:virt_text chunks
-                         :virt_text_pos "overlay"
-                         :virt_text_win_col (when ?left-off? 0)
-                         :priority hl.priority.label})))))
+        (api.nvim_buf_set_extmark (or (?. wininfo :bufnr) 0) hl.ns 
+                                  (dec line) (dec (+ col offset))
+                                  {:virt_text chunks
+                                   :virt_text_pos "overlay"
+                                   :virt_text_win_col (when ?left-off? 0)
+                                   :priority hl.priority.label})))))
 
 
 (fn get-target-with-active-primary-label [target-list input]
@@ -1176,7 +1274,7 @@ sub-table containing label-target k-v pairs for these targets."
                           :reverse? nil
                           :x-mode? nil}}})
 
-(fn sx.go [self reverse? x-mode? repeat-invoc]
+(fn sx.go [self reverse? x-mode? repeat-invoc cross-window?]
   "Entry point for 2-character search."
   (let [mode (. (api.nvim_get_mode) :mode)  ; endnote #4
         op-mode? (mode:match :o)
@@ -1192,7 +1290,9 @@ sub-table containing label-target k-v pairs for these targets."
         reverse? (if cold-repeat? (#(if invoked-as-reverse? (not $) $)
                                     self.state.cold.reverse?)
                      reverse?)
-        x-mode? (if cold-repeat? self.state.cold.x-mode? x-mode?)]
+        x-mode? (if cold-repeat? self.state.cold.x-mode? x-mode?)
+        ?target-windows (or (when cross-window? (get-targetable-windows reverse?))
+                            (when instant-repeat? instant-state.target-windows))]
 
     ; Top-level vars
 
@@ -1216,10 +1316,16 @@ sub-table containing label-target k-v pairs for these targets."
 
     (macro with-highlight-chores [...]
       `(do (when-not (or cold-repeat? instant-repeat? to-eol?)
-             (grey-out-search-area reverse?))
+             (grey-out-search-area reverse? ?target-windows))
            (do ,...)
            (highlight-cursor)
            (vim.cmd :redraw)))
+
+    ; TODO: DRY
+    (macro with-highlight-cleanup [...]
+      `(let [res# (do ,...)]
+         (hl:cleanup ?target-windows)
+         res#))
 
     (fn get-first-input []
       (if instant-repeat? instant-state.in1
@@ -1256,9 +1362,11 @@ sub-table containing label-target k-v pairs for these targets."
     (local jump-to!
            (do (var first-jump? true)
                (fn [target ?to-pre-eol?]
+                 (when target.wininfo
+                   (api.nvim_set_current_win target.wininfo.winid))
                  (let [to-pre-eol? (or ?to-pre-eol? to-pre-eol?)
                        adjusted-pos
-                       (jump-to!* target
+                       (jump-to!* target.pos
                                   {: mode : reverse?
                                    :inclusive-motion? (and x-mode? (not reverse?))
                                    :add-to-jumplist? (and first-jump?
@@ -1362,7 +1470,7 @@ sub-table containing label-target k-v pairs for these targets."
       (echo "")  ; clean up the command line
       (with-highlight-chores
         (when opts.jump_to_unique_chars
-          (highlight-unique-chars reverse?))))
+          (highlight-unique-chars reverse? ?target-windows))))
 
     (match (get-first-input)
       in1
@@ -1373,14 +1481,14 @@ sub-table containing label-target k-v pairs for these targets."
                          (or cold-repeat? backspace-repeat?) self.state.cold.in2
                          dot-repeat? self.state.dot.in2)]
         (match (or (?. instant-state :sublist)
-                   (get-targets in1 reverse?)
+                   (get-targets in1 reverse? ?target-windows)
                    (exit-early (echo-not-found (.. in1 (or prev-in2 "")))))
           (where [{:pair [_ ch2] &as only} nil]
                  opts.jump_to_unique_chars)
           (if (or new-search? (= ch2 prev-in2))
               (exit (update-state  ; endnote #5
                       {:cold {:in2 ch2} :dot {:in2 ch2 :in3 (. opts.labels 1)}})
-                    (local to-pos (jump-to! only.pos (= ch2 "\r")))
+                    (local to-pos (jump-to! only (= ch2 "\r")))
                     (when new-search?  ; i.e. user is actually typing the pattern
                       (with-highlight-cleanup
                         (highlight-new-curpos-and-op-area from-pos to-pos)
@@ -1407,7 +1515,7 @@ sub-table containing label-target k-v pairs for these targets."
               (match (?. targets.shortcuts in2)
                 {:pair [_ ch2] &as shortcut}
                 (exit (update-state {:cold {:in2 ch2} :dot {:in2 ch2 :in3 in2}})
-                      (jump-to! shortcut.pos (= ch2 "\r")))
+                      (jump-to! shortcut (= ch2 "\r")))
 
                 _
                 (do
@@ -1418,7 +1526,7 @@ sub-table containing label-target k-v pairs for these targets."
                              (exit-early (echo-not-found (.. in1 in2))))
                     [only nil]
                     (exit (update-state {:dot {: in2 :in3 (. opts.labels 1)}})
-                          (jump-to! only.pos))
+                          (jump-to! only))
 
                     [first &as sublist]
                     (let [autojump? sublist.autojump?
@@ -1430,7 +1538,7 @@ sub-table containing label-target k-v pairs for these targets."
                       ; If instant-repeating, we have already done the jump,
                       ; before descending into the recursive call (see below).
                       (when (and autojump? (not instant-repeat?))
-                        (jump-to! first.pos))
+                        (jump-to! first))
                       (match (or (when (and dot-repeat? self.state.dot.in3)  ; endnote #3
                                    [self.state.dot.in3 0])
                                  (get-last-input sublist (inc curr-idx))
@@ -1442,14 +1550,15 @@ sub-table containing label-target k-v pairs for these targets."
                           action (let [idx (match action
                                              :repeat (min (inc curr-idx) (length targets))
                                              :revert (max (dec curr-idx) 1))]
-                                   (jump-to! (. sublist idx :pos))
+                                   (jump-to! (. sublist idx))
                                    (sx:go reverse? x-mode?
                                           {: in1 : in2 : sublist : idx
-                                           : from-reverse-cold-repeat?}))
+                                           : from-reverse-cold-repeat?
+                                           :target-windows ?target-windows}))
                           _ (match (get-target-with-active-primary-label sublist in3)
                               target (exit (update-state
                                              {:dot {: in2 :in3 (if (> group-offset 0) nil in3)}})  ; endnote #3
-                                           (jump-to! target.pos))
+                                           (jump-to! target))
                               _ (if autojump?
                                     (exit (vim.fn.feedkeys in3 :i))
                                     (exit-early))))))))))))))))
@@ -1505,6 +1614,9 @@ sub-table containing label-target k-v pairs for these targets."
      ["<Plug>Lightspeed_x" "sx:go(false, true)"]
      ["<Plug>Lightspeed_X" "sx:go(true, true)"]
 
+     ["<Plug>Lightspeed_gs" "sx:go(false, nil, nil, true)"]
+     ["<Plug>Lightspeed_gS" "sx:go(true, nil, nil, true)"]
+
      ; params: reverse? [t-mode?] [repeat-invoc]
      ["<Plug>Lightspeed_f" "ft:go(false)"]
      ["<Plug>Lightspeed_F" "ft:go(true)"]
@@ -1548,6 +1660,9 @@ sub-table containing label-target k-v pairs for these targets."
      [:x "S" "<Plug>Lightspeed_S"]
      [:o "z" "<Plug>Lightspeed_s"]
      [:o "Z" "<Plug>Lightspeed_S"]
+
+     [:n "gs" "<Plug>Lightspeed_gs"]
+     [:n "gS" "<Plug>Lightspeed_gS"]
 
      [:o "x" "<Plug>Lightspeed_x"]
      [:o "X" "<Plug>Lightspeed_X"]
@@ -1642,6 +1757,8 @@ sub-table containing label-target k-v pairs for these targets."
  : setup
  : ft
  : sx
+
+ :get_targetable_windows get-targetable-windows
 
  :save_editor_opts save-editor-opts
  :set_temporary_editor_opts set-temporary-editor-opts
