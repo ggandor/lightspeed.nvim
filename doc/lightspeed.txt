@@ -1,4 +1,4 @@
-*lightspeed.txt*      For Neovim version 0.5.0      Last change: 2022 January 31
+*lightspeed.txt*      For Neovim version 0.5.0     Last change: 2022 February 01
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -309,6 +309,10 @@ All modes~
                            See also |lightspeed-repeat|.
 
 <Esc>                      Exit Lightspeed at any stage cleanly.
+
+2-character search (after invoking the motion)~
+
+<Tab>                      Switch the search direction on the fly.
 
 2-character search (after entering the full pattern)~
 

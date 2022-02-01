@@ -47,6 +47,7 @@ by DevOnDuty](https://youtu.be/ESyld9NCl1w) first.
 * [Multi-line f/t motions VS macros and :normal](#notes)
 * [Using the plugin together with
   vim-surround](https://github.com/ggandor/lightspeed.nvim/discussions/83)
+* [Bi-directional search?](#bi-directional-search)
 
 ## ⚡ A lightning pitch
 
@@ -370,7 +371,10 @@ lines. Likewise, a character before EOL can be targeted by `s{char}<enter>`
 ### Repeating motions
 
 Repeating in Lightspeed works in a uniform way across all motions - all of the
-following methods (and even combinations of them) are valid options:
+following methods (and even combinations of them) are valid options.
+
+Note that for s/x motions the labels will remain available during the whole
+time, even after entering instant-repeat mode.
 
 #### "Instant" repeat (after jumping)
 
@@ -402,9 +406,6 @@ following methods (and even combinations of them) are valid options:
   s/x or f/t), see `:h lightspeed-custom-mappings`. Just like above, subsequent
   keystrokes move on to the next match, while the opposite key reverts the
   previous motion.
-
-Note that for s/x motions the labels will remain available during the whole
-time, even after entering instant-repeat mode.
 
 #### Dot-repeat
 
@@ -646,6 +647,10 @@ Consequently, it's utterly wasteful _not_ to use this information and encode it
 in the trigger key right away, to ease our lives, by - on average - halving the
 search area and thus doubling the number of available target labels, while
 creating less visual noise on screen.
+
+To get an experience somewhat similar to bi-directional search, you can switch
+the search direction on the fly by pressing `<tab>` after invoking `s`/`x`
+motions.
 
 ## 🌜 Contributing
 

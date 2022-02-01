@@ -1754,7 +1754,10 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f)
         return nil
       end
       _385_ = (_386_() or _387_())
-      if (_385_ == _3cbackspace_3e) then
+      if (_385_ == "\9") then
+        sx:go(not reverse_3f0, x_mode_3f0, false, cross_window_3f)
+        return nil
+      elseif (_385_ == _3cbackspace_3e) then
         backspace_repeat_3f = true
         new_search_3f = false
         local function _389_()

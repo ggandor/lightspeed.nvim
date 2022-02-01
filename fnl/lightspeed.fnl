@@ -1335,6 +1335,7 @@ sub-table containing label-target k-v pairs for these targets."
                      (exit-early))
             ; Here we can handle any other modifier key as "zeroth" input,
             ; if the need arises (e.g. regex search).
+            "\t" (do (sx:go (not reverse?) x-mode? false cross-window?) nil)
             <backspace> (do (set backspace-repeat? true)
                             (set new-search? false)
                             (or self.state.cold.in1
