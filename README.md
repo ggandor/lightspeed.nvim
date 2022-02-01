@@ -483,7 +483,7 @@ equivalents - `cl` and `cc`, respectively.
 
 #### Setting keys to repeat the last lightspeed motion (s/x/f/t)
 
-That can be achieved easily with autocommands and expression mappings. See `h:
+That can be achieved easily with autocommands and expression mappings. See `:h
 lightspeed-custom-mappings`.
 
 #### Using the repeat keys for instant repeat only
