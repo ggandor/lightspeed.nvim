@@ -1362,9 +1362,13 @@ sub-table containing label-target k-v pairs for these targets."
     ; itself, so setting up a closure here.
     (local jump-to!
            (do (var first-jump? true)
-               (fn [target ?to-pre-eol?]
+               (fn [target ?to-pre-eol? ?save-winview?]
                  (when target.wininfo
-                   (api.nvim_set_current_win target.wininfo.winid))
+                   (api.nvim_set_current_win target.wininfo.winid)
+                   ; If we move on to another window, we'll have to restore
+                   ; the cursor etc. in the one we have just visited briefly.
+                   (when ?save-winview?
+                     (tset target :winview (vim.fn.winsaveview))))
                  (let [to-pre-eol? (or ?to-pre-eol? to-pre-eol?)
                        adjusted-pos
                        (jump-to!* target.pos
@@ -1461,6 +1465,14 @@ sub-table containing label-target k-v pairs for these targets."
                 [input group-offset])))
         (recur 0 true)))
 
+    ; TODO: Handle instant-repeat sequences too.
+    (fn restore-view-on-winleave [curr-target next-target]
+      (when (and (not instant-repeat?)
+                 (not= (?. curr-target :wininfo :winid)
+                       (?. next-target :wininfo :winid)))
+        (when curr-target.winview
+          (vim.fn.winrestview curr-target.winview))))
+
     ; //> Helpers
 
     ; After all the stage-setting, here comes the main action you've all been
@@ -1539,7 +1551,9 @@ sub-table containing label-target k-v pairs for these targets."
                       ; If instant-repeating, we have already done the jump,
                       ; before descending into the recursive call (see below).
                       (when (and autojump? (not instant-repeat?))
-                        (jump-to! first))
+                        ; Saves the view into a :winview field of `first`.
+                        ; (We need to restore it if we happen to move on later.)
+                        (jump-to! first nil true))
                       (match (or (when (and dot-repeat? self.state.dot.in3)  ; endnote #3
                                    [self.state.dot.in3 0])
                                  (get-last-input sublist (inc curr-idx))
@@ -1550,8 +1564,10 @@ sub-table containing label-target k-v pairs for these targets."
                                                     from-reverse-cold-repeat?))
                           action (let [idx (match action
                                              :repeat (min (inc curr-idx) (length targets))
-                                             :revert (max (dec curr-idx) 1))]
-                                   (jump-to! (. sublist idx))
+                                             :revert (max (dec curr-idx) 1))
+                                       neighbor (. sublist idx)]
+                                   (restore-view-on-winleave first neighbor)
+                                   (jump-to! neighbor)
                                    (sx:go reverse? x-mode?
                                           {: in1 : in2 : sublist : idx
                                            : from-reverse-cold-repeat?
@@ -1559,6 +1575,7 @@ sub-table containing label-target k-v pairs for these targets."
                           _ (match (get-target-with-active-primary-label sublist in3)
                               target (exit (update-state
                                              {:dot {: in2 :in3 (if (> group-offset 0) nil in3)}})  ; endnote #3
+                                           (restore-view-on-winleave first target)
                                            (jump-to! target))
                               _ (if autojump?
                                     (exit (vim.fn.feedkeys in3 :i))
