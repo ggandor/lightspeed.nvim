@@ -374,7 +374,8 @@ Repeating in Lightspeed works in a uniform way across all motions - all of the
 following methods (and even combinations of them) are valid options.
 
 Note that for s/x motions the labels will remain available during the whole
-time, even after entering instant-repeat mode.
+time, even after entering instant-repeat mode, if the "safe" label set is in
+use.
 
 #### "Instant" repeat (after jumping)
 

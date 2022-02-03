@@ -1171,59 +1171,61 @@ sub-table containing label-target k-v pairs for these targets."
         overlapped-distant-label$ [label hl.group.label-distant-overlapped]]
     ; The `beacon` field looks like: [col-offset [[char hl-group]]]
     (set target.beacon
-         (match label-state
-           ; No label-state = unlabeled match. (Note: there should be no
-           ; unlabeled matches when repeating, as we have the full input
-           ; sequence available then, and we will have jumped to the first
-           ; match already, if it was on the "winning" sublist.)
-           nil (when-not (or repeat to-eol?)
-                 (if overlapped?
-                     [1 [[ch2 hl.group.unlabeled-match]]]
-                     [0 [[(.. ch1 ch2) hl.group.unlabeled-match]]]))
+         (if
+           (= repeat :instant-unsafe) [0 [[(.. ch1 ch2) hl.group.one-char-match]]]
+           (match label-state
+             ; No label-state = unlabeled match. (Note: there should be no
+             ; unlabeled matches when repeating, as we have the full input
+             ; sequence available then, and we will have jumped to the first
+             ; match already, if it was on the "winning" sublist.)
+             nil (when-not (or repeat to-eol?)
+                   (if overlapped?
+                       [1 [[ch2 hl.group.unlabeled-match]]]
+                       [0 [[(.. ch1 ch2) hl.group.unlabeled-match]]]))
 
-           ; Note: `repeat` is also mutually exclusive with both
-           ; `overlapped?` and `shortcut?`.
-           :active-primary
-           (if to-eol? (if (or vim.wo.wrap 
-                               (and (<= col right-bound) (>= col left-bound)))
-                           [0 [shortcut$]]
+             ; Note: `repeat` is also mutually exclusive with both
+             ; `overlapped?` and `shortcut?`.
+             :active-primary
+             (if to-eol? (if (or vim.wo.wrap 
+                                 (and (<= col right-bound) (>= col left-bound)))
+                             [0 [shortcut$]]
 
-                           (> col right-bound)
-                           [(dec (- right-bound col))
-                            [shortcut$ [">" hl.group.one-char-match]]]
+                             (> col right-bound)
+                             [(dec (- right-bound col))
+                              [shortcut$ [">" hl.group.one-char-match]]]
 
-                           (< col left-bound)
-                           [0 [["<" hl.group.one-char-match] shortcut$]
-                            :left-off])
-               repeat [(if squeezed? 1 2) [shortcut$]]
-               shortcut? (if overlapped?
-                             [1 [overlapped-shortcut$]]
-                             (if squeezed?
-                                 [0 [masked-char$ shortcut$]]
-                                 [2 [shortcut$]]))
-               overlapped? [1 [overlapped-label$]]
-               squeezed? [0 [masked-char$ label$]]
-               [2 [label$]])
+                             (< col left-bound)
+                             [0 [["<" hl.group.one-char-match] shortcut$]
+                              :left-off])
+                 repeat [(if squeezed? 1 2) [shortcut$]]
+                 shortcut? (if overlapped?
+                               [1 [overlapped-shortcut$]]
+                               (if squeezed?
+                                   [0 [masked-char$ shortcut$]]
+                                   [2 [shortcut$]]))
+                 overlapped? [1 [overlapped-label$]]
+                 squeezed? [0 [masked-char$ label$]]
+                 [2 [label$]])
 
-           :active-secondary
-           (if to-eol? (if (or vim.wo.wrap 
-                               (and (<= col right-bound) (>= col left-bound)))
-                           [0 [distant-label$]]
-                         
-                           ; TODO: New hl group (~ no-underline distant label).
-                           (> col right-bound)
-                           [(dec (- right-bound col))
-                            [distant-label$ [">" hl.group.unlabeled-match]]]
+             :active-secondary
+             (if to-eol? (if (or vim.wo.wrap 
+                                 (and (<= col right-bound) (>= col left-bound)))
+                             [0 [distant-label$]]
+                           
+                             ; TODO: New hl group (~ no-underline distant label).
+                             (> col right-bound)
+                             [(dec (- right-bound col))
+                              [distant-label$ [">" hl.group.unlabeled-match]]]
 
-                           (< col left-bound)
-                           [0 [["<" hl.group.unlabeled-match] distant-label$]
-                            :left-off])
-               repeat [(if squeezed? 1 2) [distant-label$]]
-               overlapped? [1 [overlapped-distant-label$]]
-               squeezed? [0 [masked-char$ distant-label$]]
-               [2 [distant-label$]])
+                             (< col left-bound)
+                             [0 [["<" hl.group.unlabeled-match] distant-label$]
+                              :left-off])
+                 repeat [(if squeezed? 1 2) [distant-label$]]
+                 overlapped? [1 [overlapped-distant-label$]]
+                 squeezed? [0 [masked-char$ distant-label$]]
+                 [2 [distant-label$]])
 
-           :inactive nil))))
+             :inactive nil)))))
 
 
 (fn set-beacons [target-list {: repeat}]
@@ -1439,7 +1441,9 @@ sub-table containing label-target k-v pairs for these targets."
             prev_group_key (replace-keycodes opts.special_keys.prev_match_group)]
         (fn recur [group-offset initial-invoc?]
           (set-beacons sublist {:repeat (if (or cold-repeat? backspace-repeat?) :cold
-                                            instant-repeat? :instant)})
+                                            instant-repeat? (if sublist.autojump?
+                                                                :instant
+                                                                :instant-unsafe))})
           (with-highlight-chores (light-up-beacons sublist start-idx))
           (match (with-highlight-cleanup
                    (get-input (when initial-invoc?
@@ -1538,7 +1542,12 @@ sub-table containing label-target k-v pairs for these targets."
                              (get-sublist targets in2)
                              (exit-early (echo-not-found (.. in1 in2))))
                     [only nil]
-                    (exit (update-state {:dot {: in2 :in3 (. opts.labels 1)}})
+                    (exit (update-state
+                            ; TODO: What if the user sets a different char to
+                            ; labels[1] and safe_labels[1]? This whole approach
+                            ; of mindlessly replaying a key sequence for repeat
+                            ; has its flaws, obviously...
+                            {:dot {: in2 :in3 (. (or opts.labels opts.safe_labels) 1)}})
                           (jump-to! only))
 
                     [first &as sublist]
@@ -1572,12 +1581,13 @@ sub-table containing label-target k-v pairs for these targets."
                                           {: in1 : in2 : sublist : idx
                                            : from-reverse-cold-repeat?
                                            :target-windows ?target-windows}))
-                          _ (match (get-target-with-active-primary-label sublist in3)
+                          _ (match (when-not (and instant-repeat? (not autojump?)) ; = no safe label set
+                                     (get-target-with-active-primary-label sublist in3))
                               target (exit (update-state
                                              {:dot {: in2 :in3 (if (> group-offset 0) nil in3)}})  ; endnote #3
                                            (restore-view-on-winleave first target)
                                            (jump-to! target))
-                              _ (if autojump?
+                              _ (if (or autojump? instant-repeat?)
                                     (exit (vim.fn.feedkeys in3 :i))
                                     (exit-early))))))))))))))))
 

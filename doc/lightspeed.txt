@@ -1,4 +1,4 @@
-*lightspeed.txt*      For Neovim version 0.5.0     Last change: 2022 February 01
+*lightspeed.txt*      For Neovim version 0.5.0     Last change: 2022 February 03
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -113,8 +113,9 @@ mapped to f/t-repeat by default (that is, they follow the native behaviour).
 If you would like to set `;` and `,` to repeat the last Lightspeed motion
 (whether it was s/x or f/t), see |lightspeed-custom-mappings|.
 
-Note that for s/x motions the labels will remain available even after entering
-instant-repeat mode.
+Note that for s/x motions the labels will remain available, even after
+entering instant-repeat mode, if the "safe" label set (see
+|lightspeed-config|) is in use.
 
                                                          *lightspeed-dot-repeat*
 You can repeat change and delete operations with the `.` character, if
