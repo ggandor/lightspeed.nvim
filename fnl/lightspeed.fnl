@@ -1233,17 +1233,33 @@ sub-table containing label-target k-v pairs for these targets."
     (set-beacon target repeat)))
 
 
-(fn light-up-beacons [target-list ?start-idx]
+(fn light-up-beacons [target-list linewise-to-eol? ?start-idx]
   (for [i (or ?start-idx 1) (length target-list)]
-    (let [{:pos [line col] : beacon : wininfo} (. target-list i)]
-      (match beacon  ; might be nil, if the state is inactive
+    (let [{:pos [line col] &as target} (. target-list i)]
+      (match target.beacon  ; might be nil, if the state is inactive
         [offset chunks ?left-off?]
-        (api.nvim_buf_set_extmark (or (?. wininfo :bufnr) 0) hl.ns 
-                                  (dec line) (dec (+ col offset))
-                                  {:virt_text chunks
-                                   :virt_text_pos "overlay"
-                                   :virt_text_win_col (when ?left-off? 0)
-                                   :priority hl.priority.label})))))
+        (do
+          (api.nvim_buf_set_extmark (or (?. target.wininfo :bufnr) 0) hl.ns 
+                                    (dec line) (dec (+ col offset))
+                                    {:virt_text chunks
+                                     :virt_text_pos "overlay"
+                                     :virt_text_win_col (when ?left-off? 0)
+                                     :priority hl.priority.label})
+          (when linewise-to-eol?
+            ; Then display the labels in the cursor column too.
+            ; TODO: First column & first non-blank column as options too?
+            (let [curcol (vim.fn.col ".")
+                  col-delta (math.abs (- curcol col))
+                  min-col-delta 5]  ; arbitrary value
+              (when (> col-delta min-col-delta)
+                (let [chunks (match target.label-state
+                               :active-primary [[target.label hl.group.label-overlapped]]
+                               :active-secondary [[target.label hl.group.label-distant-overlapped]])]
+                  (api.nvim_buf_set_extmark 0 hl.ns (dec line) 0
+                                            {:virt_text chunks
+                                             :virt_text_pos "overlay"
+                                             :virt_text_win_col (dec (vim.fn.virtcol "."))
+                                             :priority hl.priority.label}))))))))))
 
 
 (fn get-target-with-active-primary-label [target-list input]
@@ -1279,6 +1295,7 @@ sub-table containing label-target k-v pairs for these targets."
 (fn sx.go [self reverse? x-mode? repeat-invoc cross-window?]
   "Entry point for 2-character search."
   (let [mode (. (api.nvim_get_mode) :mode)  ; endnote #4
+        linewise? (= (mode:sub -1) :V)
         op-mode? (mode:match :o)
         change-op? (and op-mode? (= vim.v.operator :c))
         delete-op? (and op-mode? (= vim.v.operator :d))
@@ -1317,7 +1334,7 @@ sub-table containing label-target k-v pairs for these targets."
     (macro exit-early [...] `(exit-template :sx true ,...))
 
     (macro with-highlight-chores [...]
-      `(do (when-not (or cold-repeat? instant-repeat? to-eol?)
+      `(do (when-not (or cold-repeat? instant-repeat?)
              (grey-out-search-area reverse? ?target-windows))
            (do ,...)
            (highlight-cursor)
@@ -1444,7 +1461,8 @@ sub-table containing label-target k-v pairs for these targets."
                                             instant-repeat? (if sublist.autojump?
                                                                 :instant
                                                                 :instant-unsafe))})
-          (with-highlight-chores (light-up-beacons sublist start-idx))
+          (with-highlight-chores
+            (light-up-beacons sublist (and linewise? to-eol?) start-idx))
           (match (with-highlight-cleanup
                    (get-input (when initial-invoc?
                                 opts.exit_after_idle_msecs.labeled)))
@@ -1523,7 +1541,8 @@ sub-table containing label-target k-v pairs for these targets."
               (doto targets
                 (set-shortcuts-and-populate-shortcuts-map)
                 (set-beacons {:repeat nil}))
-              (with-highlight-chores (light-up-beacons targets)))
+              (with-highlight-chores
+                (light-up-beacons targets (and linewise? to-eol?))))
             (match (or prev-in2
                        (when to-eol? "")
                        (with-highlight-cleanup (get-input))
