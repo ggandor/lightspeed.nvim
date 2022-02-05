@@ -840,7 +840,7 @@ interrupted change-operation."
               (if (<= match-count (dec count)) (set jump-pos pos)
                   (when-not op-mode?
                     (let [ch (or (char-at-pos pos {}) "\r")
-                          ch (or (. opts.substitute_chars ch) ch)]
+                          ch (or (?. opts.substitute_chars ch) ch)]
                       (api.nvim_buf_set_extmark 0 hl.ns (dec line) (dec col)
                                                 {:virt_text [[ch hl.group.one-char-match]]
                                                  :virt_text_pos "overlay"
@@ -1165,7 +1165,7 @@ sub-table containing label-target k-v pairs for these targets."
                 repeat]
   (let [to-eol? (and (= ch1 "\n") (= ch2 ""))
         ch1 (if to-eol? "\r" ch1)  ; to trigger substitute_chars
-        [ch1 ch2] (map #(or (. opts.substitute_chars $) $) [ch1 ch2])
+        [ch1 ch2] (map #(or (?. opts.substitute_chars $) $) [ch1 ch2])
         squeezed? (or opts.force_beacons_into_match_width squeezed?)
         masked-char$ [ch2 hl.group.masked-ch]
         label$ [label hl.group.label]
