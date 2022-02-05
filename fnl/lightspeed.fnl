@@ -143,9 +143,9 @@ character instead."
                "/" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
        (local labels
               ["s" "f" "n"
-               "j" "k" "l" "o" "i" "w" "e" "h" "g"
+               "j" "k" "l" "o" "d" "w" "e" "h" "m" "v" "g"
                "u" "t"
-               "m" "v" "c" "a" "." "z"
+               "c" "." "z"
                "/" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
        {:ignore_case false
         :exit_after_idle_msecs {:labeled nil :unlabeled 1000}

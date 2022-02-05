@@ -1,4 +1,4 @@
-*lightspeed.txt*      For Neovim version 0.5.0     Last change: 2022 February 03
+*lightspeed.txt*      For Neovim version 0.5.0     Last change: 2022 February 05
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -194,8 +194,8 @@ s/x-specific options~
     label next to it.
 
 `safe_labels` >
-    {"s", "f", "n"
-     "u", "t"
+    {"s", "f", "n",
+     "u", "t",
      "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
 <
     When the number of matches does not exceed the number of these "safe"
@@ -209,10 +209,10 @@ s/x-specific options~
           are labeled then (using the `labels` list, if not empty).
 
 `labels` >
-    {"s", "f", "n"
-     "j", "k", "l", "o", "i", "w", "e", "h", "g"
-     "u", "t"
-     "m", "v", "c", "a" ".", "z",
+    {"s", "f", "n",
+     "j", "k", "l", "o", "d", "w", "e", "h", "m", "v", "g",
+     "u", "t",
+     "c", ".", "z",
      "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
 <
     Target labels to be used when there are more matches than the number of
