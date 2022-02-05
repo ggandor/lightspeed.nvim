@@ -39,6 +39,7 @@ by DevOnDuty](https://youtu.be/ESyld9NCl1w) first.
 
 ### Quick links (FAQ)
 
+* [Hop-style config](#low-key-config)
 * [A primer on the highlighting strategy](#a-primer-on-the-highlighting-strategy)
 * [Guidelines for colorscheme
   integrations](#guidelines-for-colorscheme-integrations)
@@ -460,6 +461,22 @@ You can also set options individually from the command line:
 ```Lua
 lua require'lightspeed'.opts.jump_to_unique_chars = false
 ```
+
+### Low-key config
+
+By default, Lightspeed is tuned for maximum speed, especially for close and
+midrange movements, but the cost of this is increased visual noise and a bit
+more hectic experience. For a "calmer" style of navigation, similar to using Hop
+or EasyMotion, add the following two lines to your config:
+
+```
+jump_to_unique_chars = false,
+safe_labels = {}
+```
+
+These disable the two most obtrusive automagic features, while you can still
+enjoy Lightspeed's unique advantage of making the labels visible right as you
+type.
 
 ### Keymaps
 
