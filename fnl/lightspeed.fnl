@@ -1238,7 +1238,7 @@ sub-table containing label-target k-v pairs for these targets."
     (set-beacon target repeat)))
 
 
-(fn light-up-beacons [target-list linewise-to-eol? ?start-idx]
+(fn light-up-beacons [target-list ghost-beacons? ?start-idx]
   (for [i (or ?start-idx 1) (length target-list)]
     (let [{:pos [line col] &as target} (. target-list i)]
       (match target.beacon  ; might be nil, if the state is inactive
@@ -1250,7 +1250,7 @@ sub-table containing label-target k-v pairs for these targets."
                                      :virt_text_pos "overlay"
                                      :virt_text_win_col (when ?left-off? 0)
                                      :priority hl.priority.label})
-          (when linewise-to-eol?
+          (when ghost-beacons?
             ; Then display the labels in the cursor column too.
             ; TODO: First column & first non-blank column as options too?
             (let [curcol (vim.fn.col ".")
@@ -1467,7 +1467,8 @@ sub-table containing label-target k-v pairs for these targets."
                                                                 :instant
                                                                 :instant-unsafe))})
           (with-highlight-chores
-            (light-up-beacons sublist (and linewise? to-eol?) start-idx))
+            (light-up-beacons
+              sublist (and linewise? to-eol? (not instant-repeat?)) start-idx))
           (match (with-highlight-cleanup
                    (get-input (when initial-invoc?
                                 opts.exit_after_idle_msecs.labeled)))
@@ -1547,7 +1548,8 @@ sub-table containing label-target k-v pairs for these targets."
                 (set-shortcuts-and-populate-shortcuts-map)
                 (set-beacons {:repeat nil}))
               (with-highlight-chores
-                (light-up-beacons targets (and linewise? to-eol?))))
+                (light-up-beacons 
+                  targets (and linewise? to-eol? (not instant-repeat?)))))
             (match (or prev-in2
                        (when to-eol? "")
                        (with-highlight-cleanup (get-input))

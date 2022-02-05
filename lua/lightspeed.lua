@@ -1641,7 +1641,7 @@ local function set_beacons(target_list, _367_)
   end
   return nil
 end
-local function light_up_beacons(target_list, linewise_to_eol_3f, _3fstart_idx)
+local function light_up_beacons(target_list, ghost_beacons_3f, _3fstart_idx)
   for i = (_3fstart_idx or 1), #target_list do
     local _let_369_ = target_list[i]
     local target = _let_369_
@@ -1667,7 +1667,7 @@ local function light_up_beacons(target_list, linewise_to_eol_3f, _3fstart_idx)
       _375_ = nil
       end
       api.nvim_buf_set_extmark((_373_() or 0), hl.ns, dec(line), dec((col + offset)), {priority = hl.priority.label, virt_text = chunks, virt_text_pos = "overlay", virt_text_win_col = _375_})
-      if linewise_to_eol_3f then
+      if ghost_beacons_3f then
         local curcol = vim.fn.col(".")
         local col_delta = math.abs((curcol - col))
         local min_col_delta = 5
@@ -1972,7 +1972,7 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f)
           grey_out_search_area(reverse_3f0, _3ftarget_windows)
         end
         do
-          light_up_beacons(sublist, (linewise_3f and to_eol_3f), start_idx)
+          light_up_beacons(sublist, (linewise_3f and to_eol_3f and not instant_repeat_3f), start_idx)
         end
         highlight_cursor()
         vim.cmd("redraw")
@@ -2102,15 +2102,15 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f)
     end
     _465_ = (_467_() or get_targets(in1, reverse_3f0, _3ftarget_windows) or _469_())
     local function _471_()
+      local only = (_465_)[1]
       local _0 = (((_465_)[1]).pair)[1]
       local ch2 = (((_465_)[1]).pair)[2]
-      local only = (_465_)[1]
       return opts.jump_to_unique_chars
     end
     if (((type(_465_) == "table") and ((type((_465_)[1]) == "table") and ((type(((_465_)[1]).pair) == "table") and true and (nil ~= (((_465_)[1]).pair)[2]))) and ((_465_)[2] == nil)) and _471_()) then
+      local only = (_465_)[1]
       local _0 = (((_465_)[1]).pair)[1]
       local ch2 = (((_465_)[1]).pair)[2]
-      local only = (_465_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           if dot_repeatable_op_3f then
@@ -2159,7 +2159,7 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f)
           grey_out_search_area(reverse_3f0, _3ftarget_windows)
         end
         do
-          light_up_beacons(targets, (linewise_3f and to_eol_3f))
+          light_up_beacons(targets, (linewise_3f and to_eol_3f and not instant_repeat_3f))
         end
         highlight_cursor()
         vim.cmd("redraw")
@@ -2200,9 +2200,9 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f)
           _486_ = t_487_
         end
         if ((type(_486_) == "table") and ((type((_486_).pair) == "table") and true and (nil ~= ((_486_).pair)[2]))) then
+          local shortcut = _486_
           local _0 = ((_486_).pair)[1]
           local ch2 = ((_486_).pair)[2]
-          local shortcut = _486_
           do
             if dot_repeatable_op_3f then
               set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f0, x_mode_3f0, "dot")))
