@@ -839,8 +839,12 @@ interrupted change-operation."
             (when-not (and (= match-count 0) cold-repeat? t-mode? (same-pos? pos next-pos))
               (if (<= match-count (dec count)) (set jump-pos pos)
                   (when-not op-mode?
-                    (api.nvim_buf_add_highlight 0 hl.ns hl.group.one-char-match
-                                                (dec line) (dec col) col)))
+                    (let [ch (or (char-at-pos pos {}) "\r")
+                          ch (or (. opts.substitute_chars ch) ch)]
+                      (api.nvim_buf_set_extmark 0 hl.ns (dec line) (dec col)
+                                                {:virt_text [[ch hl.group.one-char-match]]
+                                                 :virt_text_pos "overlay"
+                                                 :priority hl.priority.label}))))
               (++ match-count))))
         (if (and (not reverted-instant-repeat?)
                  (or (= match-count 0)
@@ -1160,6 +1164,7 @@ sub-table containing label-target k-v pairs for these targets."
                  &as target}
                 repeat]
   (let [to-eol? (and (= ch1 "\n") (= ch2 ""))
+        ch1 (if to-eol? "\r" ch1)  ; to trigger substitute_chars
         [ch1 ch2] (map #(or (. opts.substitute_chars $) $) [ch1 ch2])
         squeezed? (or opts.force_beacons_into_match_width squeezed?)
         masked-char$ [ch2 hl.group.masked-ch]
