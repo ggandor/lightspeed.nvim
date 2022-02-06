@@ -4,8 +4,7 @@ Lightspeed is a cutting-edge motion plugin for [Neovim](https://neovim.io/),
 with a small interface and lots of innovative ideas, that allow for making
 on-screen movements with yet unprecedented ease and efficiency. The aim is to
 maximize speed while minimizing mental effort and breaks in the flow, providing
-an intuitive, distractionless experience, that should feel as "native" as
-possible.
+a distractionless experience, that should feel as "native" as possible.
 
 ## The gist in 30 secs
 
@@ -23,8 +22,60 @@ despite the use of target labels, you can keep typing in a continuous manner.
 You can almost always reach the destination by at most - and very often less
 than - four keystrokes in total, that can be typed _in one go_.
 
-If this sounds cool enough, read on, or watch this [6-minute introductory video
-by DevOnDuty](https://youtu.be/ESyld9NCl1w) first.
+## A quick example
+
+Here is the absolute minimum you need to understand to start using the plugin.
+([Permalink](https://github.com/neovim/neovim/blob/8215c05945054755b2c3cadae198894372dbfe0f/src/nvim/window.c#L1078)
+to the file, if you want to try out the example.)
+
+The search is invoked with `s` in the forward direction, and `S` in the backward
+direction. Let's press `s`:
+
+![quick example 1](../media/quick_example_1.png?raw=true)
+
+You can see that the search area is greyed out, and you can also see some
+characters highlighted. Those are characters with only one occurrence, and you
+can jump to them by simply typing the given character.
+
+Let's target some word containing `me` (probably part of `frame`). After
+entering the letter `m`, the plugin processes all bigrams starting with it, and
+from here on, you have all the visual information you need to reach your
+specific target:
+
+![quick example 2](../media/quick_example_2.png?raw=true)
+
+Now type `e`. If you aimed for the first match (`frame_minheight`), you are good
+to go, just continue the work! The labels for the subsequent matches remain
+visible, but they are carefully chosen "safe" letters, guaranteed to not
+interfere with your subsequent editing command. If you aimed for some other
+match, then type the label, for example `u`, and move on to that.
+
+![quick example 3](../media/quick_example_3.png?raw=true)
+
+The third option is using a "shortcut" - skipping the second pattern character,
+in our case `e`, and just typing the label, if it is marked by an inverse
+highlight. This is only practical if the first pattern character is hard to
+type, otherwise you have no time to process the information. Shortcuts can
+_always_ be used as normal labels - skipping is optional.
+
+Now let's zoom out a bit, and target the struct member on the line `available =
+topframe->fr_height;` near the bottom, by first pressing `s`, and then `f`:
+
+![quick example 4](../media/quick_example_4.png?raw=true)
+
+The blue labels indicate the "secondary" group of matches, where we start to
+reuse the available labels (`s`, `f`, `n`... again). You can reach those by
+prefixing the label with `<space>`, that switches to the subsequent match group.
+For example, to jump to the "blue" `j` target, you should now press `r<space>j`.
+In very rare cases, if the large number of matches cannot be covered even by two
+label groups, you might need to press `<space>` multiple times, until you see
+the target labeled, first with blue, and then, after one more `<space>`, red.
+
+## Video tutorial
+
+The [6-minute introductory video by DevOnDuty](https://youtu.be/ESyld9NCl1w) is
+another good entry point, showing the basics with straightforward, easy to
+understand explanations.
 
 ## Sky chart
 
@@ -39,7 +90,7 @@ by DevOnDuty](https://youtu.be/ESyld9NCl1w) first.
 
 ### Quick links (FAQ)
 
-* [Hop-style config](#low-key-config)
+* [EasyMotion/Hop-style config](#easymotionhop-style-config)
 * [A primer on the highlighting strategy](#a-primer-on-the-highlighting-strategy)
 * [Guidelines for colorscheme
   integrations](#guidelines-for-colorscheme-integrations)
@@ -462,7 +513,7 @@ You can also set options individually from the command line:
 lua require'lightspeed'.opts.jump_to_unique_chars = false
 ```
 
-### Low-key config
+### EasyMotion/Hop-style config
 
 By default, Lightspeed is tuned for maximum speed, especially for close and
 midrange movements, but the cost of this is increased visual noise and a bit
