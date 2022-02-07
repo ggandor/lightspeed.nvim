@@ -22,64 +22,15 @@ despite the use of target labels, you can keep typing in a continuous manner.
 You can almost always reach the destination by at most - and very often less
 than - four keystrokes in total, that can be typed _in one go_.
 
-## A quick example
-
-Here is the absolute minimum you need to understand to start using the plugin.
-([Permalink](https://github.com/neovim/neovim/blob/8215c05945054755b2c3cadae198894372dbfe0f/src/nvim/window.c#L1078)
-to the file, if you want to try out the example.)
-
-The search is invoked with `s` in the forward direction, and `S` in the backward
-direction. Let's press `s`:
-
-![quick example 1](../media/quick_example_1.png?raw=true)
-
-You can see that the search area is greyed out, and you can also see some
-characters highlighted. Those are characters with only one occurrence, and you
-can jump to them by simply typing the given character.
-
-Let's target some word containing `me` (probably part of `frame`). After
-entering the letter `m`, the plugin processes all bigrams starting with it, and
-from here on, you have all the visual information you need to reach your
-specific target:
-
-![quick example 2](../media/quick_example_2.png?raw=true)
-
-Now type `e`. If you aimed for the first match (`frame_minheight`), you are good
-to go, just continue the work! The labels for the subsequent matches remain
-visible, but they are carefully chosen "safe" letters, guaranteed to not
-interfere with your subsequent editing command. If you aimed for some other
-match, then type the label, for example `u`, and move on to that.
-
-![quick example 3](../media/quick_example_3.png?raw=true)
-
-The third option is using a "shortcut" - skipping the second pattern character,
-in our case `e`, and just typing the label, if it is marked by an inverse
-highlight. This is only practical if the first pattern character is hard to
-type, otherwise you have no time to process the information. Shortcuts can
-_always_ be used as normal labels - skipping is optional.
-
-Now let's zoom out a bit, and target the struct member on the line `available =
-topframe->fr_height;` near the bottom, by first pressing `s`, and then `f`:
-
-![quick example 4](../media/quick_example_4.png?raw=true)
-
-The blue labels indicate the "secondary" group of matches, where we start to
-reuse the available labels (`s`, `f`, `n`... again). You can reach those by
-prefixing the label with `<space>`, that switches to the subsequent match group.
-For example, to jump to the "blue" `j` target, you should now press `r<space>j`.
-In very rare cases, if the large number of matches cannot be covered even by two
-label groups, you might need to press `<space>` multiple times, until you see
-the target labeled, first with blue, and then, after one more `<space>`, red.
-
 ## Video tutorial
 
-The [6-minute introductory video by DevOnDuty](https://youtu.be/ESyld9NCl1w) is
-another good entry point, showing the basics with straightforward, easy to
-understand explanations.
+If this sounds cool enough, read on, or watch the [6-minute introductory video
+by DevOnDuty](https://youtu.be/ESyld9NCl1w) - a very good entry point, showing
+the basic usage with straightforward, easy to understand explanations.
 
 ## Sky chart
 
-* [A lightning pitch](#-a-lightning-pitch)
+* [Evolution and design](#-evolution-and-design)
 * [An in-depth introduction of the key features](#-an-in-depth-introduction-of-the-key-features)
 * [Getting started](#-getting-started)
 * [Usage](#-usage)
@@ -91,28 +42,14 @@ understand explanations.
 ### Quick links (FAQ)
 
 * [EasyMotion/Hop-style config](#easymotionhop-style-config)
-* [A primer on the highlighting strategy](#a-primer-on-the-highlighting-strategy)
 * [Suggestions for colorscheme integrations](COLORSCHEMES.md)
 * [Enforce the default highlighting if a colorscheme messes things
   up](#enforce-the-default-highlighting)
 * [Multi-line f/t motions VS macros and :normal](#notes)
 * [Using the plugin together with
   vim-surround](https://github.com/ggandor/lightspeed.nvim/discussions/83)
-* [Bi-directional search?](#bi-directional-search)
 
-## ⚡ A lightning pitch
-
-The plugin's closest ancestor is Justin Keyes' beloved
-[vim-sneak](https://github.com/justinmk/vim-sneak), in that they share the same
-basic assumptions, namely:
-
-1. To reach all kinds of distant targets, ideally we need a few
-   _context-independent_ motions, that are flexible enough to do the job all
-   the time, and can be invoked/operated with _total automatism_, without
-   being aware of the type or the surroundings of the target.
-2. For that, the most adequate basis is unidirectional 1- and 2-character
-   search.
-3. The interface should be _optimized for the common case_.
+## 🧬 Evolution and design
 
 ### Composite motions do not compose
 
@@ -144,9 +81,19 @@ embraces a philosophy that is just the opposite of above: you barely need to
 think about motions anymore - "sneaking" gets you everywhere you need to be,
 with maximal precision. It is like having a _jetpack_ on you all the time.
 
+Lightspeed shares the same basic assumptions with its closest ancestor, namely:
+
+1. To reach all kinds of distant targets, ideally we need a few
+   _context-independent_ motions, that are flexible enough to do the job all
+   the time, and can be invoked/operated with _total automatism_, without
+   being aware of the type or the surroundings of the target.
+2. For that, the most adequate basis is unidirectional 1- and 2-character
+   search.
+3. The interface should be _optimized for the common case_.
+
 ### Always a step ahead of you
 
-Lightspeed takes the next logical step, and eliminates yet more cognitive
+Lightspeed takes the next logical step though, and eliminates yet more cognitive
 overhead, unnecessary keystrokes or interruptions, by blurring the boundary
 between one- and two-character search. The idea is to process the input
 incrementally - analyzing the available information after _each_ keystroke, to
@@ -174,31 +121,25 @@ introduction below.
 
 To make the suite complete, Lightspeed also implements [enhanced f/t-like
 motions working over multiple lines](#1-character-search-ft), with same-key
-repeat available, and a so-called [x-mode](#x-mode), providing
+repeat available, and a so-called [x-mode](#operator-pending-mode), providing
 exclusive/inclusive variations for 2-character search. Together the four
 bi-directional motions (`s`/`x`/`f`/`t`) make it possible to reach and operate
 on the whole window area with high efficiency in all situations when there is no
 obvious atomic alternative - like `w`, `{`, or `%` - available.
 
-### Other quality-of-life features
+### Other improvements and quality-of-life features
 
 * **smart shifting between Sneak/EasyMotion mode** - the plugin automatically
   jumps to the first match if the remaining matches can be covered by a limited
   set of "safe" target labels, but stays in place, and switches to an extended,
   more comfortable label set otherwise
-* **cross-window** motions
-* **linewise operations** are possible without limitations via the same uniform
+* **linewise operations** are possible without limitations via the same
   interface, by targeting (potentially off-screen) EOL characters
-* flawless **dot-repeat support** for operators (with
-  [repeat.vim](https://github.com/tpope/vim-repeat) installed)
-* skips folds
-* skips repeated (3+) sequences of the same character, for preserving labels
-  (opt-out)
-* greys out the search area, like EasyMotion does (opt-out)
-* the cursor stays visible all the time
-* uses extmarks, and does not mess with the Conceal group
+* **uniform repeat interface**, and flawless dot-repeat support for operators
+  (with [repeat.vim](https://github.com/tpope/vim-repeat) installed)
+* **cross-window** motions
 
-### Guiding principles
+### High-level guiding principles
 
 _"Some people . . . like tons of features, but experienced users really care
 about cohesion, conceptual integrity, and reliability. I think of [the latter]
@@ -339,70 +280,106 @@ That is,
   matches](#grouping-matches-by-distance) that can be labeled at once
 - choose a labeled target to jump to (in the current group)
 
-In Operator-pending mode the search is invoked with `z`/`Z`, acknowledging that
-"surround" plugins may benefit even more from being able to use `s`/`S` then.
+This might sound a bit complex, but the flow is in fact very simple and
+intuitive, once accustomed to it. Let's try an example!
+([Permalink](https://github.com/neovim/neovim/blob/8215c05945054755b2c3cadae198894372dbfe0f/src/nvim/window.c#L1078)
+to the file, if you want to follow along.)
 
-#### A primer on the highlighting strategy
+Let's press `s`:
 
-Let's say you would like to jump to an `A` `B` pair, and you have entered `A`,
-the first character of the search pattern.
+![quick example 1](../media/quick_example_1.png?raw=true)
 
-At that moment, all `A` `?` matches will be highlighted, in different manners
-according to the next step needed to be taken to reach them.
+You can see that the search area is greyed out, and you can also see some
+characters highlighted. Those are characters with only one occurrence, and you
+can jump to them by simply typing the given character.
 
-- The directly reachable ones among the `A` `?` matches will be highlighted as
-  they are (with white/black for dark/light themes, respectively). For those, it
-  is enough to finish the pattern, i.e., type `?`, to land on the target.
+Let's target some word containing `me` (probably part of `frame`). After
+entering the letter `m`, the plugin processes all bigrams starting with it, and
+from here on, you have all the visual information you need to reach your
+specific target:
 
-- Otherwise, in the usual case, a label will appear right next to the second
-  character. These labels can also be [shortcuts](#shortcuts), with a filled
-  background (the inverse of a regular label), that allow for reaching the
-  target right after the first input.
+![quick example 2](../media/quick_example_2.png?raw=true)
 
-- If a match is too close to the next one, the beacon should be "squeezed" into
-  the original 2-column box of the match; that is, on top of an `A` `?` match, a
-  `?` `label` pair will appear, where the first field shows the character masked
-  by the label (it is shifted left by a column). In the most extreme case, the
-  `?` field can even be overlapped by the label of another match, but only until
-  the second input has not been entered - after that, all overlapped matches are
-  guaranteed to become uncovered.
+Now type `e`. If you aimed for the first match (`frame_minheight`), you are good
+to go, just continue the work! (The labels for the subsequent matches of `me`
+remain visible until the next keypress, but they are carefully chosen "safe"
+letters, guaranteed to not interfere with your following editing command.) If
+you aimed for some other match, then type the label, for example `u`, and move
+on to that.
 
-#### X-mode
+![quick example 3](../media/quick_example_3.png?raw=true)
 
-`s`/`S` follow the semantics of `/` and `?` in terms of cursor placement and
-inclusive/exclusive operational behaviour, including forced motion types (`:h
+An alternative could have been using a "shortcut" - skipping the second pattern
+character (`e` in our case), and just typing the label, if it has an inverse
+highlight. This is only practical if the first pattern character is hard to
+type - it is not worth it to deliberately pause and wait for a potential
+shortcut, instead of going with the flow. Shortcuts can _always_ be used as
+normal labels - skipping is optional.
+
+To show the last important feature, let's zoom out a bit, and target the struct
+member on the line `available = topframe->fr_height;` near the bottom, using the
+pattern `fr`, by first pressing `s`, and then `f`:
+
+![quick example 4](../media/quick_example_4.png?raw=true)
+
+The blue labels indicate the "secondary" group of matches, where we start to
+reuse the available labels (`s`, `f`, `n`... again). You can reach those by
+prefixing the label with `<space>`, that switches to the subsequent match group.
+For example, to jump to the "blue" `j` target, you should now press `r<space>j`.
+In very rare cases, if the large number of matches cannot be covered even by two
+label groups, you might need to press `<space>` multiple times, until you see
+the target labeled, first with blue, and then, after one more `<space>`, red.
+
+#### When matches are too close to each other
+
+If a match is too close to the next one, the beacon should be "squeezed" into
+the original 2-column box of the match; that is, on top of an `A` `?` match, a
+`?` `label` pair will appear, where the first field shows the character masked
+by the label (it is shifted left by a column) - those are the brownish
+characters you can see on some of the screenshots. In the most extreme case, the
+`?` field can even be overlapped by the label of another match, but only until
+the second input has not been entered - after that, all overlapped matches are
+guaranteed to become uncovered.
+
+#### Operator-pending mode
+
+In Operator-pending mode, there are two different (pairs of) motions available,
+providing the necessary additional comfort and precision, since in that case we
+are targeting exact positions, and can only aim once, without the means of easy
+correction.
+
+`z`/`Z` are the equivalent of `s`/`S`, and they follow the semantics of `/` and
+`?` in terms of cursor placement and inclusive/exclusive operational behaviour,
+including forced motion types (`:h
 forced-motion`): 
 
 ```
-ab···|                         |···ab
-|b····  ← S    jump      s  →  ····|b
-██████  ← S    select    s  →  █████b
-█████·  ← Z    operate   z  →  ████ab
-██████  ← vZ   operate   vz →  █████b
+ab···|                    |···ab
+█████·  ←  Zab    zab  →  ████ab
+██████  ← vZab    vzab →  █████b
 ```
 
 The mnemonic for X-mode could be **extend/exclude** (corresponding to `x`/`X`).
 It provides missing variants for the two directions:
 
 ```
-ab···|                         |···ab
-ab|···  ← ?    jump      ?  →  ····a|
-ab████  ← ?    select    ?  →  ██████
-ab███·  ← X    operate   x  →  ██████
-ab████  ← vX   operate   vx →  █████b
+ab···|                    |···ab
+ab███·  ←  Xab    xab  →  ██████
+ab████  ← vXab    vxab →  █████b
 ```
 
-As you can see from the figure, `x` goes to the end of the match, while `X`
-stops just before - in an absolute sense, after - the end of the match (the
-equivalent of `T` for two-character search). In Operator-pending mode, the edge
-of the operated area always gets an offset of +2. This means that in the forward
-direction the motion becomes _inclusive_ (the end position will be included in
-the operation).
+As you can see from the figure, `x` goes to the end of the match, including it
+in the operation, while `X` stops just before - in an absolute sense, after -
+the end of the match (the equivalent of `T` for two-character search). In
+simpler terms: in x-mode, the edge of the operated area always gets an offset of
++2.
 
-In Operator-pending mode `x`/`X` are readily available mappings for X-mode. This
-seems a sensible default, considering that those keys are free in O-P mode, and
-the handy visual mnemonic that `x` is physically to the right of `z` on a QWERTY
-keyboard (think about "pulling" the cursor forward).
+The assignment of `z` and `x` seems a sensible default, considering that those
+keys are free in O-P mode, and the handy visual mnemonic that `x` is physically
+to the right of `z` on a QWERTY keyboard (think about "pulling" the cursor
+forward). We are also acknowledging that "surround" plugins in Operator-pending
+mode may benefit more from being able to use the `s`/`S` keypair than
+general-purpose motion plugins like Lightspeed.
 
 ### 1-character search (f/t)
 
@@ -524,9 +501,9 @@ jump_to_unique_chars = false,
 safe_labels = {}
 ```
 
-These disable the two most obtrusive automagic features, while you can still
-enjoy Lightspeed's unique advantage of making the labels visible right as you
-type.
+These disable the two most obtrusive automagic features (jumping to unique
+characters, and to the first 2-character match), while you can still enjoy
+Lightspeed's unique advantage of making the labels visible right as you type.
 
 ### Keymaps
 
@@ -548,7 +525,7 @@ lightspeed-custom-mappings`.
 
 Basic motions should have the absolute least friction among all commands, since
 they are the most frequent. The native `s` and `S` both have comfortable
-equivalents - `cl` and `cc`, respectively.
+equivalents - `cl` (or `r`) and `cc`, respectively.
 
 #### Setting keys to repeat the last lightspeed motion (s/x/f/t)
 
@@ -559,7 +536,7 @@ lightspeed-custom-mappings`.
 
 Likewise, see `:h lightspeed-custom-mappings` for an example snippet.
 
-#### Disabling features
+#### Disabling the default keymaps
 
 See `:h lightspeed-disable-default-mappings`.
 
@@ -674,7 +651,12 @@ you have to consciously think about or something that slows you down at all.
 Consequently, it's utterly wasteful _not_ to use this information and encode it
 in the trigger key right away, to ease our lives, by - on average - halving the
 search area and thus doubling the number of available target labels, while
-creating less visual noise on screen.
+creating less visual noise on screen. 
+
+A further disadvantage is that the order of the labels would become
+non-deterministic. Repeating, as well as auto-jumping to the first target, would
+be much more problematic too. In general, the whole concept is very hard to fit
+into (Neo)Vim's editing model.
 
 To get an experience somewhat similar to bi-directional search, you can switch
 the search direction on the fly by pressing `<tab>` after invoking `s`/`x`
@@ -692,10 +674,11 @@ check/use [Discussions](https://github.com/ggandor/lightspeed.nvim/discussions)
 for announcements, simple Q&A, and open-ended brainstorming.
 
 Regarding feature requests and enhancements, consider the [guiding
-principles](#guiding-principles) first. If you have a different vision, feel
-free to fork the plugin and improve upon it in ways you think are best - I am
-glad to help  -, but I'd like to keep this version streamlined, and save it from
-feature creep. Of course, that doesn't mean that I am not open for discussions.
+principles](#high-level-guiding-principles) first. If you have a different
+vision, feel free to fork the plugin and improve upon it in ways you think are
+best - I am glad to help  -, but I'd like to keep this version streamlined, and
+save it from feature creep. Of course, that doesn't mean that I am not open for
+discussions.
 
 Lightspeed is written in [Fennel](https://fennel-lang.org/), and compiled to Lua
 ahead of time. I am aware that using Fennel might limit the number of available
