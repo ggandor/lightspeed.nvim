@@ -317,8 +317,8 @@ shortcut, instead of going with the flow. Shortcuts can _always_ be used as
 normal labels - skipping is optional.
 
 To show the last important feature, let's zoom out a bit, and target the struct
-member on the line `available = topframe->fr_height;` near the bottom, using the
-pattern `fr`, by first pressing `s`, and then `f`:
+member on the line `available = oldwin->w_frame->fr_height;` near the bottom,
+using the pattern `fr`, by first pressing `s`, and then `f`:
 
 ![quick example 4](../media/quick_example_4.png?raw=true)
 
@@ -348,7 +348,7 @@ providing the necessary additional comfort and precision, since in that case we
 are targeting exact positions, and can only aim once, without the means of easy
 correction.
 
-`z`/`Z` are the equivalent of `s`/`S`, and they follow the semantics of `/` and
+`z`/`Z` are the equivalents of `s`/`S`, and they follow the semantics of `/` and
 `?` in terms of cursor placement and inclusive/exclusive operational behaviour,
 including forced motion types (`:h
 forced-motion`): 
