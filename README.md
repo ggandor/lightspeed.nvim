@@ -93,7 +93,7 @@ Lightspeed shares the same basic assumptions with its closest ancestor, namely:
 
 ### Always a step ahead of you
 
-Lightspeed takes the next logical step though, and eliminates yet more cognitive
+Lightspeed takes the next logical step, and eliminates yet more cognitive
 overhead, unnecessary keystrokes or interruptions, by blurring the boundary
 between one- and two-character search. The idea is to process the input
 incrementally - analyzing the available information after _each_ keystroke, to
@@ -119,9 +119,9 @@ introduction below.
 
 ### Universal motions
 
-To make the suite complete, Lightspeed also implements [enhanced f/t-like
-motions working over multiple lines](#1-character-search-ft), with same-key
-repeat available, and a so-called [x-mode](#operator-pending-mode), providing
+To make the suite complete, Lightspeed implements [enhanced f/t-like motions
+working over multiple lines](#1-character-search-ft), with same-key repeat
+available, and a so-called [x-mode](#operator-pending-mode), providing
 exclusive/inclusive variations for 2-character search. Together the four
 bi-directional motions (`s`/`x`/`f`/`t`) make it possible to reach and operate
 on the whole window area with high efficiency in all situations when there is no
@@ -258,34 +258,12 @@ presents information before it is actually needed.
 
 ### 2-character search (s/x)
 
-Command sequence for 2-character search in Normal and Visual mode, with the
-default settings:
-
-`s|S char1 (char2|shortcut)? (<space>|<tab>)* label?`
-
-That is, 
-- invoke in the forward (`s`) or backward (`S`) direction
-- enter 1st character of the search pattern (might [short-circuit after
-  this](#jump-on-partial-input), if the character is unique in the search
-  direction) 
-- _the "beacons" are lit at this point; all potential matches are labeled (char1 + ?)_
-- enter 2nd character of the search pattern (might short-circuit after this, if
-  there is only one match), or the label character, if the target is
-  [shortcutable](#shortcuts).
-- _certain beacons are extinguished; only char1 + char2 matches remain_
-- _the cursor automatically jumps to the first match if there are enough "safe"
-  labels; pressing any other key than a group-switch or a target label exits the
-  plugin now_
-- optionally [cycle through the groups of
-  matches](#grouping-matches-by-distance) that can be labeled at once
-- choose a labeled target to jump to (in the current group)
-
-This might sound a bit complex, but the flow is in fact very simple and
-intuitive, once accustomed to it. Let's try an example!
+Without further ado, let's cut to the chase, and learn by doing.
 ([Permalink](https://github.com/neovim/neovim/blob/8215c05945054755b2c3cadae198894372dbfe0f/src/nvim/window.c#L1078)
 to the file, if you want to follow along.)
 
-Let's press `s`:
+The search is invoked with `s` in the forward direction, and `S` in the backward
+direction. Let's press `s`:
 
 ![quick example 1](../media/quick_example_1.png?raw=true)
 
@@ -309,10 +287,10 @@ on to that.
 
 ![quick example 3](../media/quick_example_3.png?raw=true)
 
-An alternative could have been using a "shortcut" - skipping the second pattern
-character (`e` in our case), and just typing the label, if it has an inverse
-highlight. This is only practical if the first pattern character is hard to
-type - it is not worth it to deliberately pause and wait for a potential
+An alternative could have been using a [shortcut](#shortcuts) - skipping the
+second pattern character (`e` in our case), and just typing the label, if it has
+an inverse highlight. This is only practical if the first pattern character is
+hard to type - it is not worth it to deliberately pause and wait for a potential
 shortcut, instead of going with the flow. Shortcuts can _always_ be used as
 normal labels - skipping is optional.
 
@@ -330,14 +308,37 @@ In very rare cases, if the large number of matches cannot be covered even by two
 label groups, you might need to press `<space>` multiple times, until you see
 the target labeled, first with blue, and then, after one more `<space>`, red.
 
+To summarize, here is the general flow again (in Normal and Visual mode, with
+the default settings):
+
+`s|S char1 (char2|shortcut)? (<space>|<tab>)* label?`
+
+That is,
+- invoke in the forward (`s`) or backward (`S`) direction
+- enter 1st character of the search pattern (might [short-circuit after
+  this](#jump-on-partial-input), if the character is unique in the search
+  direction)
+    - _the "beacons" are lit at this point; all potential matches are labeled
+      (char1 + ?)_
+- enter 2nd character of the search pattern (might short-circuit after this, if
+  there is only one match), or finish the motion by selecting a
+  [shortcut](#shortcuts)
+    - _certain beacons are extinguished; only char1 + char2 matches remain_
+    - _the cursor automatically jumps to the first match if there are enough
+      "safe" labels; pressing any other key than a group-switch or a target
+      label exits the plugin now_
+- optionally [cycle through the groups of
+  matches](#grouping-matches-by-distance) that can be labeled at once
+- choose a labeled target to jump to (in the current group)
+
 #### When matches are too close to each other
 
 If a match is too close to the next one, the beacon should be "squeezed" into
-the original 2-column box of the match; that is, on top of an `A` `?` match, a
-`?` `label` pair will appear, where the first field shows the character masked
+the original 2-column box of the match; that is, on top of an `A` `B` match, a
+`B` `label` pair will appear, where the first field shows the character masked
 by the label (it is shifted left by a column) - those are the brownish
 characters you can see on some of the screenshots. In the most extreme case, the
-`?` field can even be overlapped by the label of another match, but only until
+`B` field can even be overlapped by the label of another match, but only until
 the second input has not been entered - after that, all overlapped matches are
 guaranteed to become uncovered.
 
@@ -371,8 +372,8 @@ ab████  ← vXab    vxab →  █████b
 As you can see from the figure, `x` goes to the end of the match, including it
 in the operation, while `X` stops just before - in an absolute sense, after -
 the end of the match (the equivalent of `T` for two-character search). In
-simpler terms: in x-mode, the edge of the operated area always gets an offset of
-+2.
+simpler terms: in X-mode, the relevant edge of the operated area gets an offset
+of +2.
 
 The assignment of `z` and `x` seems a sensible default, considering that those
 keys are free in O-P mode, and the handy visual mnemonic that `x` is physically
