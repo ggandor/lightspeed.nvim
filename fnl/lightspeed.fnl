@@ -1167,41 +1167,40 @@ sub-table containing label-target k-v pairs for these targets."
         ch1 (if to-eol? "\r" ch1)  ; to trigger substitute_chars
         [ch1 ch2] (map #(or (?. opts.substitute_chars $) $) [ch1 ch2])
         squeezed? (or opts.force_beacons_into_match_width squeezed?)
-        masked-char$ [ch2 hl.group.masked-ch]
-        label$ [label hl.group.label]
-        shortcut$ [label hl.group.shortcut]
-        distant-label$ [label hl.group.label-distant]
-        overlapped-label$ [label hl.group.label-overlapped]
-        overlapped-shortcut$ [label hl.group.shortcut-overlapped]
-        overlapped-distant-label$ [label hl.group.label-distant-overlapped]]
+        onscreen? (or vim.wo.wrap (and (<= col right-bound) (>= col left-bound)))
+        left-off? (< col left-bound)
+        right-off? (> col right-bound)
+        hg hl.group
+        masked-char$ [ch2 hg.masked-ch]
+        label$ [label hg.label]
+        shortcut$ [label hg.shortcut]
+        distant-label$ [label hg.label-distant]
+        overlapped-label$ [label hg.label-overlapped]
+        overlapped-shortcut$ [label hg.shortcut-overlapped]
+        overlapped-distant-label$ [label hg.label-distant-overlapped]]
     ; The `beacon` field looks like: [col-offset [[char hl-group]]]
     (set target.beacon
          (if
-           (= repeat :instant-unsafe) [0 [[(.. ch1 ch2) hl.group.one-char-match]]]
+           (= repeat :instant-unsafe) [0 [[(.. ch1 ch2) hg.one-char-match]]]
            (match label-state
-             ; No label-state = unlabeled match. (Note: there should be no
-             ; unlabeled matches when repeating, as we have the full input
-             ; sequence available then, and we will have jumped to the first
-             ; match already, if it was on the "winning" sublist.)
-             nil (when-not (or repeat to-eol?)
-                   (if overlapped?
-                       [1 [[ch2 hl.group.unlabeled-match]]]
-                       [0 [[(.. ch1 ch2) hl.group.unlabeled-match]]]))
+             ; Note: there should be no unlabeled matches when repeating, as we
+             ; have the full input sequence available then, and we will have
+             ; jumped to the first match already, if it was on the "winning"
+             ; sublist.
+             nil  ; match w/o label-state = unlabeled
+             (when-not (or repeat to-eol?)
+               (if overlapped?
+                   [1 [[ch2 hg.unlabeled-match]]]
+                   [0 [[(.. ch1 ch2) hg.unlabeled-match]]]))
 
              ; Note: `repeat` is also mutually exclusive with both
              ; `overlapped?` and `shortcut?`.
              :active-primary
-             (if to-eol? (if (or vim.wo.wrap 
-                                 (and (<= col right-bound) (>= col left-bound)))
-                             [0 [shortcut$]]
-
-                             (> col right-bound)
-                             [(dec (- right-bound col))
-                              [shortcut$ [">" hl.group.one-char-match]]]
-
-                             (< col left-bound)
-                             [0 [["<" hl.group.one-char-match] shortcut$]
-                              :left-off])
+             (if to-eol? (if onscreen? [0 [shortcut$]]
+                             left-off? [0 [["<" hg.one-char-match] shortcut$]
+                                        :left-off]
+                             right-off? [(dec (- right-bound col))
+                                         [shortcut$ [">" hg.one-char-match]]])
                  repeat [(if squeezed? 1 2) [shortcut$]]
                  shortcut? (if overlapped?
                                [1 [overlapped-shortcut$]]
@@ -1212,19 +1211,13 @@ sub-table containing label-target k-v pairs for these targets."
                  squeezed? [0 [masked-char$ label$]]
                  [2 [label$]])
 
+             ; TODO: New hl group (~ no-underline distant label).
              :active-secondary
-             (if to-eol? (if (or vim.wo.wrap 
-                                 (and (<= col right-bound) (>= col left-bound)))
-                             [0 [distant-label$]]
-                           
-                             ; TODO: New hl group (~ no-underline distant label).
-                             (> col right-bound)
-                             [(dec (- right-bound col))
-                              [distant-label$ [">" hl.group.unlabeled-match]]]
-
-                             (< col left-bound)
-                             [0 [["<" hl.group.unlabeled-match] distant-label$]
-                              :left-off])
+             (if to-eol? (if onscreen? [0 [distant-label$]]
+                             left-off? [0 [["<" hg.unlabeled-match] distant-label$]
+                                        :left-off]
+                             right-off? [(dec (- right-bound col))
+                                         [distant-label$ [">" hg.unlabeled-match]]])
                  repeat [(if squeezed? 1 2) [distant-label$]]
                  overlapped? [1 [overlapped-distant-label$]]
                  squeezed? [0 [masked-char$ distant-label$]]

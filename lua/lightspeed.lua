@@ -1542,35 +1542,39 @@ local function set_beacon(_342_, _repeat)
   local ch11 = _let_347_[1]
   local ch20 = _let_347_[2]
   local squeezed_3f0 = (opts.force_beacons_into_match_width or squeezed_3f)
-  local masked_char_24 = {ch20, hl.group["masked-ch"]}
-  local label_24 = {label, hl.group.label}
-  local shortcut_24 = {label, hl.group.shortcut}
-  local distant_label_24 = {label, hl.group["label-distant"]}
-  local overlapped_label_24 = {label, hl.group["label-overlapped"]}
-  local overlapped_shortcut_24 = {label, hl.group["shortcut-overlapped"]}
-  local overlapped_distant_label_24 = {label, hl.group["label-distant-overlapped"]}
+  local onscreen_3f = (vim.wo.wrap or ((col <= right_bound) and (col >= left_bound)))
+  local left_off_3f = (col < left_bound)
+  local right_off_3f = (col > right_bound)
+  local hg = hl.group
+  local masked_char_24 = {ch20, hg["masked-ch"]}
+  local label_24 = {label, hg.label}
+  local shortcut_24 = {label, hg.shortcut}
+  local distant_label_24 = {label, hg["label-distant"]}
+  local overlapped_label_24 = {label, hg["label-overlapped"]}
+  local overlapped_shortcut_24 = {label, hg["shortcut-overlapped"]}
+  local overlapped_distant_label_24 = {label, hg["label-distant-overlapped"]}
   if (_repeat == "instant-unsafe") then
-    target.beacon = {0, {{(ch11 .. ch20), hl.group["one-char-match"]}}}
+    target.beacon = {0, {{(ch11 .. ch20), hg["one-char-match"]}}}
   else
     local _352_ = label_state
     if (_352_ == nil) then
       if not (_repeat or to_eol_3f) then
         if overlapped_3f then
-          target.beacon = {1, {{ch20, hl.group["unlabeled-match"]}}}
+          target.beacon = {1, {{ch20, hg["unlabeled-match"]}}}
         else
-          target.beacon = {0, {{(ch11 .. ch20), hl.group["unlabeled-match"]}}}
+          target.beacon = {0, {{(ch11 .. ch20), hg["unlabeled-match"]}}}
         end
       else
       target.beacon = nil
       end
     elseif (_352_ == "active-primary") then
       if to_eol_3f then
-        if (vim.wo.wrap or ((col <= right_bound) and (col >= left_bound))) then
+        if onscreen_3f then
           target.beacon = {0, {shortcut_24}}
-        elseif (col > right_bound) then
-          target.beacon = {dec((right_bound - col)), {shortcut_24, {">", hl.group["one-char-match"]}}}
-        elseif (col < left_bound) then
-          target.beacon = {0, {{"<", hl.group["one-char-match"]}, shortcut_24}, "left-off"}
+        elseif left_off_3f then
+          target.beacon = {0, {{"<", hg["one-char-match"]}, shortcut_24}, "left-off"}
+        elseif right_off_3f then
+          target.beacon = {dec((right_bound - col)), {shortcut_24, {">", hg["one-char-match"]}}}
         else
         target.beacon = nil
         end
@@ -1601,12 +1605,12 @@ local function set_beacon(_342_, _repeat)
       end
     elseif (_352_ == "active-secondary") then
       if to_eol_3f then
-        if (vim.wo.wrap or ((col <= right_bound) and (col >= left_bound))) then
+        if onscreen_3f then
           target.beacon = {0, {distant_label_24}}
-        elseif (col > right_bound) then
-          target.beacon = {dec((right_bound - col)), {distant_label_24, {">", hl.group["unlabeled-match"]}}}
-        elseif (col < left_bound) then
-          target.beacon = {0, {{"<", hl.group["unlabeled-match"]}, distant_label_24}, "left-off"}
+        elseif left_off_3f then
+          target.beacon = {0, {{"<", hg["unlabeled-match"]}, distant_label_24}, "left-off"}
+        elseif right_off_3f then
+          target.beacon = {dec((right_bound - col)), {distant_label_24, {">", hg["unlabeled-match"]}}}
         else
         target.beacon = nil
         end
