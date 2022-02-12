@@ -6,6 +6,8 @@ on-screen movements with yet unprecedented ease and efficiency. The aim is to
 maximize speed while minimizing mental effort and breaks in the flow, providing
 a distractionless experience, that should feel as "native" as possible.
 
+![welcome](../media/welcome.gif?raw=true)
+
 ## The gist in 30 secs
 
 With Lightspeed you can jump to any positions in the visible window area by
@@ -146,7 +148,7 @@ about cohesion, conceptual integrity, and reliability. I think of [the latter]
 as the @tpope school."_
 ([justinmk](https://github.com/justinmk/vim-sneak/issues/62#issuecomment-34044380))
 
-* [80/20 (leverage)](https://youtu.be/Bt-vmPC_-Ho?t=1249): focus on features
+* [80/20](https://youtu.be/Bt-vmPC_-Ho?t=1249): focus on features
   that are applicable in all contexts; micro-optimisations for the most frequent
   tasks accumulate more savings than vanity features that turn out to be rarely
   needed in practice
@@ -271,19 +273,18 @@ You can see that the search area is greyed out, and you can also see some
 characters highlighted. Those are characters with only one occurrence, and you
 can jump to them by simply typing the given character.
 
-Let's target some word containing `me` (probably part of `frame`). After
-entering the letter `m`, the plugin processes all bigrams starting with it, and
-from here on, you have all the visual information you need to reach your
-specific target:
+Let's target some word containing `me`. After entering the letter `m`, the
+plugin processes all bigrams starting with it, and from here on, you have all
+the visual information you need to reach your specific target:
 
 ![quick example 2](../media/quick_example_2.png?raw=true)
 
-Now type `e`. If you aimed for the first match (`frame_minheight`), you are good
-to go, just continue the work! (The labels for the subsequent matches of `me`
-remain visible until the next keypress, but they are carefully chosen "safe"
-letters, guaranteed to not interfere with your following editing command.) If
-you aimed for some other match, then type the label, for example `u`, and move
-on to that.
+Now type `e`. If you aimed for the first match (in `frame_minheight`), you are
+good to go, just continue the work! (The labels for the subsequent matches of
+`me` remain visible until the next keypress, but they are carefully chosen
+"safe" letters, guaranteed to not interfere with your following editing
+command.) If you aimed for some other match, then type the label, for example
+`u`, and move on to that.
 
 ![quick example 3](../media/quick_example_3.png?raw=true)
 
@@ -301,12 +302,13 @@ using the pattern `fr`, by first pressing `s`, and then `f`:
 ![quick example 4](../media/quick_example_4.png?raw=true)
 
 The blue labels indicate the "secondary" group of matches, where we start to
-reuse the available labels (`s`, `f`, `n`... again). You can reach those by
-prefixing the label with `<space>`, that switches to the subsequent match group.
-For example, to jump to the "blue" `j` target, you should now press `r<space>j`.
-In very rare cases, if the large number of matches cannot be covered even by two
-label groups, you might need to press `<space>` multiple times, until you see
-the target labeled, first with blue, and then, after one more `<space>`, red.
+reuse the available labels for a given pair (`s`, `f`, `n`... again). You can
+reach those by prefixing the label with `<space>`, that switches to the
+subsequent match group. For example, to jump to the "blue" `j` target, you
+should now press `r<space>j`. In very rare cases, if the large number of matches
+cannot be covered even by two label groups, you might need to press `<space>`
+multiple times, until you see the target labeled, first with blue, and then,
+after one more `<space>`, red.
 
 To summarize, here is the general flow again (in Normal and Visual mode, with
 the default settings):
@@ -429,8 +431,8 @@ use.
   Subsequent keystrokes of `<backspace>` move on to the next match (that is, it
   invokes "instant-repeat" mode), while `<tab>` reverts (just like `S`/`F`/`T`).
 
-- There are dedicated repeat `<Plug>` keys available for the two search modes.
-  `;` and `,` are mapped to f/t repeat by default (following the native
+- There are also dedicated `<Plug>` keys available for repeating the two search
+  modes. `;` and `,` are mapped to f/t repeat by default (following the native
   behaviour), but it might be a good idea to remap them to repeat s/x. If you
   would like to set them to repeat the last Lightspeed motion (whether it was
   s/x or f/t), see `:h lightspeed-custom-mappings`. Just like above, subsequent
