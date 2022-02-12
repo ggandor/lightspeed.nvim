@@ -46,7 +46,7 @@ the basic usage with straightforward, easy to understand explanations.
 * [EasyMotion/Hop-style config](#easymotionhop-style-config)
 * [Suggestions for colorscheme integrations](COLORSCHEMES.md)
 * [Enforce the default highlighting if a colorscheme messes things
-  up](#enforce-the-default-highlighting)
+  up](#highlight-groups)
 * [Multi-line f/t motions VS macros and :normal](#notes)
 * [Using the plugin together with
   vim-surround](https://github.com/ggandor/lightspeed.nvim/discussions/83)
