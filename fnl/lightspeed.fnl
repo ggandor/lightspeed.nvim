@@ -1336,7 +1336,7 @@ sub-table containing label-target k-v pairs for these targets."
         op-mode? (mode:match :o)
         change-op? (and op-mode? (= vim.v.operator :c))
         delete-op? (and op-mode? (= vim.v.operator :d))
-        dot-repeatable-op? (and op-mode? (not= vim.v.operator :y))
+        dot-repeatable-op? (and op-mode? (not omni?) (not= vim.v.operator :y))
         ; TODO: DRY
         instant-repeat? (= (type repeat-invoc) :table)
         instant-state (when instant-repeat? repeat-invoc)

@@ -1779,7 +1779,7 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
   local op_mode_3f = mode:match("o")
   local change_op_3f = (op_mode_3f and (vim.v.operator == "c"))
   local delete_op_3f = (op_mode_3f and (vim.v.operator == "d"))
-  local dot_repeatable_op_3f = (op_mode_3f and (vim.v.operator ~= "y"))
+  local dot_repeatable_op_3f = (op_mode_3f and not omni_3f and (vim.v.operator ~= "y"))
   local instant_repeat_3f = (type(repeat_invoc) == "table")
   local instant_state
   if instant_repeat_3f then
