@@ -352,7 +352,7 @@ character instead."
       (each [_ win (ipairs (or ?target-windows
                                [(. (vim.fn.getwininfo (vim.fn.win_getid)) 1)]))]
         (vim.highlight.range win.bufnr hl.ns hl.group.greywash
-                             [(dec win.topline) 0] [win.botline -1] :v false
+                             [(dec win.topline) 0] [(dec win.botline) -1] :v false
                              hl.priority.greywash))
       (let [[curline curcol] (map dec (get-cursor-pos))
             [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]

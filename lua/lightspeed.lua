@@ -323,7 +323,7 @@ end
 local function grey_out_search_area(reverse_3f, _3ftarget_windows, omni_3f)
   if (_3ftarget_windows or omni_3f) then
     for _, win in ipairs((_3ftarget_windows or {vim.fn.getwininfo(vim.fn.win_getid())[1]})) do
-      vim.highlight.range(win.bufnr, hl.ns, hl.group.greywash, {dec(win.topline), 0}, {win.botline, -1}, "v", false, hl.priority.greywash)
+      vim.highlight.range(win.bufnr, hl.ns, hl.group.greywash, {dec(win.topline), 0}, {dec(win.botline), -1}, "v", false, hl.priority.greywash)
     end
     return nil
   else
@@ -2160,15 +2160,15 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
     end
     _476_ = (_478_() or get_targets(in1, reverse_3f0, _3ftarget_windows, omni_3f) or _480_())
     local function _482_()
-      local only = (_476_)[1]
       local _0 = (((_476_)[1]).pair)[1]
       local ch2 = (((_476_)[1]).pair)[2]
+      local only = (_476_)[1]
       return opts.jump_to_unique_chars
     end
     if (((type(_476_) == "table") and ((type((_476_)[1]) == "table") and ((type(((_476_)[1]).pair) == "table") and true and (nil ~= (((_476_)[1]).pair)[2]))) and ((_476_)[2] == nil)) and _482_()) then
-      local only = (_476_)[1]
       local _0 = (((_476_)[1]).pair)[1]
       local ch2 = (((_476_)[1]).pair)[2]
+      local only = (_476_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           if dot_repeatable_op_3f then
@@ -2258,9 +2258,9 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
           _497_ = t_498_
         end
         if ((type(_497_) == "table") and ((type((_497_).pair) == "table") and true and (nil ~= ((_497_).pair)[2]))) then
-          local shortcut = _497_
           local _0 = ((_497_).pair)[1]
           local ch2 = ((_497_).pair)[2]
+          local shortcut = _497_
           do
             if dot_repeatable_op_3f then
               set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f0, x_mode_3f0, "dot")))
