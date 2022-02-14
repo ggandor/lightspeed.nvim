@@ -1,4 +1,4 @@
-*lightspeed.txt*      For Neovim version 0.5.0     Last change: 2022 February 05
+*lightspeed.txt*      For Neovim version 0.5.0     Last change: 2022 February 14
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -351,7 +351,10 @@ motion/operation semantics):
 `<Plug>Lightspeed_t`  1-character  forward   t-like (-1, inclusive op)
 `<Plug>Lightspeed_T`  1-character  backward  T-like (+1, exclusive op)
 
-Cross-window versions of `s`/`S` (Normal mode only)
+Bidirectional `s`:
+`<Plug>Lightspeed_omni_s`
+
+Cross-window versions of `s`/`S`:
 `<Plug>Lightspeed_gs`  down/right (successors in the window tree)
 `<Plug>Lightspeed_gS`  up/left (predecessors in the window tree)
 

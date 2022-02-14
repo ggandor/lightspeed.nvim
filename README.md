@@ -139,6 +139,7 @@ obvious atomic alternative - like `w`, `{`, or `%` - available.
   interface, by targeting (potentially off-screen) EOL characters
 * **uniform repeat interface**, and flawless dot-repeat support for operators
   (with [repeat.vim](https://github.com/tpope/vim-repeat) installed)
+* **bidirectional** search (optional)
 * **cross-window** motions
 
 ### High-level guiding principles
@@ -508,6 +509,9 @@ These disable the two most obtrusive automagic features (jumping to unique
 characters, and to the first 2-character match), while you can still enjoy
 Lightspeed's unique advantage of making the labels visible right as you type.
 
+You might also want to use bidirectional search instead of the default `s`/`S` -
+for that, see `:h lightspeed-custom-mappings`.
+
 ### Keymaps
 
 Lightspeed aims to be part of an "extended native" layer, similar to such
@@ -646,24 +650,6 @@ effort. That is the mantra of Lightspeed. You should think of `f` and `t` as
 _shortcuts_ for very specific situations, when you can count the number of
 occurrences, and thus reach for them in a totally automatic way, and _not_ as
 equals of the `s`/`x` motions.
-
-### Bi-directional search?
-
-When you aim for a target, you know the direction to go, that's not something
-you have to consciously think about or something that slows you down at all.
-Consequently, it's utterly wasteful _not_ to use this information and encode it
-in the trigger key right away, to ease our lives, by - on average - halving the
-search area and thus doubling the number of available target labels, while
-creating less visual noise on screen. 
-
-A further disadvantage is that the order of the labels would become
-non-deterministic. Repeating, as well as auto-jumping to the first target, would
-be much more problematic too. In general, the whole concept is very hard to fit
-into (Neo)Vim's editing model.
-
-To get an experience somewhat similar to bi-directional search, you can switch
-the search direction on the fly by pressing `<tab>` after invoking `s`/`x`
-motions.
 
 ## 🌜 Contributing
 
