@@ -1,12 +1,13 @@
 ; Imports & aliases ///1
 
 (local api vim.api)
-(local empty? vim.tbl_isempty)
 (local contains? vim.tbl_contains)
+(local empty? vim.tbl_isempty)
 (local map vim.tbl_map)
-(local min math.min)
-(local max math.max)
+(local abs math.abs)
 (local ceil math.ceil)
+(local max math.max)
+(local min math.min)
 
 
 ; Fennel utils ///1
@@ -346,9 +347,10 @@ character instead."
                  "link " from-group " " to-group))))
 
 
-(fn grey-out-search-area [reverse? ?target-windows]
-  (if ?target-windows
-      (each [_ win (ipairs ?target-windows)]
+(fn grey-out-search-area [reverse? ?target-windows omni?]
+  (if (or ?target-windows omni?)
+      (each [_ win (ipairs (or ?target-windows
+                               [(. (vim.fn.getwininfo (vim.fn.win_getid)) 1)]))]
         (vim.highlight.range win.bufnr hl.ns hl.group.greywash
                              [(dec win.topline) 0] [win.botline -1] :v false
                              hl.priority.greywash))
@@ -919,7 +921,7 @@ interrupted change-operation."
 
 
 ; TODO: multibyte issues?
-(fn highlight-unique-chars [reverse? ?target-windows]
+(fn highlight-unique-chars [reverse? ?target-windows omni?]
   (let [unique-chars {}
         curr-w (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
         [curline curcol] (get-cursor-pos)]
@@ -927,7 +929,7 @@ interrupted change-operation."
       (when ?target-windows
         (api.nvim_set_current_win w.winid))
       (let [[left-bound right-bound] (get-horizontal-bounds {:match-width 2})
-            lines (get-onscreen-lines {:get-full-window? ?target-windows
+            lines (get-onscreen-lines {:get-full-window? (or ?target-windows omni?)
                                        : reverse? :skip-folds? true})]
         (each [lnum line (pairs lines)]
           (let [startcol (if (and (= lnum curline) (not reverse?)
@@ -973,6 +975,7 @@ ones might be set by subsequent functions):
 "
   (local targets (or ?targets []))
   (local to-eol? (= input "\r"))
+  (local winid (vim.fn.win_getid))
   (var prev-match {})
   (var added-prev-match? nil)
   (let [pattern (if to-eol? "\\n"  ; we should send in a literal \n, for searchpos
@@ -1033,8 +1036,43 @@ ones might be set by subsequent functions):
     (when (next targets) targets)))
 
 
-(fn get-targets [input reverse? ?target-windows]
-  (if ?target-windows
+(fn get-targets [input reverse? ?target-windows omni?]
+  (if omni?
+      (let [fwd-targets (get-targets* input false)
+            targets (get-targets* input true nil fwd-targets)
+            ; TODO: performance
+            ; vim.fn.screenpos is very costly for a large number of targets
+            ; - only get them when at least one line is actually wrapped?
+            ; - FFI?
+            calculate-screen-positions? (and vim.wo.wrap (< (length targets) 200))
+            winid (vim.fn.win_getid)
+            ; screenrow() & screencol() would return the _current_ position of
+            ; the cursor (on the command line).
+            [curline curcol] (get-cursor-pos)
+            curscreenpos (vim.fn.screenpos winid curline curcol)
+            editor-grid-aspect-ratio 0.3  ; arbitrary (make it configurable? get it programmatically?)
+            to-eol? (= input "\r")]
+
+        (fn dist-from-cursor [target]
+          (let [[dx dy] (if calculate-screen-positions?
+                            [(abs (- target.screenpos.col curscreenpos.col))
+                             (abs (- target.screenpos.row curscreenpos.row))]
+                            [(abs (- (. target.pos 2) curcol))
+                             (abs (- (. target.pos 1) curline))])
+                 dx (* dx editor-grid-aspect-ratio (if to-eol? 0 1))]
+            (math.pow (+ (math.pow dx 2) (math.pow dy 2)) 0.5)))
+
+        (fn by-dist-from-cursor [t1 t2]
+          (< (dist-from-cursor t1) (dist-from-cursor t2)))
+
+        (when (next targets)
+          (when calculate-screen-positions?
+            (each [_ {:pos [line col] &as t} (ipairs targets)]
+              (tset t :screenpos (vim.fn.screenpos winid line col))))
+          (table.sort targets by-dist-from-cursor)
+          targets))
+    
+      ?target-windows
       (let [curr-w (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
             targets []]
         (each [_ w (ipairs ?target-windows)]
@@ -1043,6 +1081,7 @@ ones might be set by subsequent functions):
         (api.nvim_set_current_win curr-w.winid)
         (when (next targets)
           targets))
+
       (get-targets* input reverse?)))
 
 
@@ -1247,7 +1286,7 @@ sub-table containing label-target k-v pairs for these targets."
             ; Then display the labels in the cursor column too.
             ; TODO: First column & first non-blank column as options too?
             (let [curcol (vim.fn.col ".")
-                  col-delta (math.abs (- curcol col))
+                  col-delta (abs (- curcol col))
                   min-col-delta 5]  ; arbitrary value
               (when (> col-delta min-col-delta)
                 (let [chunks (match target.label-state
@@ -1290,7 +1329,7 @@ sub-table containing label-target k-v pairs for these targets."
                           :reverse? nil
                           :x-mode? nil}}})
 
-(fn sx.go [self reverse? x-mode? repeat-invoc cross-window?]
+(fn sx.go [self reverse? x-mode? repeat-invoc cross-window? omni?]
   "Entry point for 2-character search."
   (let [mode (. (api.nvim_get_mode) :mode)  ; endnote #4
         linewise? (= (mode:sub -1) :V)
@@ -1333,7 +1372,7 @@ sub-table containing label-target k-v pairs for these targets."
 
     (macro with-highlight-chores [...]
       `(do (when-not (or cold-repeat? instant-repeat?)
-             (grey-out-search-area reverse? ?target-windows))
+             (grey-out-search-area reverse? ?target-windows omni?))
            (do ,...)
            (highlight-cursor)
            (vim.cmd :redraw)))
@@ -1352,7 +1391,9 @@ sub-table containing label-target k-v pairs for these targets."
                      (exit-early))
             ; Here we can handle any other modifier key as "zeroth" input,
             ; if the need arises (e.g. regex search).
-            "\t" (do (sx:go (not reverse?) x-mode? false cross-window?) nil)
+            (where "\t" (not omni?))
+            (do (sx:go (not reverse?) x-mode? false cross-window?) nil)
+
             <backspace> (do (set backspace-repeat? true)
                             (set new-search? false)
                             (or self.state.cold.in1
@@ -1504,7 +1545,7 @@ sub-table containing label-target k-v pairs for these targets."
       (echo "")  ; clean up the command line
       (with-highlight-chores
         (when opts.jump_to_unique_chars
-          (highlight-unique-chars reverse? ?target-windows))))
+          (highlight-unique-chars reverse? ?target-windows omni?))))
 
     (match (get-first-input)
       in1
@@ -1515,7 +1556,7 @@ sub-table containing label-target k-v pairs for these targets."
                          (or cold-repeat? backspace-repeat?) self.state.cold.in2
                          dot-repeat? self.state.dot.in2)]
         (match (or (?. instant-state :sublist)
-                   (get-targets in1 reverse? ?target-windows)
+                   (get-targets in1 reverse? ?target-windows omni?)
                    (exit-early (echo-not-found (.. in1 (or prev-in2 "")))))
           (where [{:pair [_ ch2] &as only} nil]
                  opts.jump_to_unique_chars)
@@ -1655,7 +1696,7 @@ sub-table containing label-target k-v pairs for these targets."
 (fn set-plug-keys []
   (local plug-keys
     [
-     ; params: reverse? [x-mode?] [repeat-invoc]
+     ; params: reverse? x-mode? repeat-invoc cross-window? omni?
      ["<Plug>Lightspeed_s" "sx:go(false)"]
      ["<Plug>Lightspeed_S" "sx:go(true)"]
      ["<Plug>Lightspeed_x" "sx:go(false, true)"]
@@ -1664,7 +1705,9 @@ sub-table containing label-target k-v pairs for these targets."
      ["<Plug>Lightspeed_gs" "sx:go(false, nil, nil, true)"]
      ["<Plug>Lightspeed_gS" "sx:go(true, nil, nil, true)"]
 
-     ; params: reverse? [t-mode?] [repeat-invoc]
+     ["<Plug>Lightspeed_omni_s" "sx:go(nil, false, nil, nil, true)"]
+
+     ; params: reverse? t-mode? repeat-invoc
      ["<Plug>Lightspeed_f" "ft:go(false)"]
      ["<Plug>Lightspeed_F" "ft:go(true)"]
      ["<Plug>Lightspeed_t" "ft:go(false, true)"]
