@@ -1848,8 +1848,6 @@ sub-table containing label-target k-v pairs for these targets."
  : ft
  : sx
 
- :get_targetable_windows get-targetable-windows
-
  :save_editor_opts save-editor-opts
  :set_temporary_editor_opts set-temporary-editor-opts
  :restore_editor_opts restore-editor-opts

@@ -2160,15 +2160,15 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
     end
     _476_ = (_478_() or get_targets(in1, reverse_3f0, _3ftarget_windows, omni_3f) or _480_())
     local function _482_()
+      local only = (_476_)[1]
       local _0 = (((_476_)[1]).pair)[1]
       local ch2 = (((_476_)[1]).pair)[2]
-      local only = (_476_)[1]
       return opts.jump_to_unique_chars
     end
     if (((type(_476_) == "table") and ((type((_476_)[1]) == "table") and ((type(((_476_)[1]).pair) == "table") and true and (nil ~= (((_476_)[1]).pair)[2]))) and ((_476_)[2] == nil)) and _482_()) then
+      local only = (_476_)[1]
       local _0 = (((_476_)[1]).pair)[1]
       local ch2 = (((_476_)[1]).pair)[2]
-      local only = (_476_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           if dot_repeatable_op_3f then
@@ -2258,9 +2258,9 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
           _497_ = t_498_
         end
         if ((type(_497_) == "table") and ((type((_497_).pair) == "table") and true and (nil ~= ((_497_).pair)[2]))) then
+          local shortcut = _497_
           local _0 = ((_497_).pair)[1]
           local ch2 = ((_497_).pair)[2]
-          local shortcut = _497_
           do
             if dot_repeatable_op_3f then
               set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f0, x_mode_3f0, "dot")))
@@ -2509,4 +2509,4 @@ if not vim.g.lightspeed_no_default_keymaps then
 end
 vim.cmd("augroup lightspeed_reinit_highlight\n   autocmd!\n   autocmd ColorScheme * lua require'lightspeed'.init_highlight()\n   augroup end")
 vim.cmd("augroup lightspeed_editor_opts\n   autocmd!\n   autocmd User LightspeedEnter lua require'lightspeed'.save_editor_opts(); require'lightspeed'.set_temporary_editor_opts()\n   autocmd User LightspeedLeave lua require'lightspeed'.restore_editor_opts()\n   augroup end")
-return {ft = ft, get_targetable_windows = get_targetable_windows, init_highlight = init_highlight, opts = opts, restore_editor_opts = restore_editor_opts, save_editor_opts = save_editor_opts, set_default_keymaps = set_default_keymaps, set_temporary_editor_opts = set_temporary_editor_opts, setup = setup, sx = sx}
+return {ft = ft, init_highlight = init_highlight, opts = opts, restore_editor_opts = restore_editor_opts, save_editor_opts = save_editor_opts, set_default_keymaps = set_default_keymaps, set_temporary_editor_opts = set_temporary_editor_opts, setup = setup, sx = sx}
