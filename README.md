@@ -385,6 +385,20 @@ forward). We are also acknowledging that "surround" plugins in Operator-pending
 mode may benefit more from being able to use the `s`/`S` keypair than
 general-purpose motion plugins like Lightspeed.
 
+#### Cross-window motions
+
+`gs` and `gS` are like `s`/`S`, but they search in the successor/predecessor
+windows in the window tree of the current tab page. In practical terms: `gs`
+scans downwards/rightwards, while `gS` upwards/leftwards. In exceptional cases,
+the direction can be switched on the fly with `tab` after invocation.
+
+#### Bidirectional search
+
+By mapping to the special key `<Plug>Lightspeed_omni_s`, you can search in the
+whole window area, instead of just a given direction. In this case, the matches
+are sorted by their distance from the cursor, advancing in concentric circles.
+This is a very different mental model, but has its own merits too.
+
 ### 1-character search (f/t)
 
 Lightspeed also overrides the native `f`/`F`/`t`/`T` motions with enhanced

@@ -1,4 +1,4 @@
-*lightspeed.txt*      For Neovim version 0.5.0     Last change: 2022 February 14
+*lightspeed.txt*      For Neovim version 0.5.0     Last change: 2022 February 15
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -70,6 +70,19 @@ equivalent of `T` for two-character search). In Operator-pending mode, the
 edge of the operated area always gets an offset of +2 - this means that in the
 forward direction the motion becomes |inclusive| (the cursor position will be
 included in the operation).
+
+                                                       *lightspeed-cross-window*
+`gs` and `gS` are like `s`/`S`, but they search in the successor/predecessor
+windows in the window tree (as returned by |winlayout()|) of the current tab
+page. In practical terms: `gs` scans downwards/rightwards, while `gS`
+upwards/leftwards. In exceptional cases, the direction can be switched on the
+fly with `tab` after invocation.
+
+                                               *lightspeed-bidirectional-search*
+By mapping to the special key `<Plug>Lightspeed_omni_s`, you can search in the
+whole window area, instead of just a given direction. In this case, the
+matches are sorted by their distance from the cursor, advancing in concentric
+circles. This is a very different mental model, but has its own merits too.
 
                                                           *lightspeed-eol-match*
 The newline character is represented by `<enter>` in search patterns. For
