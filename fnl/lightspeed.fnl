@@ -1038,34 +1038,34 @@ ones might be set by subsequent functions):
 
 (fn get-targets [input reverse? ?target-windows omni?]
   (if omni?
-      (let [fwd-targets (get-targets* input false)
-            targets (get-targets* input true nil fwd-targets)
-            ; TODO: performance
-            ; vim.fn.screenpos is very costly for a large number of targets
-            ; - only get them when at least one line is actually wrapped?
-            ; - FFI?
-            calculate-screen-positions? (and vim.wo.wrap (< (length targets) 200))
-            winid (vim.fn.win_getid)
-            ; screenrow() & screencol() would return the _current_ position of
-            ; the cursor (on the command line).
-            [curline curcol] (get-cursor-pos)
-            curscreenpos (vim.fn.screenpos winid curline curcol)
-            editor-grid-aspect-ratio 0.3  ; arbitrary (make it configurable? get it programmatically?)
-            to-eol? (= input "\r")]
+      (match (->> (get-targets* input false nil)  ; fwd targets
+                  (get-targets* input true nil))  ; fwd+bwd targets
+        targets
+        ; TODO: performance
+        ; vim.fn.screenpos is very costly for a large number of targets
+        ; - only get them when at least one line is actually wrapped?
+        ; - FFI?
+        (let [calculate-screen-positions? (and vim.wo.wrap (< (length targets) 200))
+              winid (vim.fn.win_getid)
+              ; screenrow() & screencol() would return the _current_ position of
+              ; the cursor (on the command line).
+              [curline curcol] (get-cursor-pos)
+              curscreenpos (vim.fn.screenpos winid curline curcol)
+              editor-grid-aspect-ratio 0.3  ; arbitrary (make it configurable? get it programmatically?)
+              to-eol? (= input "\r")]
 
-        (fn dist-from-cursor [target]
-          (let [[dx dy] (if calculate-screen-positions?
-                            [(abs (- target.screenpos.col curscreenpos.col))
-                             (abs (- target.screenpos.row curscreenpos.row))]
-                            [(abs (- (. target.pos 2) curcol))
-                             (abs (- (. target.pos 1) curline))])
-                 dx (* dx editor-grid-aspect-ratio (if to-eol? 0 1))]
-            (math.pow (+ (math.pow dx 2) (math.pow dy 2)) 0.5)))
+          (fn dist-from-cursor [target]
+            (let [[dx dy] (if calculate-screen-positions?
+                              [(abs (- target.screenpos.col curscreenpos.col))
+                               (abs (- target.screenpos.row curscreenpos.row))]
+                              [(abs (- (. target.pos 2) curcol))
+                               (abs (- (. target.pos 1) curline))])
+                   dx (* dx editor-grid-aspect-ratio (if to-eol? 0 1))]
+              (math.pow (+ (math.pow dx 2) (math.pow dy 2)) 0.5)))
 
-        (fn by-dist-from-cursor [t1 t2]
-          (< (dist-from-cursor t1) (dist-from-cursor t2)))
+          (fn by-dist-from-cursor [t1 t2]
+            (< (dist-from-cursor t1) (dist-from-cursor t2)))
 
-        (when (next targets)
           (when calculate-screen-positions?
             (each [_ {:pos [line col] &as t} (ipairs targets)]
               (tset t :screenpos (vim.fn.screenpos winid line col))))
