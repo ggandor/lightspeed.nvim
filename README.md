@@ -83,16 +83,6 @@ embraces a philosophy that is just the opposite of above: you barely need to
 think about motions anymore - "sneaking" gets you everywhere you need to be,
 with maximal precision. It is like having a _jetpack_ on you all the time.
 
-Lightspeed shares the same basic assumptions with its closest ancestor, namely:
-
-1. To reach all kinds of distant targets, ideally we need a few
-   _context-independent_ motions, that are flexible enough to do the job all
-   the time, and can be invoked/operated with _total automatism_, without
-   being aware of the type or the surroundings of the target.
-2. For that, the most adequate basis is unidirectional 1- and 2-character
-   search.
-3. The interface should be _optimized for the common case_.
-
 ### Always a step ahead of you
 
 Lightspeed takes the next logical step, and eliminates yet more cognitive
@@ -149,10 +139,10 @@ about cohesion, conceptual integrity, and reliability. I think of [the latter]
 as the @tpope school."_
 ([justinmk](https://github.com/justinmk/vim-sneak/issues/62#issuecomment-34044380))
 
-* [80/20](https://youtu.be/Bt-vmPC_-Ho?t=1249): focus on features
-  that are applicable in all contexts; micro-optimisations for the most frequent
-  tasks accumulate more savings than vanity features that turn out to be rarely
-  needed in practice
+* [80/20](https://youtu.be/Bt-vmPC_-Ho?t=1249): optimise the interface for the
+  common case, and not the exceptional; focus on features that are applicable in
+  all contexts - micro-improvements to the most frequent tasks accumulate more
+  savings than vanity features that turn out to be rarely needed in practice
 
 * [Design is making
   decisions](https://www.infoq.com/presentations/Design-Composition-Performance/):
@@ -318,14 +308,14 @@ the default settings):
 
 That is,
 - invoke in the forward (`s`) or backward (`S`) direction
-- enter 1st character of the search pattern (might [short-circuit after
+- enter the first character of the search pattern (might [short-circuit after
   this](#jump-on-partial-input), if the character is unique in the search
   direction)
     - _the "beacons" are lit at this point; all potential matches are labeled
       (char1 + ?)_
-- enter 2nd character of the search pattern (might short-circuit after this, if
-  there is only one match), or finish the motion by selecting a
-  [shortcut](#shortcuts)
+- finish the motion by selecting a [shortcut](#shortcuts), or enter the second
+  character of the search pattern (might short-circuit after this, if there is
+  only one match)
     - _certain beacons are extinguished; only char1 + char2 matches remain_
     - _the cursor automatically jumps to the first match if there are enough
       "safe" labels; pressing any other key than a group-switch or a target
@@ -375,8 +365,8 @@ ab████  ← vXab    vxab →  █████b
 As you can see from the figure, `x` goes to the end of the match, including it
 in the operation, while `X` stops just before - in an absolute sense, after -
 the end of the match (the equivalent of `T` for two-character search). In
-simpler terms: in X-mode, the relevant edge of the operated area gets an offset
-of +2.
+simpler terms: **in X-mode, the relevant edge of the operated area gets an
+offset of +2**.
 
 The assignment of `z` and `x` seems a sensible default, considering that those
 keys are free in O-P mode, and the handy visual mnemonic that `x` is physically
@@ -396,8 +386,8 @@ the direction can be switched on the fly with `tab` after invocation.
 
 By mapping to the special key `<Plug>Lightspeed_omni_s`, you can search in the
 whole window area, instead of just a given direction. In this case, the matches
-are sorted by their distance from the cursor, advancing in concentric circles.
-This is a very different mental model, but has its own merits too.
+are sorted by their screen distance from the cursor, advancing in concentric
+circles. This is a very different mental model, but has its own merits too.
 
 ### 1-character search (f/t)
 
