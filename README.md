@@ -139,10 +139,10 @@ about cohesion, conceptual integrity, and reliability. I think of [the latter]
 as the @tpope school."_
 ([justinmk](https://github.com/justinmk/vim-sneak/issues/62#issuecomment-34044380))
 
-* [80/20](https://youtu.be/Bt-vmPC_-Ho?t=1249): optimise the interface for the
-  common case, and not the exceptional; focus on features that are applicable in
-  all contexts - micro-improvements to the most frequent tasks accumulate more
-  savings than vanity features that turn out to be rarely needed in practice
+* [80/20](https://youtu.be/Bt-vmPC_-Ho?t=1249): focus on features that are
+  applicable in all contexts - micro-improvements to the most frequent tasks
+  accumulate more savings than vanity features that turn out to be rarely needed
+  in practice
 
 * [Design is making
   decisions](https://www.infoq.com/presentations/Design-Composition-Performance/):
@@ -353,8 +353,8 @@ ab···|                    |···ab
 ██████  ← vZab    vzab →  █████b
 ```
 
-The mnemonic for X-mode could be **extend/exclude** (corresponding to `x`/`X`).
-It provides missing variants for the two directions:
+The mnemonic for **X-mode** could be **extend/exclude** (corresponding to
+`x`/`X`). It provides missing variants for the two directions:
 
 ```
 ab···|                    |···ab
@@ -365,7 +365,7 @@ ab████  ← vXab    vxab →  █████b
 As you can see from the figure, `x` goes to the end of the match, including it
 in the operation, while `X` stops just before - in an absolute sense, after -
 the end of the match (the equivalent of `T` for two-character search). In
-simpler terms: **in X-mode, the relevant edge of the operated area gets an
+simpler terms: in X-mode, **the relevant edge of the operated area gets an
 offset of +2**.
 
 The assignment of `z` and `x` seems a sensible default, considering that those
@@ -532,11 +532,16 @@ by you or other plugins, and will not overwite them, unless explicitly told so.
 To set alternative keymaps, you can use the `<Plug>` keys listed in `:h
 lightspeed-custom-mappings`.
 
-#### Why `s`/`S`?
+#### Overridden native keymaps (`s`/`S`/`gs`)
 
-Basic motions should have the absolute least friction among all commands, since
-they are the most frequent. The native `s` and `S` both have comfortable
-equivalents - `cl` (or `r`) and `cc`, respectively.
+Basic motions, like Lightspeed jumps, should have the absolute least friction
+among all commands, since they are the most frequent.
+
+- `s`: for replacing one character, `r` is the adequate choice; for the rare
+  case when one wants to continue inserting after that, using `cl` is more than
+  fine
+- `S`: `cc` is comfortable enough, and it is consistent with `yy` and `dd`
+- `gs`: probably no one misses this shortcut for the `:sleep` command
 
 #### Setting keys to repeat the last lightspeed motion (s/x/f/t)
 
@@ -602,21 +607,6 @@ only execute for certain ones, etc.
 
 ## ❔ Why is there no feature X or Y?
 
-### I miss Sneak's "vertical scope" feature... 
-
-That might indeed be useful, but I considered it would needlessly complicate the
-plugin. Sometime in the future we might add that though.
-
-If you work with tabular data frequently, you can make a mapping instead that
-pre-populates the normal search prompt with horizontal bounds based on the
-count, something like the following (`:h /\%v`):
-
-```Vim
-" note: g? in the example overwrites the superfun native rot13 command
-nnoremap <expr> g/ '/<C-u>\%>'.(col(".")-v:count1).'v\%<'.(col(".")+v:count1).'v'
-nnoremap <expr> g? '?<C-u>\%>'.(col(".")-v:count1).'v\%<'.(col(".")+v:count1).'v'
-```
-
 ### Smart case-sensitivity?
 
 See [#64](https://github.com/ggandor/lightspeed.nvim/issues/64). It is
@@ -654,6 +644,21 @@ effort. That is the mantra of Lightspeed. You should think of `f` and `t` as
 _shortcuts_ for very specific situations, when you can count the number of
 occurrences, and thus reach for them in a totally automatic way, and _not_ as
 equals of the `s`/`x` motions.
+
+### I miss Sneak's "vertical scope" feature... 
+
+That might indeed be useful, but I considered it would needlessly complicate the
+plugin. Sometime in the future we might add that though.
+
+If you work with tabular data frequently, you can make a mapping instead that
+pre-populates the normal search prompt with horizontal bounds based on the
+count, something like the following (`:h /\%v`):
+
+```Vim
+" note: g? in the example overwrites the superfun native rot13 command
+nnoremap <expr> g/ '/<C-u>\%>'.(col(".")-v:count1).'v\%<'.(col(".")+v:count1).'v'
+nnoremap <expr> g? '?<C-u>\%>'.(col(".")-v:count1).'v\%<'.(col(".")+v:count1).'v'
+```
 
 ## 🌜 Contributing
 
