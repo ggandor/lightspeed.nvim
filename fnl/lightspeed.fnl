@@ -1063,13 +1063,11 @@ ones might be set by subsequent functions):
                    dx (* dx editor-grid-aspect-ratio (if to-eol? 0 1))]
               (math.pow (+ (math.pow dx 2) (math.pow dy 2)) 0.5)))
 
-          (fn by-dist-from-cursor [t1 t2]
-            (< (dist-from-cursor t1) (dist-from-cursor t2)))
-
-          (when calculate-screen-positions?
-            (each [_ {:pos [line col] &as t} (ipairs targets)]
-              (tset t :screenpos (vim.fn.screenpos winid line col))))
-          (table.sort targets by-dist-from-cursor)
+          (each [_ {:pos [line col] &as t} (ipairs targets)]
+            (when calculate-screen-positions?
+              (tset t :screenpos (vim.fn.screenpos winid line col)))
+            (tset t :rank (dist-from-cursor t)))
+          (table.sort targets #(< (. $1 :rank) (. $2 :rank)))
           targets))
     
       ?target-windows
