@@ -4,10 +4,7 @@
 (local contains? vim.tbl_contains)
 (local empty? vim.tbl_isempty)
 (local map vim.tbl_map)
-(local abs math.abs)
-(local ceil math.ceil)
-(local max math.max)
-(local min math.min)
+(local {: abs : ceil : max : min : pow} math)
 
 
 ; Fennel utils ///1
@@ -1061,7 +1058,7 @@ ones might be set by subsequent functions):
                               [(abs (- (. target.pos 2) curcol))
                                (abs (- (. target.pos 1) curline))])
                    dx (* dx editor-grid-aspect-ratio (if to-eol? 0 1))]
-              (math.pow (+ (math.pow dx 2) (math.pow dy 2)) 0.5)))
+              (pow (+ (pow dx 2) (pow dy 2)) 0.5)))
 
           (each [_ {:pos [line col] &as t} (ipairs targets)]
             (when calculate-screen-positions?
