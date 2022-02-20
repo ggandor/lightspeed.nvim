@@ -896,7 +896,7 @@ interrupted change-operation."
 
 ; Helpers ///
 
-(fn get-targetable-windows [reverse?]
+(fn get-targetable-windows [reverse? omni?]
   (let [curr-win-id (vim.fn.win_getid)
         ; HACK!! The output of vim.fn.winlayout looks sg like:
         ; ['col', [['leaf', 1002], ['row', [['leaf', 1003], ['leaf', 1001]]], ['leaf', 1000]]]
@@ -905,7 +905,10 @@ interrupted change-operation."
         ; the rest of the id-s, depending on the search direction.
         [left right] (-> (vim.fn.string (vim.fn.winlayout))
                          (vim.split (tostring curr-win-id)))
-        ids (string.gmatch (if reverse? left right) "%d+")
+        ids (string.gmatch (if omni? (.. left right)
+                               reverse? left
+                               right)
+                           "%d+")
         ; TODO: filter on certain window types?
         visual-or-OP-mode? (not= (vim.fn.mode) :n)
         buf api.nvim_win_get_buf
@@ -1033,50 +1036,71 @@ ones might be set by subsequent functions):
     (when (next targets) targets)))
 
 
+(fn distance [[line1 col1] [line2 col2] vertical-only?]
+  (let [editor-grid-aspect-ratio 0.3  ; arbitrary (make it configurable? get it programmatically?)
+        [dx dy] [(abs (- col1 col2)) (abs (- line1 line2))]
+         dx (* dx editor-grid-aspect-ratio (if vertical-only? 0 1))]
+    (pow (+ (pow dx 2) (pow dy 2)) 0.5)))
+
+
+; TODO: DRY!
+; I've had no mental energy to refactor this yet.
 (fn get-targets [input reverse? ?target-windows omni?]
-  (if omni?
-      (match (->> (get-targets* input false nil)  ; fwd targets
-                  (get-targets* input true nil))  ; fwd+bwd targets
-        targets
-        ; TODO: performance
-        ; vim.fn.screenpos is very costly for a large number of targets
-        ; - only get them when at least one line is actually wrapped?
-        ; - FFI?
-        (let [calculate-screen-positions? (and vim.wo.wrap (< (length targets) 200))
-              winid (vim.fn.win_getid)
-              ; screenrow() & screencol() would return the _current_ position of
-              ; the cursor (on the command line).
-              [curline curcol] (get-cursor-pos)
-              curscreenpos (vim.fn.screenpos winid curline curcol)
-              editor-grid-aspect-ratio 0.3  ; arbitrary (make it configurable? get it programmatically?)
-              to-eol? (= input "\r")]
+  (local to-eol? (= input "\r"))
+  ; TODO: performance: vim.fn.screenpos is very costly for a large number of targets
+  ; - only get them when at least one line is actually wrapped?
+  ; - some FFI magic?
+  (fn calculate-screen-positions? [targets]
+    (and vim.wo.wrap (< (length targets) 200)))
 
-          (fn dist-from-cursor [target]
-            (let [[dx dy] (if calculate-screen-positions?
-                              [(abs (- target.screenpos.col curscreenpos.col))
-                               (abs (- target.screenpos.row curscreenpos.row))]
-                              [(abs (- (. target.pos 2) curcol))
-                               (abs (- (. target.pos 1) curline))])
-                   dx (* dx editor-grid-aspect-ratio (if to-eol? 0 1))]
-              (pow (+ (pow dx 2) (pow dy 2)) 0.5)))
-
-          (each [_ {:pos [line col] &as t} (ipairs targets)]
-            (when calculate-screen-positions?
-              (tset t :screenpos (vim.fn.screenpos winid line col)))
-            (tset t :rank (dist-from-cursor t)))
-          (table.sort targets #(< (. $1 :rank) (. $2 :rank)))
-          targets))
-    
-      ?target-windows
+  (if ?target-windows
       (let [curr-w (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
+            cursor-positions {}
             targets []]
         (each [_ w (ipairs ?target-windows)]
           (api.nvim_set_current_win w.winid)
+          (tset cursor-positions w.winid (get-cursor-pos))
           (get-targets* input reverse? w targets))
         (api.nvim_set_current_win curr-w.winid)
         (when (next targets)
+          (when omni?  ; sort targets by screen distance
+            (let [calculate-screen-positions? (calculate-screen-positions? targets)]
+              (when calculate-screen-positions?
+                (each [winid [line col] (pairs cursor-positions)]
+                  (let [screenpos (vim.fn.screenpos winid line col)]
+                    (tset cursor-positions winid [screenpos.row screenpos.col]))))
+              (each [_ {:pos [line col] :wininfo {: winid} &as t} (ipairs targets)]
+                (when calculate-screen-positions?
+                  (let [screenpos (vim.fn.screenpos winid line col)]  ; perf. bottleneck
+                    (tset t :screenpos [screenpos.row screenpos.col])))
+                (let [cursor-pos (. cursor-positions winid)
+                      pos (or t.screenpos t.pos)]
+                  (tset t :rank (distance pos cursor-pos to-eol?))))
+              (table.sort targets #(< (. $1 :rank) (. $2 :rank)))))
           targets))
-
+    
+      omni?
+      (match (->> (get-targets* input false)      ; fwd targets
+                  (get-targets* input true nil))  ; fwd + bwd targets
+        targets
+        (let [winid (vim.fn.win_getid)
+              calculate-screen-positions? (calculate-screen-positions? targets)
+              ; screenrow() & screencol() would return the _current_ position of
+              ; the cursor (on the command line).
+              [curline curcol &as curpos] (get-cursor-pos)
+              curscreenpos (vim.fn.screenpos winid curline curcol)
+              cursor-pos (if calculate-screen-positions?
+                             [curscreenpos.row curscreenpos.col]
+                             curpos)]
+          (each [_ {:pos [line col] &as t} (ipairs targets)]
+            (when calculate-screen-positions?
+              (let [screenpos (vim.fn.screenpos winid line col)]
+                (tset t :screenpos [screenpos.row screenpos.col])))
+            (let [pos (or t.screenpos t.pos)]
+              (tset t :rank (distance pos cursor-pos to-eol?))))
+          (table.sort targets #(< (. $1 :rank) (. $2 :rank)))
+          targets))
+    
       (get-targets* input reverse?)))
 
 
@@ -1342,7 +1366,8 @@ sub-table containing label-target k-v pairs for these targets."
                                     self.state.cold.reverse?)
                      reverse?)
         x-mode? (if cold-repeat? self.state.cold.x-mode? x-mode?)
-        ?target-windows (or (when cross-window? (get-targetable-windows reverse?))
+        ?target-windows (or (when cross-window?
+                              (get-targetable-windows reverse? omni?))
                             (when instant-repeat? instant-state.target-windows))]
 
     ; Top-level vars
@@ -1701,6 +1726,7 @@ sub-table containing label-target k-v pairs for these targets."
      ["<Plug>Lightspeed_gS" "sx:go(true, nil, nil, true)"]
 
      ["<Plug>Lightspeed_omni_s" "sx:go(nil, false, nil, nil, true)"]
+     ["<Plug>Lightspeed_omni_gs" "sx:go(nil, false, nil, true, true)"]
 
      ; params: reverse? t-mode? repeat-invoc
      ["<Plug>Lightspeed_f" "ft:go(false)"]

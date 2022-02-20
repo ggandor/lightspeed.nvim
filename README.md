@@ -384,10 +384,11 @@ the direction can be switched on the fly with `tab` after invocation.
 
 #### Bidirectional search
 
-By mapping to the special key `<Plug>Lightspeed_omni_s`, you can search in the
-whole window area, instead of just a given direction. In this case, the matches
-are sorted by their screen distance from the cursor, advancing in concentric
-circles. This is a very different mental model, but has its own merits too.
+By mapping to the special keys `<Plug>Lightspeed_omni_s` and
+`<Plug>Lightspeed_omni_gs`, you can search in the whole window or tab page,
+instead of just a given direction. In this case, the matches are sorted by their
+screen distance from the cursor, advancing in concentric circles. This is a very
+different mental model, but has its own merits too.
 
 ### 1-character search (f/t)
 
