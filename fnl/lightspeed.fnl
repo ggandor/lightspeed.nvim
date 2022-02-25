@@ -95,6 +95,14 @@ character instead."
     (if (and ok? (= (type eval-rhs) :string)) eval-rhs rhs)))
 
 
+; For pre-0.7 compatibility
+(fn highlight-range-compat [bufnr ns higroup start finish opts]
+  (if (= 1 (vim.fn.has "nvim-0.7"))
+      (vim.highlight.range bufnr ns higroup start finish opts)
+      (vim.highlight.range bufnr ns higroup start finish
+                           opts.regtype opts.inclusive opts.priority)))
+
+
 ; Glossary ///1
 
 ; Instant-repeat (1-char search)
@@ -348,18 +356,21 @@ character instead."
   (if (or ?target-windows omni?)
       (each [_ win (ipairs (or ?target-windows
                                [(. (vim.fn.getwininfo (vim.fn.win_getid)) 1)]))]
-        (vim.highlight.range win.bufnr hl.ns hl.group.greywash
-                             [(dec win.topline) 0] [(dec win.botline) -1] :v false
-                             hl.priority.greywash))
+        (highlight-range-compat win.bufnr hl.ns hl.group.greywash
+                                [(dec win.topline) 0] [(dec win.botline) -1]
+                                {:regtype :v
+                                 :inclusive false
+                                 :priority hl.priority.greywash}))
       (let [[curline curcol] (map dec (get-cursor-pos))
             [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]
             [start finish] (if reverse?
                                [[win-top 0] [curline curcol]]
                                [[curline (inc curcol)] [win-bot -1]])]
         ; Expects 0,0-indexed args; `finish` is exclusive.
-        (vim.highlight.range 0 hl.ns hl.group.greywash
-                             start finish :v false
-                             hl.priority.greywash))))
+        (highlight-range-compat 0 hl.ns hl.group.greywash start finish
+                                {:regtype :v}
+                                {:inclusive false}
+                                {:priority hl.priority.greywash}))))
 
 
 (fn highlight-range [hl-group
@@ -369,9 +380,10 @@ character instead."
   "A wrapper around `vim.highlight.range` that handles forced motion
 types properly."
   (let [hl-range (fn [start end end-inclusive?]
-                   (vim.highlight.range 0 hl.ns hl-group
-                                        start end :v end-inclusive?
-                                        hl.priority.label))]
+                   (highlight-range-compat 0 hl.ns hl-group start end
+                                           {:regtype :v
+                                            :inclusive end-inclusive?
+                                            :priority hl.priority.label}))]
     (match motion-force
       <ctrl-v> (let [[startcol endcol] [(min startcol endcol)
                                         (max startcol endcol)]]
@@ -550,7 +562,7 @@ early termination in loops."
                  (if reverse?
                      (when (>= (dec line) stopline)
                        [(dec line) right-bound])
-                       [line left-bound])
+                     [line left-bound])
 
                  (> virtcol right-bound)
                  (if reverse?
@@ -704,7 +716,7 @@ interrupted change-operation."
       (match repeat-invoc :dot "dotrepeat_" _ "")
       ; Forcing to bools with not-not, as those values can be nils.
       (match [search-mode (not (not reverse?)) (not (not x/t?))]
-        [:ft false false] "f" 
+        [:ft false false] "f"
         [:ft true  false] "F"
         [:ft false true ] "t"
         [:ft true  true ] "T"
@@ -954,7 +966,7 @@ interrupted change-operation."
         [lnum col w]
         (api.nvim_buf_add_highlight w.bufnr hl.ns hl.group.unique-ch
                                     (dec lnum) (dec col) col)))))
-        
+
 
 (fn get-targets* [input reverse? ?wininfo ?targets]
   "Return a table that will store the positions and other metadata of
@@ -1126,7 +1138,7 @@ char separately."
   (if (or (not opts.safe_labels) (empty? opts.safe_labels))
       (do (when (= sublist.autojump? nil) (tset sublist :autojump? false))
           opts.labels)
-    
+
       (or (not opts.labels) (empty? opts.labels))
       (do (when (= sublist.autojump? nil) (tset sublist :autojump? true))
           opts.safe_labels)
@@ -1295,7 +1307,7 @@ sub-table containing label-target k-v pairs for these targets."
       (match target.beacon  ; might be nil, if the state is inactive
         [offset chunks ?left-off?]
         (do
-          (api.nvim_buf_set_extmark (or (?. target.wininfo :bufnr) 0) hl.ns 
+          (api.nvim_buf_set_extmark (or (?. target.wininfo :bufnr) 0) hl.ns
                                     (dec line) (dec (+ col offset))
                                     {:virt_text chunks
                                      :virt_text_pos "overlay"
@@ -1328,7 +1340,7 @@ sub-table containing label-target k-v pairs for these targets."
 
 
 (fn ignore-input-until-timeout [char-to-ignore]
-  (match opts.jump_to_unique_chars 
+  (match opts.jump_to_unique_chars
     {:safety_timeout timeout}
     (match (get-input timeout)
       input (when (not= input char-to-ignore)
@@ -1527,7 +1539,7 @@ sub-table containing label-target k-v pairs for these targets."
                    (get-input (when initial-invoc?
                                 opts.exit_after_idle_msecs.labeled)))
             input
-            (if (and sublist.autojump? opts.labels (not (empty? opts.labels))) 
+            (if (and sublist.autojump? opts.labels (not (empty? opts.labels)))
                 ; Non-empty `labels` means auto-jump has been set heuristically
                 ; (not forced), implying that there are no subsequent groups.
                 [input 0]
@@ -1602,7 +1614,7 @@ sub-table containing label-target k-v pairs for these targets."
                 (set-shortcuts-and-populate-shortcuts-map)
                 (set-beacons {:repeat nil}))
               (with-highlight-chores
-                (light-up-beacons 
+                (light-up-beacons
                   targets (and linewise? to-eol? (not instant-repeat?)))))
             (match (or prev-in2
                        (when to-eol? "")
@@ -1746,7 +1758,7 @@ sub-table containing label-target k-v pairs for these targets."
     (each [_ mode (ipairs [:n :x :o])]
       (api.nvim_set_keymap mode lhs (.. "<cmd>lua require'lightspeed'." rhs-call "<cr>")
                            {:noremap true :silent true})))
-  
+
   ; Just for our convenience, to be used here in the script.
   (each [_ [lhs rhs-call]
          (ipairs
@@ -1791,7 +1803,7 @@ sub-table containing label-target k-v pairs for these targets."
      [:x "T" "<Plug>Lightspeed_T"]
      [:o "t" "<Plug>Lightspeed_t"]
      [:o "T" "<Plug>Lightspeed_T"]
-     
+
      [:n ";" "<Plug>Lightspeed_;_ft"]
      [:x ";" "<Plug>Lightspeed_;_ft"]
      [:o ";" "<Plug>Lightspeed_;_ft"]
