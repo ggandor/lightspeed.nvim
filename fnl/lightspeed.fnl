@@ -100,10 +100,10 @@ character instead."
 
 ; For pre-0.7 compatibility
 (fn highlight-range-compat [bufnr ns higroup start finish opts]
-  (if (= 1 (vim.fn.has "nvim-0.7")))
-  (vim.highlight.range bufnr ns higroup start finish opts)
-  (vim.highlight.range bufnr ns higroup start finish
-                       opts.regtype opts.inclusive opts.priority))
+  (if (= 1 (vim.fn.has "nvim-0.7"))
+      (vim.highlight.range bufnr ns higroup start finish opts)
+      (vim.highlight.range bufnr ns higroup start finish
+                           opts.regtype opts.inclusive opts.priority)))
 
 
 ; Glossary ///1
