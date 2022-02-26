@@ -301,19 +301,11 @@ character instead."
                                         :guibg :NONE :ctermbg :NONE
                                         :gui "bold,underline"
                                         :cterm "bold,underline"}
-     hl.group.label-overlapped         {:guifg (match bg :light "#ff4090" _ "#e01067")
-                                        :ctermfg "Magenta"
-                                        :guibg :NONE :ctermbg :NONE
-                                        :gui "underline"
-                                        :cterm "underline"}
      hl.group.label-distant            {:guifg (match bg :light "#399d9f" _ "#99ddff")
                                         :ctermfg (match bg :light "Blue" _ "Cyan")
                                         :guibg :NONE :ctermbg :NONE
                                         :gui "bold,underline"
                                         :cterm "bold,underline"}
-     hl.group.label-distant-overlapped {:guifg (match bg :light "#59bdbf" _ "#79bddf")
-                                        :ctermfg (match bg :light "Cyan" _ "Blue")
-                                        :gui "underline" :cterm "underline"}
      hl.group.shortcut                 {:guibg "#f00077" :ctermbg "Red"
                                         :guifg "#ffffff" :ctermfg "White"
                                         :gui "bold,underline" :cterm "bold,underline"}  ; ~inverse of label
@@ -329,8 +321,6 @@ character instead."
                                         :guibg :NONE :ctermbg :NONE
                                         :gui "bold"
                                         :cterm "bold"}
-     hl.group.pending-op-area          {:guibg "#f00077" :ctermbg "Red"
-                                        :guifg "#ffffff" :ctermfg "White"}  ; ~shortcut without bold/underline
      hl.group.greywash                 {:guifg "#777777" :ctermfg "Grey"
                                         :guibg :NONE :ctermbg :NONE
                                         :gui :NONE :cterm :NONE}})
@@ -343,9 +333,12 @@ character instead."
   ; Setting linked groups.
   (each [from-group to-group
          (pairs {hl.group.unique-ch hl.group.unlabeled-match
+                 hl.group.label-overlapped hl.group.label
+                 hl.group.label-distant-overlapped hl.group.label-distant
                  hl.group.shortcut-overlapped hl.group.shortcut
-                 hl.group.cursor "Cursor"})]
-    (vim.cmd (.. "highlight " (if force? "" "default ")
+                 hl.group.pending-op-area :IncSearch
+                 hl.group.cursor :Cursor})]
+    (vim.cmd (.. "highlight! " (if force? "" "default ")
                  "link " from-group " " to-group))))
 
 
