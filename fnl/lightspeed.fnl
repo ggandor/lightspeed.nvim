@@ -898,6 +898,14 @@ interrupted change-operation."
 
 ; Helpers ///
 
+(fn user-forced-autojump? []
+  (or (not opts.labels) (empty? opts.labels)))
+
+
+(fn user-forced-no-autojump? []
+  (or (not opts.safe_labels) (empty? opts.safe_labels)))
+
+
 (fn get-targetable-windows [reverse? omni?]
   (let [curr-win-id (vim.fn.win_getid)
         ; HACK!! The output of vim.fn.winlayout looks sg like:
@@ -1123,75 +1131,86 @@ char separately."
     (table.insert (. targets :sublists ch2) target)))
 
 
-(fn get-labels [sublist to-eol?]
-  (when to-eol? (tset sublist :autojump? false))
-  (if (or (not opts.safe_labels) (empty? opts.safe_labels))
-      (do (when (= sublist.autojump? nil) (tset sublist :autojump? false))
-          opts.labels)
+(fn set-autojump [sublist to-eol?]
+  "Set a flag indicating whether we should autojump to the first target
+if selecting `sublist` with the 2nd input. Note that there is no
+one-to-one correspondence between this flag and the `label-set` field
+set by `attach-label-set`. For example, in operator-pending mode we
+never want to autojump, since that would execute the operation without
+allowing us to select a labeled target."
+  (tset sublist :autojump?
+        (and (not (or (user-forced-no-autojump?) to-eol? (operator-pending-mode?)))
+             (or (user-forced-autojump?)
+                 (>= (length opts.safe_labels)
+                     (dec (length sublist)))))))  ; skipping the first if autojumping
 
-      (or (not opts.labels) (empty? opts.labels))
-      (do (when (= sublist.autojump? nil) (tset sublist :autojump? true))
-          opts.safe_labels)
 
-      (match sublist.autojump?
-        true opts.safe_labels
-        false opts.labels
-        nil (do (tset sublist
-                      :autojump?
-                      ; We _never_ want to autojump in OP mode, since
-                      ; that would execute the operation without
-                      ; allowing us to select a labeled target.
-                      (and (not (operator-pending-mode?))
-                           (<= (dec (length sublist))
-                               (length opts.safe_labels))))
-                (get-labels sublist)))))
+(fn attach-label-set [sublist]
+  "Set a field pointing to the set of target labels to be used for
+`sublist.` Note that there is no one-to-one correspondence between this
+value and the `autojump?` field set by `set-autojump`. No-autojump might
+be forced implicitly, regardless of using a safe labels."
+  (tset sublist :label-set
+        (if (user-forced-autojump?) opts.safe_labels
+            (user-forced-no-autojump?) opts.labels
+            sublist.autojump? opts.safe_labels
+            opts.labels)))
+
+
+(fn set-sublist-attributes [targets to-eol?]
+  "Set the `autojump?` and `label-set` fields for each sublist of
+`targets`."
+  (each [_ sublist (pairs targets.sublists)]
+    (set-autojump sublist to-eol?)
+    (attach-label-set sublist)))
 
 
 (fn set-labels [targets to-eol?]
-  "Assign label characters to targets. Note: `label` is a fixed,
-implicit attribute of the target - whether and how it should actually be
-displayed depends on `label-state`."
+  "Assign label characters to each target, by going through the sublists
+one by one, using the `label-set` of the given sublist (repeated
+indefinitely), and skipping the first target if `autojump?` is set.
+Note: `label` is a once and for all fixed attribute - whether and how it
+should actually be displayed depends on the `label-state` flag."
   (each [_ sublist (pairs targets.sublists)]
     (when (> (length sublist) 1)  ; else we'll jump automatically anyway
       ; Note: We could also get `to-eol?` by checking the sublist key (ch2).
-      (let [labels (get-labels sublist to-eol?)]  ; sets :autojump? (!)
+      (let [autojump? sublist.autojump?
+            labels sublist.label-set]
         (each [i target (ipairs sublist)]
-          (tset target
-                :label
-                (when-not (and sublist.autojump? (= i 1))
+          (tset target :label
+                (when-not (and autojump? (= i 1))
                   ; In case of `autojump?`, the i-th label is assigned
                   ; to the i+1th position (we skipped the first one).
-                  (match (% (if sublist.autojump? (dec i) i) (length labels))
+                  (match (% (if autojump? (dec i) i) (length labels))
                     ; 1-indexing is not a great match for modulo arithmetic.
                     0 (last labels)
                     n (. labels n)))))))))
 
 
-(fn set-label-states-for-sublist [sublist {: group-offset}]
-  (let [labels (get-labels sublist)
+(fn set-label-states [sublist {: group-offset}]
+  (let [labels sublist.label-set
         |labels| (length labels)
         offset (* group-offset |labels|)
         primary-start (+ offset (if sublist.autojump? 2 1))
         primary-end (+ primary-start (dec |labels|))
         secondary-end (+ primary-end |labels|)]
     (each [i target (ipairs sublist)]
-      (tset target
-            :label-state
-            (when (. target :label)
+      (when target.label
+        (tset target :label-state
               (if (or (< i primary-start) (> i secondary-end)) :inactive
                   (<= i primary-end) :active-primary
                   :active-secondary))))))
 
 
-(fn set-label-states [targets]
+(fn set-initial-label-states [targets]
   (each [_ sublist (pairs targets.sublists)]
-    (set-label-states-for-sublist sublist {:group-offset 0})))
+    (set-label-states sublist {:group-offset 0})))
 
 
 (fn set-shortcuts-and-populate-shortcuts-map [targets]
   "Set the `shortcut?` attribute of those targets where the label can be
 used right after the first input (see Glossary), while populating a
-sub-table containing label-target k-v pairs for these targets."
+sub-table containing label-target key-value pairs for these targets."
   (tset targets :shortcuts {})
   (let [potential-2nd-inputs (collect [ch2 _ (pairs targets.sublists)]
                                (values ch2 true))
@@ -1529,21 +1548,20 @@ sub-table containing label-target k-v pairs for these targets."
                    (get-input (when initial-invoc?
                                 opts.exit_after_idle_msecs.labeled)))
             input
-            (if (and sublist.autojump? opts.labels (not (empty? opts.labels)))
-                ; Non-empty `labels` means auto-jump has been set heuristically
-                ; (not forced), implying that there are no subsequent groups.
+            (if (and sublist.autojump? (not (user-forced-autojump?)))
+                ; If auto-jump has been set heuristically (not forced), it
+                ; implies that there are no subsequent groups.
                 [input 0]
 
                 (and (one-of? input next_group_key prev_group_key)
                      (not instant-repeat?))
-                (let [labels (get-labels sublist)
+                (let [labels sublist.label-set
                       num-of-groups (ceil (/ (length sublist) (length labels)))
                       max-offset (dec num-of-groups)
                       group-offset* (-> group-offset
                                         ((match input next_group_key inc _ dec))
                                         (clamp 0 max-offset))]
-                  (set-label-states-for-sublist
-                    sublist {:group-offset group-offset*})
+                  (set-label-states sublist {:group-offset group-offset*})
                   (recur group-offset*))
 
                 [input group-offset])))
@@ -1597,8 +1615,9 @@ sub-table containing label-target k-v pairs for these targets."
             (when-not instant-repeat?
               (doto targets
                 (populate-sublists)
+                (set-sublist-attributes to-eol?)  ; autojump + label set used
                 (set-labels to-eol?)
-                (set-label-states)))
+                (set-initial-label-states)))
             (when (and new-search? (not to-eol?))
               (doto targets
                 (set-shortcuts-and-populate-shortcuts-map)
