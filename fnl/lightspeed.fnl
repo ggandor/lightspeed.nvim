@@ -1133,23 +1133,25 @@ char separately."
 
 (fn set-autojump [sublist to-eol?]
   "Set a flag indicating whether we should autojump to the first target
-if selecting `sublist` with the 2nd input. Note that there is no
-one-to-one correspondence between this flag and the `label-set` field
-set by `attach-label-set`. For example, in operator-pending mode we
-never want to autojump, since that would execute the operation without
-allowing us to select a labeled target."
+if selecting `sublist` with the 2nd input character.
+Note that there is no one-to-one correspondence between this flag and
+the `label-set` field set by `attach-label-set`. No-autojump might be
+forced implicitly, regardless of using safe labels."
   (tset sublist :autojump?
-        (and (not (or (user-forced-no-autojump?) to-eol? (operator-pending-mode?)))
+        ; In operator-pending mode we never want to autojump, since that
+        ; would execute the operation without allowing us to select a
+        ; labeled target.
+        (and (not (or (user-forced-no-autojump?)
+                      to-eol?
+                      (operator-pending-mode?)))
              (or (user-forced-autojump?)
                  (>= (length opts.safe_labels)
                      (dec (length sublist)))))))  ; skipping the first if autojumping
 
 
 (fn attach-label-set [sublist]
-  "Set a field pointing to the set of target labels to be used for
-`sublist.` Note that there is no one-to-one correspondence between this
-value and the `autojump?` field set by `set-autojump`. No-autojump might
-be forced implicitly, regardless of using a safe labels."
+  "Set a field referencing the target label set to be used for
+`sublist`. `set-autojump` should be called before this function."
   (tset sublist :label-set
         (if (user-forced-autojump?) opts.safe_labels
             (user-forced-no-autojump?) opts.labels
@@ -1158,8 +1160,6 @@ be forced implicitly, regardless of using a safe labels."
 
 
 (fn set-sublist-attributes [targets to-eol?]
-  "Set the `autojump?` and `label-set` fields for each sublist of
-`targets`."
   (each [_ sublist (pairs targets.sublists)]
     (set-autojump sublist to-eol?)
     (attach-label-set sublist)))
@@ -1167,8 +1167,8 @@ be forced implicitly, regardless of using a safe labels."
 
 (fn set-labels [targets to-eol?]
   "Assign label characters to each target, by going through the sublists
-one by one, using the `label-set` of the given sublist (repeated
-indefinitely), and skipping the first target if `autojump?` is set.
+one by one, using the given sublist's `label-set` repeated indefinitely,
+and skipping the first target if `autojump?` is set.
 Note: `label` is a once and for all fixed attribute - whether and how it
 should actually be displayed depends on the `label-state` flag."
   (each [_ sublist (pairs targets.sublists)]
