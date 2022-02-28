@@ -356,9 +356,9 @@ character instead."
                                [[curline (inc curcol)] [win-bot -1]])]
         ; Expects 0,0-indexed args; `finish` is exclusive.
         (highlight-range-compat 0 hl.ns hl.group.greywash start finish
-                                {:regtype :v}
-                                {:inclusive false}
-                                {:priority hl.priority.greywash}))))
+                                {:regtype :v
+                                 :inclusive false
+                                 :priority hl.priority.greywash}))))
 
 
 (fn highlight-range [hl-group

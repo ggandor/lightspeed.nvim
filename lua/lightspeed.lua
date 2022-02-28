@@ -316,7 +316,7 @@ local function grey_out_search_area(reverse_3f, _3ftarget_windows, omni_3f)
     local _let_67_ = _68_()
     local start = _let_67_[1]
     local finish = _let_67_[2]
-    return highlight_range_compat(0, hl.ns, hl.group.greywash, start, finish, {regtype = "v"}, {inclusive = false}, {priority = hl.priority.greywash})
+    return highlight_range_compat(0, hl.ns, hl.group.greywash, start, finish, {inclusive = false, priority = hl.priority.greywash, regtype = "v"})
   end
 end
 local function highlight_range(hl_group, _70_, _72_, _74_)
