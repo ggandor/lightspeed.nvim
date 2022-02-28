@@ -346,9 +346,7 @@ character instead."
                                [(. (vim.fn.getwininfo (vim.fn.win_getid)) 1)]))]
         (highlight-range-compat win.bufnr hl.ns hl.group.greywash
                                 [(dec win.topline) 0] [(dec win.botline) -1]
-                                {:regtype :v
-                                 :inclusive false
-                                 :priority hl.priority.greywash}))
+                                {:priority hl.priority.greywash}))
       (let [[curline curcol] (map dec (get-cursor-pos))
             [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]
             [start finish] (if reverse?
@@ -356,9 +354,7 @@ character instead."
                                [[curline (inc curcol)] [win-bot -1]])]
         ; Expects 0,0-indexed args; `finish` is exclusive.
         (highlight-range-compat 0 hl.ns hl.group.greywash start finish
-                                {:regtype :v
-                                 :inclusive false
-                                 :priority hl.priority.greywash}))))
+                                {:priority hl.priority.greywash}))))
 
 
 (fn highlight-range [hl-group
@@ -369,8 +365,7 @@ character instead."
 types properly."
   (let [hl-range (fn [start end end-inclusive?]
                    (highlight-range-compat 0 hl.ns hl-group start end
-                                           {:regtype :v
-                                            :inclusive end-inclusive?
+                                           {:inclusive end-inclusive?
                                             :priority hl.priority.label}))]
     (match motion-force
       <ctrl-v> (let [[startcol endcol] [(min startcol endcol)

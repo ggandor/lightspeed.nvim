@@ -296,7 +296,7 @@ end
 local function grey_out_search_area(reverse_3f, _3ftarget_windows, omni_3f)
   if (_3ftarget_windows or omni_3f) then
     for _, win in ipairs((_3ftarget_windows or {vim.fn.getwininfo(vim.fn.win_getid())[1]})) do
-      highlight_range_compat(win.bufnr, hl.ns, hl.group.greywash, {dec(win.topline), 0}, {dec(win.botline), -1}, {inclusive = false, priority = hl.priority.greywash, regtype = "v"})
+      highlight_range_compat(win.bufnr, hl.ns, hl.group.greywash, {dec(win.topline), 0}, {dec(win.botline), -1}, {priority = hl.priority.greywash})
     end
     return nil
   else
@@ -316,7 +316,7 @@ local function grey_out_search_area(reverse_3f, _3ftarget_windows, omni_3f)
     local _let_67_ = _68_()
     local start = _let_67_[1]
     local finish = _let_67_[2]
-    return highlight_range_compat(0, hl.ns, hl.group.greywash, start, finish, {inclusive = false, priority = hl.priority.greywash, regtype = "v"})
+    return highlight_range_compat(0, hl.ns, hl.group.greywash, start, finish, {priority = hl.priority.greywash})
   end
 end
 local function highlight_range(hl_group, _70_, _72_, _74_)
@@ -333,7 +333,7 @@ local function highlight_range(hl_group, _70_, _72_, _74_)
   local motion_force = _arg_75_["motion-force"]
   local hl_range
   local function _76_(start0, _end0, end_inclusive_3f)
-    return highlight_range_compat(0, hl.ns, hl_group, start0, _end0, {inclusive = end_inclusive_3f, priority = hl.priority.label, regtype = "v"})
+    return highlight_range_compat(0, hl.ns, hl_group, start0, _end0, {inclusive = end_inclusive_3f, priority = hl.priority.label})
   end
   hl_range = _76_
   local _77_ = motion_force
