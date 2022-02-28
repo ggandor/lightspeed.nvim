@@ -306,12 +306,9 @@ character instead."
                                         :guibg :NONE :ctermbg :NONE
                                         :gui "bold,underline"
                                         :cterm "bold,underline"}
-     hl.group.shortcut                 {:guibg "#f00077" :ctermbg "Red"
+     hl.group.shortcut                 {:guibg "#f00077" :ctermbg "Red"  ; ~inverse of label
                                         :guifg "#ffffff" :ctermfg "White"
-                                        :gui "bold,underline" :cterm "bold,underline"}  ; ~inverse of label
-     hl.group.one-char-match           {:guibg "#f00077" :ctermbg "Red"
-                                        :guifg "#ffffff" :ctermfg "White"
-                                        :gui "bold" :cterm "bold"}  ; shortcut without underline
+                                        :gui "bold" :cterm "bold"}
      hl.group.masked-ch                {:guifg (match bg :light "#cc9999" _ "#b38080")
                                         :ctermfg "DarkGrey"
                                         :guibg :NONE :ctermbg :NONE
@@ -335,6 +332,7 @@ character instead."
          (pairs {hl.group.unique-ch hl.group.unlabeled-match
                  hl.group.label-overlapped hl.group.label
                  hl.group.label-distant-overlapped hl.group.label-distant
+                 hl.group.one-char-match hl.group.shortcut
                  hl.group.shortcut-overlapped hl.group.shortcut
                  hl.group.pending-op-area :IncSearch
                  hl.group.cursor :Cursor})]
