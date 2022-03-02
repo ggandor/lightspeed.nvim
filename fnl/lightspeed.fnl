@@ -676,6 +676,12 @@ interrupted change-operation."
       (if (= (type ch) :number) (vim.fn.nr2char ch) ch))))
 
 
+(fn ignore-input-until-timeout [input-to-ignore timeout]
+    (match (get-input timeout)
+      input (when (not= input input-to-ignore)
+              (vim.fn.feedkeys input :i))))
+
+
 ; repeat.vim support
 ; (see the docs in the script:
 ; https://github.com/tpope/vim-repeat/blob/master/autoload/repeat.vim)
@@ -1324,15 +1330,6 @@ sub-table containing label-target key-value pairs for these targets."
       (set res target)))
   res)
 
-
-(fn ignore-input-until-timeout [char-to-ignore]
-  (match opts.jump_to_unique_chars
-    {:safety_timeout timeout}
-    (match (get-input timeout)
-      input (when (not= input char-to-ignore)
-              (vim.fn.feedkeys input :i)))))
-
-
 ; //> Helpers
 
 ; State for 2-character search that is persisted between invocations.
@@ -1583,7 +1580,9 @@ sub-table containing label-target key-value pairs for these targets."
                     (when new-search?  ; i.e. user is actually typing the pattern
                       (with-highlight-cleanup
                         (highlight-new-curpos-and-op-area from-pos to-pos)
-                        (ignore-input-until-timeout ch2))))
+                        (match opts.jump_to_unique_chars
+                          {:safety_timeout timeout}
+                          (ignore-input-until-timeout ch2 timeout)))))
               (exit-early (echo-not-found (.. in1 prev-in2))))
 
           targets
