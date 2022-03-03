@@ -930,8 +930,8 @@ interrupted change-operation."
 
 
 ; TODO: multibyte issues?
-(fn highlight-unique-chars [reverse? ?target-windows omni?]
-  (let [unique-chars {}
+(fn get-unique-chars [reverse? ?target-windows omni?]
+  (let [unique-chars {}  ; {key-ch : [lnum col wininfo ch-on-screen]}
         curr-w (. (vim.fn.getwininfo (vim.fn.win_getid)) 1)
         [curline curcol] (get-cursor-pos)]
     (each [_ w (ipairs (or ?target-windows [curr-w]))]
@@ -951,18 +951,20 @@ interrupted change-operation."
                            (length line))]
             (for [col startcol endcol]
               (when (or vim.wo.wrap (and (>= col left-bound) (<= col right-bound)))
-                (let [ch (line:sub col col)
-                      ch (if opts.ignore_case (ch:lower) ch)]
+                (let [orig-ch (line:sub col col)
+                      ch (if opts.ignore_case (ch:lower) orig-ch)]
                   (tset unique-chars ch (match (. unique-chars ch)
-                                          pos-already-there false
-                                          _ [lnum col w])))))))))
+                                          nil [lnum col w orig-ch]
+                                          _ false)))))))))
     (when ?target-windows
       (api.nvim_set_current_win curr-w.winid))
-    (each [ch pos (pairs unique-chars)]
-      (match pos  ; don't try to destructure `false` values above
-        [lnum col w]
-        (api.nvim_buf_add_highlight w.bufnr hl.ns hl.group.unique-ch
-                                    (dec lnum) (dec col) col)))))
+    (icollect [k v (pairs unique-chars)]
+      (match v
+        ; A subset of the target interface (see `get-targets*`), enough
+        ; for `light-up-beacons`.
+        [lnum col w orig-ch] {:pos [lnum col]
+                              :wininfo w
+                              :beacon [0 [[orig-ch hl.group.unique-ch]]]}))))
 
 
 (fn get-targets* [input reverse? ?wininfo ?targets]
@@ -1558,7 +1560,8 @@ sub-table containing label-target key-value pairs for these targets."
       (echo "")  ; clean up the command line
       (with-highlight-chores
         (when opts.jump_to_unique_chars
-          (highlight-unique-chars reverse? ?target-windows omni?))))
+          (-> (get-unique-chars reverse? ?target-windows omni?)
+              (light-up-beacons)))))
 
     (match (get-first-input)
       in1
