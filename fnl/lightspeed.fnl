@@ -470,127 +470,6 @@ types properly."
     adjusted-pos))
 
 
-(fn get-onscreen-lines [{: get-full-window? : reverse? : skip-folds?}]
-  (let [lines {}  ; {lnum : line-str}
-        wintop (vim.fn.line "w0")
-        winbot (vim.fn.line "w$")]
-    (var lnum (if get-full-window? (if reverse? winbot wintop)
-                  (vim.fn.line ".")))
-    (while (if reverse? (>= lnum wintop) (<= lnum winbot))
-      (local fold-edge (get-fold-edge lnum reverse?))
-      (if (and skip-folds? fold-edge)
-          (set lnum ((if reverse? dec inc) fold-edge))
-          (do (tset lines lnum (vim.fn.getline lnum))
-              (set lnum ((if reverse? dec inc) lnum)))))
-    lines))
-
-
-(fn get-horizontal-bounds [{: match-width}]
-  (let [textoff (or (. (vim.fn.getwininfo (vim.fn.win_getid)) 1 :textoff)  ; 0.6+
-                    (dec (leftmost-editable-wincol)))
-        offset-in-win (dec (vim.fn.wincol))
-        offset-in-editable-win (- offset-in-win textoff)
-        ; I.e., screen-column of the first visible column in the editable area.
-        left-bound (- (vim.fn.virtcol ".") offset-in-editable-win)
-        window-width (api.nvim_win_get_width 0)
-        right-edge (+ left-bound (dec (- window-width textoff)))
-        right-bound (- right-edge (dec match-width))]  ; the whole match should be visible
-    [left-bound right-bound]))  ; screen columns
-
-
-(fn onscreen-match-positions [pattern reverse? {: cross-window? : to-eol? : ft-search? : limit}]
-  "Returns an iterator streaming the return values of `searchpos` for
-the given pattern, stopping at the window edge; in case of 2-character
-search, folds and offscreen parts of non-wrapped lines are skipped too.
-Caveat: side-effects take place here (cursor movement, &cpo), and the
-clean-up happens only when the iterator is exhausted, so be careful with
-early termination in loops."
-  (let [view (vim.fn.winsaveview)
-        cpo vim.o.cpo
-        opts (if reverse? "b" "")
-        wintop (vim.fn.line "w0")
-        winbot (vim.fn.line "w$")
-        stopline (if reverse? wintop winbot)
-        cleanup #(do (vim.fn.winrestview view) (set vim.o.cpo cpo) nil)
-        [left-bound right-bound] (get-horizontal-bounds
-                                   {:match-width (if ft-search? 1 2)})]
-
-    ; HACK: vim.fn.cursor expects bytecol, but we want to put the cursor
-    ; to `right-bound` as virtcol (screen col); so simply start crawling
-    ; to the right, checking the virtcol... (When targeting the left
-    ; bound, we might undershoot too - the virtcol of a position is
-    ; always <= the bytecol of it -, but in that case it's no problem,
-    ; just some unnecessary work afterwards, as we're still outside the
-    ; on-screen area).
-    (fn reach-right-bound []
-      (while (and (< (vim.fn.virtcol ".") right-bound)
-                  (not (>= (vim.fn.col ".") (dec (vim.fn.col "$")))))  ; reached EOL
-        (vim.cmd "norm! l")))
-
-    (fn skip-to-fold-edge! []
-      (match ((if reverse? vim.fn.foldclosed vim.fn.foldclosedend)
-              (vim.fn.line "."))
-        -1 :not-in-fold
-        fold-edge (do (vim.fn.cursor fold-edge 0)
-                      (vim.fn.cursor 0 (if reverse? 1 (vim.fn.col "$")))
-                      ; ...regardless of whether it _actually_ moved
-                      :moved-the-cursor)))
-
-    (fn skip-to-next-in-window-pos! []
-      ; virtcol = like `col`, starting from the beginning of the line in the
-      ; buffer, but every char counts as the #of screen columns it occupies
-      ; (or would occupy), instead of the #of bytes.
-      (local [line virtcol &as from-pos] [(vim.fn.line ".") (vim.fn.virtcol ".")])
-      (match (if (< virtcol left-bound)
-                 (if reverse?
-                     (when (>= (dec line) stopline)
-                       [(dec line) right-bound])
-                     [line left-bound])
-
-                 (> virtcol right-bound)
-                 (if reverse?
-                     [line right-bound]
-                     (when (<= (inc line) stopline)
-                       [(inc line) left-bound])))
-        to-pos (when (not= from-pos to-pos)
-                 (vim.fn.cursor to-pos)
-                 (when reverse? (reach-right-bound))
-                 :moved-the-cursor)))
-
-    ; Do not skip overlapping matches.
-    (set vim.o.cpo (cpo:gsub "c" ""))
-    ; To be able to match the top-left or bottom-right corner (see below).
-    (var win-enter? nil)
-    (var match-count 0)
-
-    (when cross-window?
-      (set win-enter? true)
-      (vim.fn.cursor (if reverse? [winbot right-bound] [wintop left-bound]))
-      (when reverse? (reach-right-bound)))
-
-    (fn recur [match-at-curpos?]
-      (local match-at-curpos? (or match-at-curpos?
-                                  (when win-enter? (set win-enter? false) true)))
-      (if (and limit (>= match-count limit)) (cleanup)
-          (match (vim.fn.searchpos
-                   pattern (.. opts (if match-at-curpos? "c" "")) stopline)
-            [0 _] (cleanup)
-            [line col &as pos]
-            (if ft-search?
-                (do (++ match-count) pos)
-                (match (skip-to-fold-edge!)
-                  :moved-the-cursor (recur false)
-                  :not-in-fold
-                  (if (or vim.wo.wrap
-                          (<= left-bound col right-bound)
-                          to-eol?)  ; then we want the offscreen matches too
-                      (do (++ match-count) [line col left-bound right-bound])
-                      (match (skip-to-next-in-window-pos!)
-                        ; Arg = true, as we might be _on_ a match.
-                        :moved-the-cursor (recur true)
-                        _ (cleanup))))))))))
-
-
 (fn highlight-cursor [?pos]
   "The cursor is down on the command line during `getchar`,
 so we set a temporary highlight on it to see where we are."
@@ -656,12 +535,6 @@ interrupted change-operation."
         :sx `(doau-when-exists :LightspeedSxLeave))
      (doau-when-exists :LightspeedLeave)
      nil))
-
-
-(macro with-highlight-cleanup [...]
-  `(let [res# (do ,...)]
-     (hl:cleanup)
-     res#))
 
 
 (fn get-input [?timeout]
@@ -787,6 +660,22 @@ interrupted change-operation."
     (macro exit [...] `(exit-template :ft false ,...))
     (macro exit-early [...] `(exit-template :ft true ,...))
 
+    (macro with-highlight-cleanup [...]
+      `(let [res# (do ,...)]
+         (api.nvim_buf_clear_namespace 0 hl.ns 0 -1)
+         res#))
+
+    (fn match-positions [pattern reverse? limit]
+      (let [view (vim.fn.winsaveview)
+            cleanup #(do (vim.fn.winrestview view) nil)]
+        (var match-count 0)
+        (fn []
+          (if (and limit (>= match-count limit))
+              (cleanup)
+              (match (vim.fn.searchpos pattern (if reverse? "bW" "W"))
+                [0 _] (cleanup)
+                [line col &as pos] (do (++ match-count) pos))))))
+
     ; When instant-repeating, keep highlighting the same one group of matches,
     ; and do not shift until reaching the end of the group - it is less
     ; disorienting if the "snake" does not move continuously, on every repeat.
@@ -832,8 +721,7 @@ interrupted change-operation."
                           (.. "\\V" (if opts.ignore_case "\\c" "\\C")
                               (in1:gsub "\\" "\\\\")))
               limit (+ count (get-num-of-matches-to-be-highlighted))]
-          (each [[line col &as pos]
-                 (onscreen-match-positions pattern reverse? {:ft-search? true : limit})]
+          (each [[line col &as pos] (match-positions pattern reverse? limit)]
             ; If we've started cold-repeating t/T from right before a match,
             ; then skip that match (endnote #2).
             (when-not (and (= match-count 0) cold-repeat? t-mode? (same-pos? pos next-pos))
@@ -897,6 +785,110 @@ interrupted change-operation."
 
 ; Helpers ///
 
+(fn get-horizontal-bounds []
+  (let [match-width 2
+        textoff (or (. (vim.fn.getwininfo (vim.fn.win_getid)) 1 :textoff)  ; 0.6+
+                    (dec (leftmost-editable-wincol)))
+        offset-in-win (dec (vim.fn.wincol))
+        offset-in-editable-win (- offset-in-win textoff)
+        ; I.e., screen-column of the first visible column in the editable area.
+        left-bound (- (vim.fn.virtcol ".") offset-in-editable-win)
+        window-width (api.nvim_win_get_width 0)
+        right-edge (+ left-bound (dec (- window-width textoff)))
+        right-bound (- right-edge (dec match-width))]  ; the whole match should be visible
+    [left-bound right-bound]))  ; screen columns
+
+
+(fn onscreen-match-positions [pattern reverse? {: cross-window? : to-eol?}]
+  "Returns an iterator streaming the return values of `searchpos` for
+the given pattern, stopping at the window edge; in case of 2-character
+search, folds and offscreen parts of non-wrapped lines are skipped too.
+Caveat: side-effects take place here (cursor movement, &cpo), and the
+clean-up happens only when the iterator is exhausted, so be careful with
+early termination in loops."
+  (let [view (vim.fn.winsaveview)
+        cpo vim.o.cpo
+        opts (if reverse? "b" "")
+        wintop (vim.fn.line "w0")
+        winbot (vim.fn.line "w$")
+        stopline (if reverse? wintop winbot)
+        cleanup #(do (vim.fn.winrestview view) (set vim.o.cpo cpo) nil)
+        [left-bound right-bound] (get-horizontal-bounds)]
+
+    ; HACK: vim.fn.cursor expects bytecol, but we want to put the cursor
+    ; to `right-bound` as virtcol (screen col); so simply start crawling
+    ; to the right, checking the virtcol... (When targeting the left
+    ; bound, we might undershoot too - the virtcol of a position is
+    ; always <= the bytecol of it -, but in that case it's no problem,
+    ; just some unnecessary work afterwards, as we're still outside the
+    ; on-screen area).
+    (fn reach-right-bound []
+      (while (and (< (vim.fn.virtcol ".") right-bound)
+                  (not (>= (vim.fn.col ".") (dec (vim.fn.col "$")))))  ; reached EOL
+        (vim.cmd "norm! l")))
+
+    (fn skip-to-fold-edge! []
+      (match ((if reverse? vim.fn.foldclosed vim.fn.foldclosedend)
+              (vim.fn.line "."))
+        -1 :not-in-fold
+        fold-edge (do (vim.fn.cursor fold-edge 0)
+                      (vim.fn.cursor 0 (if reverse? 1 (vim.fn.col "$")))
+                      ; ...regardless of whether it _actually_ moved
+                      :moved-the-cursor)))
+
+    (fn skip-to-next-in-window-pos! []
+      ; virtcol = like `col`, starting from the beginning of the line in the
+      ; buffer, but every char counts as the #of screen columns it occupies
+      ; (or would occupy), instead of the #of bytes.
+      (local [line virtcol &as from-pos] [(vim.fn.line ".") (vim.fn.virtcol ".")])
+      (match (if (< virtcol left-bound)
+                 (if reverse?
+                     (when (>= (dec line) stopline)
+                       [(dec line) right-bound])
+                     [line left-bound])
+
+                 (> virtcol right-bound)
+                 (if reverse?
+                     [line right-bound]
+                     (when (<= (inc line) stopline)
+                       [(inc line) left-bound])))
+        to-pos (when (not= from-pos to-pos)
+                 (vim.fn.cursor to-pos)
+                 (when reverse? (reach-right-bound))
+                 :moved-the-cursor)))
+
+    ; Do not skip overlapping matches.
+    (set vim.o.cpo (cpo:gsub "c" ""))
+    ; To be able to match the top-left or bottom-right corner (see below).
+    (var win-enter? nil)
+    (var match-count 0)
+
+    (when cross-window?
+      (set win-enter? true)
+      (vim.fn.cursor (if reverse? [winbot right-bound] [wintop left-bound]))
+      (when reverse? (reach-right-bound)))
+
+    (fn recur [match-at-curpos?]
+      (local match-at-curpos? (or match-at-curpos?
+                                  (when win-enter? (set win-enter? false) true)))
+      (if (and limit (>= match-count limit)) (cleanup)
+          (match (vim.fn.searchpos
+                   pattern (.. opts (if match-at-curpos? "c" "")) stopline)
+            [0 _] (cleanup)
+            [line col &as pos]
+            (match (skip-to-fold-edge!)
+              :moved-the-cursor (recur false)
+              :not-in-fold
+              (if (or vim.wo.wrap
+                      (<= left-bound col right-bound)
+                      to-eol?)  ; then we want the offscreen matches too
+                (do (++ match-count) [line col left-bound right-bound])
+                (match (skip-to-next-in-window-pos!)
+                  ; Arg = true, as we might be _on_ a match.
+                  :moved-the-cursor (recur true)
+                  _ (cleanup)))))))))
+
+
 (fn user-forced-autojump? []
   (or (not opts.labels) (empty? opts.labels)))
 
@@ -927,6 +919,21 @@ interrupted change-operation."
                 id))
         ids (if reverse? (vim.fn.reverse ids) ids)]
     (map #(. (vim.fn.getwininfo $) 1) ids)))
+
+
+(fn get-onscreen-lines [{: get-full-window? : reverse? : skip-folds?}]
+  (let [lines {}  ; {lnum : line-str}
+        wintop (vim.fn.line "w0")
+        winbot (vim.fn.line "w$")]
+    (var lnum (if get-full-window? (if reverse? winbot wintop)
+                  (vim.fn.line ".")))
+    (while (if reverse? (>= lnum wintop) (<= lnum winbot))
+      (local fold-edge (get-fold-edge lnum reverse?))
+      (if (and skip-folds? fold-edge)
+          (set lnum ((if reverse? dec inc) fold-edge))
+          (do (tset lines lnum (vim.fn.getline lnum))
+              (set lnum ((if reverse? dec inc) lnum)))))
+    lines))
 
 
 ; TODO: multibyte issues?
