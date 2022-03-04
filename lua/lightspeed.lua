@@ -285,11 +285,11 @@ local function init_highlight(force_3f)
   for from_group, to_group in pairs({[hl.group.cursor] = "Cursor", [hl.group["label-distant-overlapped"]] = hl.group["label-distant"], [hl.group["label-overlapped"]] = hl.group.label, [hl.group["one-char-match"]] = hl.group.shortcut, [hl.group["pending-op-area"]] = "IncSearch", [hl.group["shortcut-overlapped"]] = hl.group.shortcut, [hl.group["unique-ch"]] = hl.group["unlabeled-match"]}) do
     local _63_
     if force_3f then
-      _63_ = ""
+      _63_ = "! "
     else
-      _63_ = "default "
+      _63_ = " default "
     end
-    vim.cmd(("highlight! " .. _63_ .. "link " .. from_group .. " " .. to_group))
+    vim.cmd(("highlight" .. _63_ .. "link " .. from_group .. " " .. to_group))
   end
   return nil
 end

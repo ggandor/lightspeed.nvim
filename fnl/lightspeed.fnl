@@ -336,7 +336,7 @@ character instead."
                  hl.group.shortcut-overlapped hl.group.shortcut
                  hl.group.pending-op-area :IncSearch
                  hl.group.cursor :Cursor})]
-    (vim.cmd (.. "highlight! " (if force? "" "default ")
+    (vim.cmd (.. "highlight" (if force? "! " " default ")
                  "link " from-group " " to-group))))
 
 
