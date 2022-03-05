@@ -1217,7 +1217,7 @@ local function get_unique_chars(reverse_3f, _3ftarget_windows, omni_3f)
           local orig_ch = line:sub(col, col)
           local ch
           if opts.ignore_case then
-            ch = ch:lower()
+            ch = orig_ch:lower()
           else
             ch = orig_ch
           end

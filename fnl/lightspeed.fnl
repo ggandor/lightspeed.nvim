@@ -959,7 +959,7 @@ early termination in loops."
             (for [col startcol endcol]
               (when (or vim.wo.wrap (and (>= col left-bound) (<= col right-bound)))
                 (let [orig-ch (line:sub col col)
-                      ch (if opts.ignore_case (ch:lower) orig-ch)]
+                      ch (if opts.ignore_case (orig-ch:lower) orig-ch)]
                   (tset unique-chars ch (match (. unique-chars ch)
                                           nil [lnum col w orig-ch]
                                           _ false)))))))))
