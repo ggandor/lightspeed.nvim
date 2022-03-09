@@ -1562,7 +1562,8 @@ sub-table containing label-target key-value pairs for these targets."
     ; After all the stage-setting, here comes the main action you've all been
     ; waiting for:
 
-    (enter :sx)
+    (when-not instant-repeat?
+      (enter :sx))
     (when-not repeat-invoc
       (echo "")  ; clean up the command line
       (with-highlight-chores
@@ -1679,11 +1680,12 @@ sub-table containing label-target key-value pairs for these targets."
 
 ; Handling editor options ///1
 
-; Quick-and-dirty code, we'll tidy up/expand/rethink this section later.
-
 ; We will probably expose this table in the future, as an `opts` field.
 (local temporary-editor-opts {:vim.wo.conceallevel 0
                               :vim.wo.scrolloff 0
+                              :vim.wo.sidescrolloff 0
+                              :vim.o.scrolloff 0
+                              :vim.o.sidescrolloff 0
                               :vim.bo.modeline false})  ; #81
 
 (local saved-editor-opts {})
@@ -1696,9 +1698,9 @@ sub-table containing label-target key-value pairs for these targets."
             opt
             ; Workaround for Nvim #13964.
             (if (= opt :vim.wo.scrolloff) (api.nvim_eval "&l:scrolloff")
-                ; (= opt :vim.o.scrolloff) (api.nvim_eval "&scrolloff")
-                ; (= opt :vim.wo.sidescrolloff) (api.nvim_eval "&l:sidescrolloff")
-                ; (= opt :vim.o.sidescrolloff) (api.nvim_eval "&sidescrolloff")
+                (= opt :vim.wo.sidescrolloff) (api.nvim_eval "&l:sidescrolloff")
+                (= opt :vim.o.scrolloff) (api.nvim_eval "&scrolloff")
+                (= opt :vim.o.sidescrolloff) (api.nvim_eval "&sidescrolloff")
                 (. _G.vim scope name))))))
 
 
