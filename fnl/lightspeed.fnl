@@ -1372,7 +1372,10 @@ sub-table containing label-target key-value pairs for these targets."
         x-mode? (if cold-repeat? self.state.cold.x-mode? x-mode?)
         ?target-windows (or (when cross-window?
                               (get-targetable-windows reverse? omni?))
-                            (when instant-repeat? instant-state.target-windows))]
+                            (when instant-repeat? instant-state.target-windows))
+        spec-keys (setmetatable {} {:__index
+                                    (fn [_ k] (replace-keycodes
+                                                (. opts.special_keys k)))})]
 
     ; Top-level vars
 
@@ -1517,37 +1520,39 @@ sub-table containing label-target key-value pairs for these targets."
               sublist))))
 
     (fn get-last-input [sublist start-idx]
-      (let [next_group_key (replace-keycodes opts.special_keys.next_match_group)
-            prev_group_key (replace-keycodes opts.special_keys.prev_match_group)]
-        (fn recur [group-offset initial-invoc?]
-          (set-beacons sublist {:repeat (if (or cold-repeat? backspace-repeat?) :cold
-                                            instant-repeat? (if sublist.autojump?
-                                                                :instant
-                                                                :instant-unsafe))})
-          (with-highlight-chores
-            (light-up-beacons sublist start-idx))
-          (match (with-highlight-cleanup
-                   (get-input (when initial-invoc?
-                                opts.exit_after_idle_msecs.labeled)))
-            input
-            (if (and sublist.autojump? (not (user-forced-autojump?)))
-                ; If auto-jump has been set heuristically (not forced), it
-                ; implies that there are no subsequent groups.
-                [input 0]
+      (fn recur [group-offset initial-invoc?]
+        (set-beacons sublist
+                     {:repeat (if (or cold-repeat? backspace-repeat?) :cold
+                                  instant-repeat? (if sublist.autojump? :instant
+                                                      :instant-unsafe))})
+        (with-highlight-chores
+          (light-up-beacons sublist start-idx))
+        (match (with-highlight-cleanup
+                 (get-input (when initial-invoc?
+                              opts.exit_after_idle_msecs.labeled)))
+          input
+          (if (and sublist.autojump? (not (user-forced-autojump?)))
+              ; If auto-jump has been set heuristically (not forced), it
+              ; implies that there are no subsequent groups.
+              [input 0]
 
-                (and (one-of? input next_group_key prev_group_key)
-                     (not instant-repeat?))
-                (let [labels sublist.label-set
-                      num-of-groups (ceil (/ (length sublist) (length labels)))
-                      max-offset (dec num-of-groups)
-                      group-offset* (-> group-offset
-                                        ((match input next_group_key inc _ dec))
-                                        (clamp 0 max-offset))]
-                  (set-label-states sublist {:group-offset group-offset*})
-                  (recur group-offset*))
+              (and (one-of? input
+                     spec-keys.next_match_group
+                     spec-keys.prev_match_group)
+                   (not instant-repeat?))
+              (let [labels sublist.label-set
+                    num-of-groups (ceil (/ (length sublist) (length labels)))
+                    max-offset (dec num-of-groups)
+                    group-offset* (-> group-offset
+                                      ((match input
+                                         spec-keys.next_match_group inc
+                                         _ dec))
+                                      (clamp 0 max-offset))]
+                (set-label-states sublist {:group-offset group-offset*})
+                (recur group-offset*))
 
-                [input group-offset])))
-        (recur 0 true)))
+              [input group-offset])))
+      (recur 0 true))
 
     ; TODO: Handle instant-repeat sequences too.
     (fn restore-view-on-winleave [curr-target next-target]
