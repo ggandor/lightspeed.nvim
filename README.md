@@ -162,7 +162,7 @@ Lightspeed jumps to it directly, without waiting for a second input. These
 unique characters are highlighted beforehand;
 [quick-scope](https://github.com/unblevable/quick-scope) is based on a similar
 idea, but the intent here is not a "choose me!"-kind of preliminary orientation
-(the assumpiton is that you _know_ where you want to go), more like giving
+(the assumption is that you _know_ where you want to go), more like giving
 feedback for your brain _while_ you type.
 
 ![jumping to unique characters](../media/intro_img1_jump_to_unique.gif?raw=true)
