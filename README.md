@@ -1,3 +1,11 @@
+# Announcement
+
+For a more lightweight, easier-to-use alternative, check out the author's new,
+work-in-progress plugin, [Leap](https://github.com/ggandor/leap.nvim). It is a
+streamlined, refined successor of Lightspeed, incorporating all the lessons
+learned from the predecessor, achieving much better balance between speed,
+simplicity (of both interface and implementation) and intuitiveness.
+
 # 🌌 lightspeed.nvim
 
 Lightspeed is a cutting-edge motion plugin for [Neovim](https://neovim.io/),
