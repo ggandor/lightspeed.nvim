@@ -597,6 +597,10 @@ only execute for certain ones, etc.
   should check the state of that first. Alternatively, you can tweak the
   `LightspeedCursor` group, to highlight the cursor in a custom way.
 
+* If you are using VSCode with NeoVim extension, you need to set 
+  [`hi LightspeedCursor gui=reverse`](https://github.com/vscode-neovim/vscode-neovim/pull/868#issuecomment-1131963354) 
+  in your nvim config to support the fake cursor and make Lightspeed work.
+
 * The otherwise useful multiline scoping of `f/F/t/T` can be undesireable when
   recording macros or executing `:normal`. This is [being worked
   on](https://github.com/ggandor/lightspeed.nvim/issues/14), but as an API
