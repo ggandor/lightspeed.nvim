@@ -68,18 +68,6 @@ character instead."
       (vim.fn.nr2char char-nr))))
 
 
-; For pre-0.6 compatibility.
-(fn leftmost-editable-wincol []
-  ; Note: This will not have a visible effect if not forcing a redraw.
-  (local view (vim.fn.winsaveview))
-  (vim.cmd "norm! 0")
-  (local wincol (vim.fn.wincol))
-  (vim.fn.winrestview view)
-  (if (= "\t" (string.sub (vim.fn.getline ".") 1 1))  ; #98
-      (- wincol (dec vim.o.tabstop))
-      wincol))
-
-
 (fn get-fold-edge [lnum reverse?]
   (match ((if reverse? vim.fn.foldclosed vim.fn.foldclosedend) lnum)
     -1 nil
@@ -93,14 +81,6 @@ character instead."
         ; field, but this works as well.
         (ok? eval-rhs) (pcall vim.fn.eval rhs)]
     (if (and ok? (= (type eval-rhs) :string)) eval-rhs rhs)))
-
-
-; For pre-0.7 compatibility
-(fn highlight-range-compat [bufnr ns higroup start finish opts]
-  (if (= 1 (vim.fn.has "nvim-0.7"))
-      (vim.highlight.range bufnr ns higroup start finish opts)
-      (vim.highlight.range bufnr ns higroup start finish
-                           opts.regtype opts.inclusive opts.priority)))
 
 
 ; Glossary ///1
@@ -344,17 +324,17 @@ character instead."
   (if (or ?target-windows omni?)
       (each [_ win (ipairs (or ?target-windows
                                [(. (vim.fn.getwininfo (vim.fn.win_getid)) 1)]))]
-        (highlight-range-compat win.bufnr hl.ns hl.group.greywash
-                                [(dec win.topline) 0] [(dec win.botline) -1]
-                                {:priority hl.priority.greywash}))
+        (vim.highlight.range win.bufnr hl.ns hl.group.greywash
+                             [(dec win.topline) 0] [(dec win.botline) -1]
+                             {:priority hl.priority.greywash}))
       (let [[curline curcol] (map dec (get-cursor-pos))
             [win-top win-bot] [(dec (vim.fn.line "w0")) (dec (vim.fn.line "w$"))]
             [start finish] (if reverse?
                                [[win-top 0] [curline curcol]]
                                [[curline (inc curcol)] [win-bot -1]])]
         ; Expects 0,0-indexed args; `finish` is exclusive.
-        (highlight-range-compat 0 hl.ns hl.group.greywash start finish
-                                {:priority hl.priority.greywash}))))
+        (vim.highlight.range 0 hl.ns hl.group.greywash start finish
+                             {:priority hl.priority.greywash}))))
 
 
 (fn highlight-range [hl-group
@@ -364,9 +344,9 @@ character instead."
   "A wrapper around `vim.highlight.range` that handles forced motion
 types properly."
   (let [hl-range (fn [start end end-inclusive?]
-                   (highlight-range-compat 0 hl.ns hl-group start end
-                                           {:inclusive end-inclusive?
-                                            :priority hl.priority.label}))]
+                   (vim.highlight.range 0 hl.ns hl-group start end
+                                        {:inclusive end-inclusive?
+                                         :priority hl.priority.label}))]
     (match motion-force
       <ctrl-v> (let [[startcol endcol] [(min startcol endcol)
                                         (max startcol endcol)]]
@@ -530,15 +510,14 @@ interrupted change operation."
 
 
 (fn get-input [?timeout]
-  (let [esc-keycode 27
-        char-available? #(not= 0 (vim.fn.getchar 1))
+  (let [char-available? #(not= "" (vim.fn.getcharstr true))
         getchar-timeout #(when (vim.wait ?timeout char-available? 100)
-                           (vim.fn.getchar 0))
+                           (vim.fn.getcharstr false))
         ; pcall for handling <C-c>.
-        (ok? ch) (pcall (if ?timeout getchar-timeout vim.fn.getchar))]
+        (ok? ch) (pcall (if ?timeout getchar-timeout vim.fn.getcharstr))]
     ; <esc> should cleanly exit anytime.
-    (when (and ok? (not= ch esc-keycode))
-      (if (= (type ch) :number) (vim.fn.nr2char ch) ch))))
+    (when (and ok? (not= ch (replace-keycodes "<esc>")))
+      ch)))
 
 
 (fn ignore-input-until-timeout [input-to-ignore timeout]
@@ -779,8 +758,7 @@ interrupted change operation."
 
 (fn get-horizontal-bounds []
   (let [match-width 2
-        textoff (or (. (vim.fn.getwininfo (vim.fn.win_getid)) 1 :textoff)  ; 0.6+
-                    (dec (leftmost-editable-wincol)))
+        textoff (. (vim.fn.getwininfo (vim.fn.win_getid)) 1 :textoff)
         offset-in-win (dec (vim.fn.wincol))
         offset-in-editable-win (- offset-in-win textoff)
         ; I.e., screen-column of the first visible column in the editable area.

@@ -233,7 +233,7 @@ rolling/flashing sequence of labels, like in case of Hop/EasyMotion.)
 
 ### Requirements
 
-* Neovim >= 0.5.0
+* Neovim >= 0.7.0
 
 ### Dependencies
 

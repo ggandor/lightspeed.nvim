@@ -1,6 +1,6 @@
-if !has('nvim-0.5')
+if !has('nvim-0.7')
   echohl WarningMsg
-  echom "Lightspeed needs Neovim >= 0.5"
+  echom "Lightspeed needs Neovim >= 0.7"
   echohl None
   finish
 endif
