@@ -398,10 +398,6 @@ local function push_cursor_21(direction)
   end
   return vim.fn.search("\\_.", _79_())
 end
-local function force_matchparen_refresh()
-  pcall(api.nvim_exec_autocmds, "CursorMoved", {group = "matchparen"})
-  return pcall(api.nvim_exec_autocmds, "CursorMoved", {group = "matchup_matchparen"})
-end
 local function cursor_before_eof_3f()
   return ((vim.fn.line(".") == vim.fn.line("$")) and (vim.fn.virtcol(".") == dec(vim.fn.virtcol("$"))))
 end
@@ -415,40 +411,45 @@ local function push_beyond_eof_21()
   end
   return api.nvim_create_autocmd({"CursorMoved", "WinLeave", "BufLeave", "InsertEnter", "CmdlineEnter", "CmdwinEnter"}, {callback = _81_, once = true})
 end
-local function jump_to_21_2a(target, _82_)
-  local _arg_83_ = _82_
-  local mode = _arg_83_["mode"]
-  local reverse_3f = _arg_83_["reverse?"]
-  local inclusive_motion_3f = _arg_83_["inclusive-motion?"]
-  local add_to_jumplist_3f = _arg_83_["add-to-jumplist?"]
-  local adjust = _arg_83_["adjust"]
+local function simulate_inclusive_op_21(mode)
+  local _82_ = vim.fn.matchstr(mode, "^no\\zs.")
+  if (_82_ == "") then
+    if cursor_before_eof_3f() then
+      return push_beyond_eof_21()
+    else
+      return push_cursor_21("fwd")
+    end
+  elseif (_82_ == "v") then
+    return push_cursor_21("bwd")
+  else
+    return nil
+  end
+end
+local function force_matchparen_refresh()
+  pcall(api.nvim_exec_autocmds, "CursorMoved", {group = "matchparen"})
+  return pcall(api.nvim_exec_autocmds, "CursorMoved", {group = "matchup_matchparen"})
+end
+local function jump_to_21_2a(target, _85_)
+  local _arg_86_ = _85_
+  local mode = _arg_86_["mode"]
+  local reverse_3f = _arg_86_["reverse?"]
+  local inclusive_motion_3f = _arg_86_["inclusive-motion?"]
+  local add_to_jumplist_3f = _arg_86_["add-to-jumplist?"]
+  local adjust = _arg_86_["adjust"]
   local op_mode_3f = string.match(mode, "o")
-  local motion_force = get_motion_force(mode)
   if add_to_jumplist_3f then
     vim.cmd("norm! m`")
   else
   end
   vim.fn.cursor(target)
   adjust()
-  if not op_mode_3f then
-    force_matchparen_refresh()
+  local adjusted_pos = get_cursor_pos()
+  if (op_mode_3f and inclusive_motion_3f and not reverse_3f) then
+    simulate_inclusive_op_21(mode)
   else
   end
-  local adjusted_pos = get_cursor_pos()
-  if (op_mode_3f and not reverse_3f and inclusive_motion_3f) then
-    local _86_ = motion_force
-    if (_86_ == nil) then
-      if cursor_before_eof_3f() then
-        push_beyond_eof_21()
-      else
-        push_cursor_21("fwd")
-      end
-    elseif (_86_ == "V") then
-    elseif (_86_ == _3cctrl_v_3e) then
-    elseif (_86_ == "v") then
-      push_cursor_21("bwd")
-    else
-    end
+  if not op_mode_3f then
+    force_matchparen_refresh()
   else
   end
   return adjusted_pos
@@ -2389,15 +2390,15 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
     end
     _456_ = (_457_() or get_targets(in1, reverse_3f0, _3ftarget_windows, omni_3f) or _460_())
     local function _462_()
+      local only = (_456_)[1]
       local _0 = (((_456_)[1]).pair)[1]
       local ch2 = (((_456_)[1]).pair)[2]
-      local only = (_456_)[1]
       return opts.jump_to_unique_chars
     end
     if (((_G.type(_456_) == "table") and ((_G.type((_456_)[1]) == "table") and ((_G.type(((_456_)[1]).pair) == "table") and true and (nil ~= (((_456_)[1]).pair)[2]))) and ((_456_)[2] == nil)) and _462_()) then
+      local only = (_456_)[1]
       local _0 = (((_456_)[1]).pair)[1]
       local ch2 = (((_456_)[1]).pair)[2]
-      local only = (_456_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           if dot_repeatable_op_3f then
@@ -2504,9 +2505,9 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
           _480_ = t_481_
         end
         if ((_G.type(_480_) == "table") and ((_G.type((_480_).pair) == "table") and true and (nil ~= ((_480_).pair)[2]))) then
+          local shortcut = _480_
           local _0 = ((_480_).pair)[1]
           local ch2 = ((_480_).pair)[2]
-          local shortcut = _480_
           do
             if dot_repeatable_op_3f then
               set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f0, x_mode_3f0, "dot")))

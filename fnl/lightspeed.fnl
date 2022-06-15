@@ -373,22 +373,7 @@ types properly."
   (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW")))
 
 
-(fn force-matchparen-refresh []
-  ; HACK: :DoMatchParen turns matchparen on simply by triggering
-  ; CursorMoved events (see matchparen.vim). We can do the same, which
-  ; is cleaner for us than calling :DoMatchParen directly, since that
-  ; would wrap this in a `windo`, and might visit another buffer,
-  ; breaking our visual selection (and thus also dot-repeat,
-  ; apparently). (See :h visual-start, and the discussion at #38.)
-  ; Programming against the API would be more robust of course, but in
-  ; the unlikely case that the implementation details would change, this
-  ; still cannot do any damage on our side if called with pcall (the
-  ; feature just ceases to work then).
-  (pcall api.nvim_exec_autocmds "CursorMoved" {:group "matchparen"})
-  ; If vim-matchup is installed, it can similarly be forced to refresh
-  ; by triggering a CursorMoved event. (The same caveats apply.)
-  (pcall api.nvim_exec_autocmds "CursorMoved" {:group "matchup_matchparen"}))
-
+; Jump ///
 
 (fn cursor-before-eof? []
   (and (= (vim.fn.line ".") (vim.fn.line "$"))
@@ -407,45 +392,60 @@ types properly."
      :once true}))
 
 
+(fn simulate-inclusive-op! [mode]
+  "When applied after an exclusive motion (like setting the cursor via
+the API), make the motion appear to behave as an inclusive one."
+  (match (vim.fn.matchstr mode "^no\\zs.")  ; get forcing modifier
+    ; In the normal case (no modifier), we should push the cursor
+    ; forward. (The EOF edge case requires some hackery though.)
+    "" (if (cursor-before-eof?) (push-beyond-eof!) (push-cursor! :fwd))
+    ; We also want the `v` modifier to behave in the native way, that
+    ; is, to toggle between inclusive/exclusive if applied to a charwise
+    ; motion (:h o_v). As `v` will change our (technically) exclusive
+    ; motion to inclusive, we should push the cursor back to undo that.
+    :v (push-cursor! :bwd)
+    ; Blockwise (<c-v>) itself makes the motion inclusive, do nothing in
+    ; that case.
+    ))
+
+
+(fn force-matchparen-refresh []
+  ; HACK: :DoMatchParen turns matchparen on simply by triggering
+  ; CursorMoved events (see matchparen.vim). We can do the same, which
+  ; is cleaner for us than calling :DoMatchParen directly, since that
+  ; would wrap this in a `windo`, and might visit another buffer,
+  ; breaking our visual selection (and thus also dot-repeat,
+  ; apparently). (See :h visual-start, and the discussion at #38.)
+  ; Programming against the API would be more robust of course, but in
+  ; the unlikely case that the implementation details would change, this
+  ; still cannot do any damage on our side if called with pcall (the
+  ; feature just ceases to work then).
+  (pcall api.nvim_exec_autocmds "CursorMoved" {:group "matchparen"})
+  ; If vim-matchup is installed, it can similarly be forced to refresh
+  ; by triggering a CursorMoved event. (The same caveats apply.)
+  (pcall api.nvim_exec_autocmds "CursorMoved" {:group "matchup_matchparen"}))
+
+
 (fn jump-to!* [target {: mode : reverse? : inclusive-motion?
                        : add-to-jumplist? : adjust}]
-  (let [op-mode? (string.match mode :o)
-        motion-force (get-motion-force mode)]
-    ; <C-o> will unfortunately ignore this if the line has not changed.
-    ; See neovim#9874.
-    (when add-to-jumplist?
-      (vim.cmd "norm! m`"))
-    (vim.fn.cursor target)
-    ; Adjust position after the jump (for t-mode or x-mode).
-    (adjust)
-    (when-not op-mode?
-      (force-matchparen-refresh))
-    ; We should get this before the (possible) hacks below.
-    (local adjusted-pos (get-cursor-pos))
-    ; Simulating inclusive/exclusive behaviour for operator-pending mode by
-    ; adjusting the cursor position.
-    ; For operators, our jump is always interpreted by Vim as an exclusive
-    ; motion, so whenever we'd like to behave as an inclusive one, an
-    ; additional push is needed to even that out (:h inclusive).
-    ; (This is only relevant in the forward direction.)
-    (when (and op-mode? (not reverse?) inclusive-motion?)
-      (match motion-force
-        ; In the normal case (no modifier), we should push the cursor
-        ; forward. (The EOF edge case requires some hackery though.)
-        nil (if (cursor-before-eof?) (push-beyond-eof!) (push-cursor! :fwd))
-        ; We should _never_ push the cursor in the linewise case, as we might
-        ; push it beyond EOL, and that would add another line to the selection.
-        :V nil
-        ; Blockwise (<c-v>) itself makes the motion inclusive, we're done.
-        <ctrl-v> nil
-        ; We want the `v` modifier to behave in the native way, that is, to
-        ; toggle between inclusive/exclusive if applied to a charwise
-        ; motion (:h o_v). As our jump is technically - i.e., from Vim's
-        ; perspective - an exclusive motion, `v` will change it to
-        ; _inclusive_, so we should push the cursor back to "undo" that.
-        ; (Previous column as inclusive = target column as exclusive.)
-        :v (push-cursor! :bwd)))
-    adjusted-pos))
+  (local op-mode? (string.match mode :o))
+  ; Note: <C-o> will ignore this if the line has not changed (neovim#9874).
+  (when add-to-jumplist? (vim.cmd "norm! m`"))
+  (vim.fn.cursor target)
+  ; Adjust position after the jump (for t-mode or x-mode).
+  (adjust)
+  ; We should get this before the (possible) hacks below.
+  (local adjusted-pos (get-cursor-pos))
+  ; Since Vim interprets our jump as an exclusive motion (:h exclusive),
+  ; we need custom tweaks to behave as an inclusive one. (This is only
+  ; relevant in the forward direction, as inclusiveness applies to the
+  ; end of the selection.)
+  (when (and op-mode? inclusive-motion? (not reverse?))
+    (simulate-inclusive-op! mode))
+  (when-not op-mode? (force-matchparen-refresh))
+  adjusted-pos)
+
+; //> Jump
 
 
 (fn highlight-cursor [?pos]
