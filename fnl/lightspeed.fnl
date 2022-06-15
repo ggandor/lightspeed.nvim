@@ -250,10 +250,7 @@ character instead."
 (local hl
   {:group {:label                    "LightspeedLabel"
            :label-distant            "LightspeedLabelDistant"
-           :label-overlapped         "LightspeedLabelOverlapped"
-           :label-distant-overlapped "LightspeedLabelDistantOverlapped"
            :shortcut                 "LightspeedShortcut"
-           :shortcut-overlapped      "LightspeedShortcutOverlapped"
            :masked-ch                "LightspeedMaskedChar"
            :unlabeled-match          "LightspeedUnlabeledMatch"
            :one-char-match           "LightspeedOneCharMatch"
@@ -310,10 +307,7 @@ character instead."
   ; Setting linked groups.
   (each [from-group to-group
          (pairs {hl.group.unique-ch hl.group.unlabeled-match
-                 hl.group.label-overlapped hl.group.label
-                 hl.group.label-distant-overlapped hl.group.label-distant
                  hl.group.one-char-match hl.group.shortcut
-                 hl.group.shortcut-overlapped hl.group.shortcut
                  hl.group.pending-op-area :IncSearch
                  hl.group.cursor :Cursor})]
     (vim.cmd (.. "highlight" (if force? "! " " default ")
@@ -1228,10 +1222,7 @@ sub-table containing label-target key-value pairs for these targets."
         masked-char$ [ch2 hg.masked-ch]
         label$ [label hg.label]
         shortcut$ [label hg.shortcut]
-        distant-label$ [label hg.label-distant]
-        overlapped-label$ [label hg.label-overlapped]
-        overlapped-shortcut$ [label hg.shortcut-overlapped]
-        overlapped-distant-label$ [label hg.label-distant-overlapped]]
+        distant-label$ [label hg.label-distant]]
     ; The `beacon` field looks like: [col-offset [[char hl-group]]]
     (set target.beacon
          (if
@@ -1256,14 +1247,11 @@ sub-table containing label-target key-value pairs for these targets."
                              right-off? [(dec (- right-bound col))
                                          [shortcut$ [">" hg.one-char-match]]])
                  repeat [(if squeezed? 1 2) [shortcut$]]
-                 shortcut? (if overlapped?
-                               [1 [overlapped-shortcut$]]
-                               (if squeezed?
-                                   [0 [masked-char$ shortcut$]]
-                                   [2 [shortcut$]]))
-                 overlapped? [1 [overlapped-label$]]
+                 shortcut? (if squeezed?
+                               [0 [masked-char$ shortcut$]]
+                               [(if overlapped? 1 2) [shortcut$]])
                  squeezed? [0 [masked-char$ label$]]
-                 [2 [label$]])
+                 [(if overlapped? 1 2) [label$]])
 
              ; TODO: New hl group (~ no-underline distant label).
              :active-secondary
@@ -1273,9 +1261,8 @@ sub-table containing label-target key-value pairs for these targets."
                              right-off? [(dec (- right-bound col))
                                          [distant-label$ [">" hg.unlabeled-match]]])
                  repeat [(if squeezed? 1 2) [distant-label$]]
-                 overlapped? [1 [overlapped-distant-label$]]
                  squeezed? [0 [masked-char$ distant-label$]]
-                 [2 [distant-label$]])
+                 [(if overlapped? 1 2) [distant-label$]])
 
              :inactive nil)))))
 

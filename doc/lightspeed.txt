@@ -434,20 +434,13 @@ own liking:
         into the 2-column box of the match, or if
         `force_beacons_into_match_width` is set to true).
 
-    *LightspeedLabelOverlapped*
-        When matches overlap, labels get next to each other - in that case
-        they get different highlights, to be more easily distinguishable
-        (slightly lighter or darker, depending on the global background).
-
     *LightspeedLabelDistant*
-    *LightspeedLabelDistantOverlapped*
         If the number of matches exceeds the available target labels, the next
         group of labeled targets are shown with a different color. Those can
         be reached by pressing `<space>` (`special_keys.next_match_group`)
         before the label character.
          
     *LightspeedShortcut*
-    *LightspeedShortcutOverlapped*
         Labels for positions that can be jumped to right after the first
         input (see |lightspeed-shortcuts|).
         These are highlighted as "inverted" labels by default
