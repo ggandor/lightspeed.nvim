@@ -398,26 +398,32 @@ local function push_cursor_21(direction)
   end
   return vim.fn.search("\\_.", _79_())
 end
-local function get_restore_virtualedit_autocmd()
-  return ("autocmd " .. "CursorMoved,WinLeave,BufLeave,InsertEnter,CmdlineEnter,CmdwinEnter" .. " * ++once set virtualedit=" .. vim.o.virtualedit)
-end
 local function force_matchparen_refresh()
-  vim.cmd("silent! doautocmd matchparen CursorMoved")
-  return vim.cmd("silent! doautocmd matchup_matchparen CursorMoved")
+  pcall(api.nvim_exec_autocmds, "CursorMoved", {group = "matchparen"})
+  return pcall(api.nvim_exec_autocmds, "CursorMoved", {group = "matchup_matchparen"})
 end
 local function cursor_before_eof_3f()
   return ((vim.fn.line(".") == vim.fn.line("$")) and (vim.fn.virtcol(".") == dec(vim.fn.virtcol("$"))))
 end
-local function jump_to_21_2a(target, _81_)
-  local _arg_82_ = _81_
-  local mode = _arg_82_["mode"]
-  local reverse_3f = _arg_82_["reverse?"]
-  local inclusive_motion_3f = _arg_82_["inclusive-motion?"]
-  local add_to_jumplist_3f = _arg_82_["add-to-jumplist?"]
-  local adjust = _arg_82_["adjust"]
+local function push_beyond_eof_21()
+  local saved = vim.o.virtualedit
+  vim.o.virtualedit = "onemore"
+  vim.cmd("norm! l")
+  local function _81_()
+    vim.o.virtualedit = saved
+    return nil
+  end
+  return api.nvim_create_autocmd({"CursorMoved", "WinLeave", "BufLeave", "InsertEnter", "CmdlineEnter", "CmdwinEnter"}, {callback = _81_, once = true})
+end
+local function jump_to_21_2a(target, _82_)
+  local _arg_83_ = _82_
+  local mode = _arg_83_["mode"]
+  local reverse_3f = _arg_83_["reverse?"]
+  local inclusive_motion_3f = _arg_83_["inclusive-motion?"]
+  local add_to_jumplist_3f = _arg_83_["add-to-jumplist?"]
+  local adjust = _arg_83_["adjust"]
   local op_mode_3f = string.match(mode, "o")
   local motion_force = get_motion_force(mode)
-  local restore_virtualedit_autocmd = get_restore_virtualedit_autocmd()
   if add_to_jumplist_3f then
     vim.cmd("norm! m`")
   else
@@ -430,18 +436,16 @@ local function jump_to_21_2a(target, _81_)
   end
   local adjusted_pos = get_cursor_pos()
   if (op_mode_3f and not reverse_3f and inclusive_motion_3f) then
-    local _85_ = motion_force
-    if (_85_ == nil) then
-      if not cursor_before_eof_3f() then
-        push_cursor_21("fwd")
+    local _86_ = motion_force
+    if (_86_ == nil) then
+      if cursor_before_eof_3f() then
+        push_beyond_eof_21()
       else
-        vim.cmd("set virtualedit=onemore")
-        vim.cmd("norm! l")
-        vim.cmd(restore_virtualedit_autocmd)
+        push_cursor_21("fwd")
       end
-    elseif (_85_ == "V") then
-    elseif (_85_ == _3cctrl_v_3e) then
-    elseif (_85_ == "v") then
+    elseif (_86_ == "V") then
+    elseif (_86_ == _3cctrl_v_3e) then
+    elseif (_86_ == "v") then
       push_cursor_21("bwd")
     else
     end
@@ -450,39 +454,35 @@ local function jump_to_21_2a(target, _81_)
   return adjusted_pos
 end
 local function highlight_cursor(_3fpos)
-  local _let_89_ = (_3fpos or get_cursor_pos())
-  local line = _let_89_[1]
-  local col = _let_89_[2]
-  local pos = _let_89_
+  local _let_90_ = (_3fpos or get_cursor_pos())
+  local line = _let_90_[1]
+  local col = _let_90_[2]
+  local pos = _let_90_
   local ch_at_curpos = (char_at_pos(pos, {}) or " ")
   return api.nvim_buf_set_extmark(0, hl.ns, dec(line), dec(col), {virt_text = {{ch_at_curpos, hl.group.cursor}}, virt_text_pos = "overlay", hl_mode = "combine", priority = hl.priority.cursor})
 end
 local function handle_interrupted_change_op_21()
   local seq
-  local function _90_()
+  local function _91_()
     if (vim.fn.col(".") > 1) then
       return "<RIGHT>"
     else
       return ""
     end
   end
-  seq = ("<C-\\><C-G>" .. _90_())
+  seq = ("<C-\\><C-G>" .. _91_())
   return api.nvim_feedkeys(replace_keycodes(seq), "n", true)
 end
-local function doau_when_exists(event)
-  if vim.fn.exists(("#User#" .. event)) then
-    return vim.cmd(("doautocmd <nomodeline> User " .. event))
-  else
-    return nil
-  end
+local function exec_user_autocmds(pattern)
+  return api.nvim_exec_autocmds("User", {pattern = pattern, modeline = false})
 end
 local function enter(mode)
-  doau_when_exists("LightspeedEnter")
+  exec_user_autocmds("LightspeedEnter")
   local _92_ = mode
   if (_92_ == "ft") then
-    return doau_when_exists("LightspeedFtEnter")
+    return exec_user_autocmds("LightspeedFtEnter")
   elseif (_92_ == "sx") then
-    return doau_when_exists("LightspeedSxEnter")
+    return exec_user_autocmds("LightspeedSxEnter")
   else
     return nil
   end
@@ -780,8 +780,8 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
       end
       do
       end
-      doau_when_exists("LightspeedFtLeave")
-      doau_when_exists("LightspeedLeave")
+      exec_user_autocmds("LightspeedFtLeave")
+      exec_user_autocmds("LightspeedLeave")
       return nil
     end
     _144_ = (_145_() or _146_())
@@ -794,8 +794,8 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
         do
           echo_no_prev_search()
         end
-        doau_when_exists("LightspeedFtLeave")
-        doau_when_exists("LightspeedLeave")
+        exec_user_autocmds("LightspeedFtLeave")
+        exec_user_autocmds("LightspeedLeave")
         return nil
       end
       _143_ = (self.state.cold["in"] or _148_())
@@ -877,8 +877,8 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
       do
         echo_not_found(in1)
       end
-      doau_when_exists("LightspeedFtLeave")
-      doau_when_exists("LightspeedLeave")
+      exec_user_autocmds("LightspeedFtLeave")
+      exec_user_autocmds("LightspeedLeave")
       return nil
     else
       if not reverted_instant_repeat_3f then
@@ -912,8 +912,8 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
           else
           end
         end
-        doau_when_exists("LightspeedFtLeave")
-        doau_when_exists("LightspeedLeave")
+        exec_user_autocmds("LightspeedFtLeave")
+        exec_user_autocmds("LightspeedLeave")
         return nil
       else
         highlight_cursor()
@@ -930,8 +930,8 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
         local function _173_()
           do
           end
-          doau_when_exists("LightspeedFtLeave")
-          doau_when_exists("LightspeedLeave")
+          exec_user_autocmds("LightspeedFtLeave")
+          exec_user_autocmds("LightspeedLeave")
           return nil
         end
         _171_ = (_172_() or _173_())
@@ -971,8 +971,8 @@ ft.go = function(self, reverse_3f, t_mode_3f, repeat_invoc)
             do
               vim.fn.feedkeys(in2, "i")
             end
-            doau_when_exists("LightspeedFtLeave")
-            doau_when_exists("LightspeedLeave")
+            exec_user_autocmds("LightspeedFtLeave")
+            exec_user_autocmds("LightspeedLeave")
             return nil
           else
             return nil
@@ -2025,8 +2025,8 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
         end
         do
         end
-        doau_when_exists("LightspeedSxLeave")
-        doau_when_exists("LightspeedLeave")
+        exec_user_autocmds("LightspeedSxLeave")
+        exec_user_autocmds("LightspeedLeave")
         return nil
       end
       _385_ = (_386_() or _387_())
@@ -2047,8 +2047,8 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
           do
             echo_no_prev_search()
           end
-          doau_when_exists("LightspeedSxLeave")
-          doau_when_exists("LightspeedLeave")
+          exec_user_autocmds("LightspeedSxLeave")
+          exec_user_autocmds("LightspeedLeave")
           return nil
         end
         return (self.state.cold.in1 or _390_())
@@ -2383,21 +2383,21 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
       do
         echo_not_found((in1 .. (prev_in2 or "")))
       end
-      doau_when_exists("LightspeedSxLeave")
-      doau_when_exists("LightspeedLeave")
+      exec_user_autocmds("LightspeedSxLeave")
+      exec_user_autocmds("LightspeedLeave")
       return nil
     end
     _456_ = (_457_() or get_targets(in1, reverse_3f0, _3ftarget_windows, omni_3f) or _460_())
     local function _462_()
-      local only = (_456_)[1]
       local _0 = (((_456_)[1]).pair)[1]
       local ch2 = (((_456_)[1]).pair)[2]
+      local only = (_456_)[1]
       return opts.jump_to_unique_chars
     end
     if (((_G.type(_456_) == "table") and ((_G.type((_456_)[1]) == "table") and ((_G.type(((_456_)[1]).pair) == "table") and true and (nil ~= (((_456_)[1]).pair)[2]))) and ((_456_)[2] == nil)) and _462_()) then
-      local only = (_456_)[1]
       local _0 = (((_456_)[1]).pair)[1]
       local ch2 = (((_456_)[1]).pair)[2]
+      local only = (_456_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           if dot_repeatable_op_3f then
@@ -2422,8 +2422,8 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
           else
           end
         end
-        doau_when_exists("LightspeedSxLeave")
-        doau_when_exists("LightspeedLeave")
+        exec_user_autocmds("LightspeedSxLeave")
+        exec_user_autocmds("LightspeedLeave")
         return nil
       else
         if change_operation_3f() then
@@ -2433,8 +2433,8 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
         do
           echo_not_found((in1 .. prev_in2))
         end
-        doau_when_exists("LightspeedSxLeave")
-        doau_when_exists("LightspeedLeave")
+        exec_user_autocmds("LightspeedSxLeave")
+        exec_user_autocmds("LightspeedLeave")
         return nil
       end
     elseif (nil ~= _456_) then
@@ -2487,8 +2487,8 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
         end
         do
         end
-        doau_when_exists("LightspeedSxLeave")
-        doau_when_exists("LightspeedLeave")
+        exec_user_autocmds("LightspeedSxLeave")
+        exec_user_autocmds("LightspeedLeave")
         return nil
       end
       _474_ = (prev_in2 or _475_() or _477_() or _478_())
@@ -2504,9 +2504,9 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
           _480_ = t_481_
         end
         if ((_G.type(_480_) == "table") and ((_G.type((_480_).pair) == "table") and true and (nil ~= ((_480_).pair)[2]))) then
-          local shortcut = _480_
           local _0 = ((_480_).pair)[1]
           local ch2 = ((_480_).pair)[2]
+          local shortcut = _480_
           do
             if dot_repeatable_op_3f then
               set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f0, x_mode_3f0, "dot")))
@@ -2515,8 +2515,8 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
             update_state({cold = {in2 = ch2}, dot = {in2 = ch2, in3 = in2}})
             jump_to_21(shortcut, (ch2 == "\13"))
           end
-          doau_when_exists("LightspeedSxLeave")
-          doau_when_exists("LightspeedLeave")
+          exec_user_autocmds("LightspeedSxLeave")
+          exec_user_autocmds("LightspeedLeave")
           return nil
         elseif true then
           local _0 = _480_
@@ -2539,8 +2539,8 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
             do
               echo_not_found((in1 .. in2))
             end
-            doau_when_exists("LightspeedSxLeave")
-            doau_when_exists("LightspeedLeave")
+            exec_user_autocmds("LightspeedSxLeave")
+            exec_user_autocmds("LightspeedLeave")
             return nil
           end
           _484_ = (_485_() or get_sublist(targets, in2) or _488_())
@@ -2554,8 +2554,8 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
               update_state({dot = {in2 = in2, in3 = (opts.labels or opts.safe_labels)[1]}})
               jump_to_21(only)
             end
-            doau_when_exists("LightspeedSxLeave")
-            doau_when_exists("LightspeedLeave")
+            exec_user_autocmds("LightspeedSxLeave")
+            exec_user_autocmds("LightspeedLeave")
             return nil
           elseif ((_G.type(_484_) == "table") and (nil ~= (_484_)[1])) then
             local first = (_484_)[1]
@@ -2603,8 +2603,8 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
               end
               do
               end
-              doau_when_exists("LightspeedSxLeave")
-              doau_when_exists("LightspeedLeave")
+              exec_user_autocmds("LightspeedSxLeave")
+              exec_user_autocmds("LightspeedLeave")
               return nil
             end
             _497_ = (_498_() or get_last_input(sublist, inc(curr_idx)) or _500_())
@@ -2659,8 +2659,8 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
                     restore_view_on_winleave(first, target)
                     jump_to_21(target)
                   end
-                  doau_when_exists("LightspeedSxLeave")
-                  doau_when_exists("LightspeedLeave")
+                  exec_user_autocmds("LightspeedSxLeave")
+                  exec_user_autocmds("LightspeedLeave")
                   return nil
                 elseif true then
                   local _2 = _506_
@@ -2672,8 +2672,8 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
                       end
                       vim.fn.feedkeys(in3, "i")
                     end
-                    doau_when_exists("LightspeedSxLeave")
-                    doau_when_exists("LightspeedLeave")
+                    exec_user_autocmds("LightspeedSxLeave")
+                    exec_user_autocmds("LightspeedLeave")
                     return nil
                   else
                     if change_operation_3f() then
@@ -2682,8 +2682,8 @@ sx.go = function(self, reverse_3f, x_mode_3f, repeat_invoc, cross_window_3f, omn
                     end
                     do
                     end
-                    doau_when_exists("LightspeedSxLeave")
-                    doau_when_exists("LightspeedLeave")
+                    exec_user_autocmds("LightspeedSxLeave")
+                    exec_user_autocmds("LightspeedLeave")
                     return nil
                   end
                 else
@@ -2789,6 +2789,15 @@ if not vim.g.lightspeed_no_default_keymaps then
   set_default_keymaps()
 else
 end
-vim.cmd("augroup lightspeed_reinit_highlight\n   autocmd!\n   autocmd ColorScheme * lua require'lightspeed'.init_highlight()\n   augroup end")
-vim.cmd("augroup lightspeed_editor_opts\n   autocmd!\n   autocmd User LightspeedEnter lua require'lightspeed'.save_editor_opts(); require'lightspeed'.set_temporary_editor_opts()\n   autocmd User LightspeedLeave lua require'lightspeed'.restore_editor_opts()\n   augroup end")
+api.nvim_create_augroup("LightspeedDefault", {})
+local function _534_()
+  return init_highlight()
+end
+api.nvim_create_autocmd("ColorScheme", {callback = _534_, group = "LightspeedDefault"})
+local function _535_()
+  save_editor_opts()
+  return set_temporary_editor_opts()
+end
+api.nvim_create_autocmd("User", {pattern = "LightspeedEnter", callback = _535_, group = "LightspeedDefault"})
+api.nvim_create_autocmd("User", {pattern = "LightspeedLeave", callback = restore_editor_opts, group = "LightspeedDefault"})
 return {opts = opts, setup = setup, ft = ft, sx = sx, save_editor_opts = save_editor_opts, set_temporary_editor_opts = set_temporary_editor_opts, restore_editor_opts = restore_editor_opts, init_highlight = init_highlight, set_default_keymaps = set_default_keymaps}

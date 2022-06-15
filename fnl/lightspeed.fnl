@@ -373,28 +373,21 @@ types properly."
   (vim.fn.search "\\_." (match direction :fwd "W" :bwd "bW")))
 
 
-(fn get-restore-virtualedit-autocmd []
-  (.. "autocmd "
-      "CursorMoved,WinLeave,BufLeave,InsertEnter,CmdlineEnter,CmdwinEnter"
-      " * ++once set virtualedit=" vim.o.virtualedit))
-
-
 (fn force-matchparen-refresh []
   ; HACK: :DoMatchParen turns matchparen on simply by triggering
-  ;       CursorMoved events (see matchparen.vim). We can do the same,
-  ;       which is cleaner for us than calling :DoMatchParen directly,
-  ;       since that would wrap this in a `windo`, and might visit
-  ;       another buffer, breaking our visual selection (and thus also
-  ;       dot-repeat, apparently). (See :h visual-start, and the
-  ;       discussion at #38.)
-  ;       Programming against the API would be more robust of course,
-  ;       but in the unlikely case that the implementation details would
-  ;       change, this still cannot do any damage on our side if called
-  ;       silent!-ly (the feature just ceases to work then).
-  (vim.cmd "silent! doautocmd matchparen CursorMoved")
+  ; CursorMoved events (see matchparen.vim). We can do the same, which
+  ; is cleaner for us than calling :DoMatchParen directly, since that
+  ; would wrap this in a `windo`, and might visit another buffer,
+  ; breaking our visual selection (and thus also dot-repeat,
+  ; apparently). (See :h visual-start, and the discussion at #38.)
+  ; Programming against the API would be more robust of course, but in
+  ; the unlikely case that the implementation details would change, this
+  ; still cannot do any damage on our side if called with pcall (the
+  ; feature just ceases to work then).
+  (pcall api.nvim_exec_autocmds "CursorMoved" {:group "matchparen"})
   ; If vim-matchup is installed, it can similarly be forced to refresh
   ; by triggering a CursorMoved event. (The same caveats apply.)
-  (vim.cmd "silent! doautocmd matchup_matchparen CursorMoved"))
+  (pcall api.nvim_exec_autocmds "CursorMoved" {:group "matchup_matchparen"}))
 
 
 (fn cursor-before-eof? []
@@ -402,11 +395,22 @@ types properly."
        (= (vim.fn.virtcol ".") (dec (vim.fn.virtcol "$")))))
 
 
+(fn push-beyond-eof! []
+  (local saved vim.o.virtualedit)
+  (set vim.o.virtualedit :onemore)
+  ; Note: No need to undo this afterwards, the cursor will be
+  ; moved to the end of the operated area anyway.
+  (vim.cmd "norm! l")
+  (api.nvim_create_autocmd
+    [:CursorMoved :WinLeave :BufLeave :InsertEnter :CmdlineEnter :CmdwinEnter]
+    {:callback #(set vim.o.virtualedit saved)
+     :once true}))
+
+
 (fn jump-to!* [target {: mode : reverse? : inclusive-motion?
                        : add-to-jumplist? : adjust}]
   (let [op-mode? (string.match mode :o)
-        motion-force (get-motion-force mode)
-        restore-virtualedit-autocmd (get-restore-virtualedit-autocmd)]
+        motion-force (get-motion-force mode)]
     ; <C-o> will unfortunately ignore this if the line has not changed.
     ; See neovim#9874.
     (when add-to-jumplist?
@@ -426,15 +430,9 @@ types properly."
     ; (This is only relevant in the forward direction.)
     (when (and op-mode? (not reverse?) inclusive-motion?)
       (match motion-force
-        ; In the normal case (no modifier), we should push the cursor forward
-        ; (next column as exclusive = target column as inclusive).
-        nil (if (not (cursor-before-eof?)) (push-cursor! :fwd)
-                ; The EOF edge case requires some hackery.
-                ; Note: No need to undo the `l` afterwards, as the cursor will
-                ; be moved to the end of the operated area anyway.
-                (do (vim.cmd "set virtualedit=onemore")
-                    (vim.cmd "norm! l")
-                    (vim.cmd restore-virtualedit-autocmd)))
+        ; In the normal case (no modifier), we should push the cursor
+        ; forward. (The EOF edge case requires some hackery though.)
+        nil (if (cursor-before-eof?) (push-beyond-eof!) (push-cursor! :fwd))
         ; We should _never_ push the cursor in the linewise case, as we might
         ; push it beyond EOL, and that would add another line to the selection.
         :V nil
@@ -472,16 +470,15 @@ interrupted change operation."
     (api.nvim_feedkeys (replace-keycodes seq) :n true)))
 
 
-(fn doau-when-exists [event]
-  (when (vim.fn.exists (.. :#User# event))
-    (vim.cmd (.. "doautocmd <nomodeline> User " event))))
+(fn exec-user-autocmds [pattern]
+  (api.nvim_exec_autocmds "User" {: pattern :modeline false}))
 
 
 (fn enter [mode]
-  (doau-when-exists :LightspeedEnter)
+  (exec-user-autocmds :LightspeedEnter)
   (match mode
-    :ft (doau-when-exists :LightspeedFtEnter)
-    :sx (doau-when-exists :LightspeedSxEnter)))
+    :ft (exec-user-autocmds :LightspeedFtEnter)
+    :sx (exec-user-autocmds :LightspeedSxEnter)))
 
 
 ; Note: One of the main purpose of these macros, besides wrapping cleanup stuff,
@@ -503,9 +500,9 @@ interrupted change operation."
      ; an additional `do` - else only sees the first item.)
      (do ,...)
      ,(match search-mode
-        :ft `(doau-when-exists :LightspeedFtLeave)
-        :sx `(doau-when-exists :LightspeedSxLeave))
-     (doau-when-exists :LightspeedLeave)
+        :ft `(exec-user-autocmds :LightspeedFtLeave)
+        :sx `(exec-user-autocmds :LightspeedSxLeave))
+     (exec-user-autocmds :LightspeedLeave)
      nil))
 
 
@@ -1795,23 +1792,26 @@ sub-table containing label-target key-value pairs for these targets."
 
 (init-highlight)
 (set-plug-keys)
-(when-not vim.g.lightspeed_no_default_keymaps
-  (set-default-keymaps))
+(when-not vim.g.lightspeed_no_default_keymaps (set-default-keymaps))
+
+(api.nvim_create_augroup "LightspeedDefault" {})
 
 ; Colorscheme plugins might clear out our highlight definitions, without
-; defining their own.
-(vim.cmd
-  "augroup lightspeed_reinit_highlight
-   autocmd!
-   autocmd ColorScheme * lua require'lightspeed'.init_highlight()
-   augroup end")
+; defining their own, so we re-init the highlight on every change.
+(api.nvim_create_autocmd "ColorScheme"
+                         {:callback #(init-highlight)
+                          :group "LightspeedDefault"})
 
-(vim.cmd
-  "augroup lightspeed_editor_opts
-   autocmd!
-   autocmd User LightspeedEnter lua require'lightspeed'.save_editor_opts(); require'lightspeed'.set_temporary_editor_opts()
-   autocmd User LightspeedLeave lua require'lightspeed'.restore_editor_opts()
-   augroup end")
+(api.nvim_create_autocmd "User"
+                         {:pattern "LightspeedEnter"
+                          :callback #(do (save-editor-opts)
+                                         (set-temporary-editor-opts))
+                          :group "LightspeedDefault"})
+
+(api.nvim_create_autocmd "User"
+                         {:pattern "LightspeedLeave"
+                          :callback restore-editor-opts
+                          :group "LightspeedDefault"})
 
 
 ; Endnotes ///1
