@@ -593,7 +593,7 @@ interrupted change operation."
                           :reverse? nil
                           :t-mode? nil}}})
 
-(fn ft.go [self reverse? t-mode? repeat-invoc]
+(fn ft.go [self {: reverse? : t-mode? : repeat-invoc}]
   "Entry point for 1-character search."
   (let [mode (. (api.nvim_get_mode) :mode)  ; endnote #4
         op-mode? (mode:match :o)
@@ -733,13 +733,13 @@ interrupted change operation."
                         (match (get-repeat-action in2 :ft t-mode? instant-repeat?
                                                   from-reverse-cold-repeat? in1)
                           :repeat (do (table.insert stack (get-cursor-pos))
-                                      (ft:go reverse? t-mode?
-                                             {:in in1 : stack :reverted? false
-                                              : from-reverse-cold-repeat?}))
+                                      (ft:go {: reverse? : t-mode?
+                                              :repeat-invoc {:in in1 : stack :reverted? false
+                                                             : from-reverse-cold-repeat?}}))
                           :revert (do (-?> (table.remove stack) (vim.fn.cursor))  ; jump!
-                                      (ft:go reverse? t-mode?
-                                             {:in in1 : stack :reverted? true
-                                              : from-reverse-cold-repeat?}))
+                                      (ft:go {: reverse? : t-mode?
+                                              :repeat-invoc {:in in1 : stack :reverted? true
+                                                             : from-reverse-cold-repeat?}}))
                           _ (exit (vim.fn.feedkeys in2 :i)))))))))))))
 
 
@@ -1306,7 +1306,7 @@ sub-table containing label-target key-value pairs for these targets."
                           :reverse? nil
                           :x-mode? nil}}})
 
-(fn sx.go [self reverse? x-mode? repeat-invoc cross-window? omni?]
+(fn sx.go [self {: reverse? : x-mode? : repeat-invoc : cross-window? : omni?}]
   "Entry point for 2-character search."
   (let [mode (. (api.nvim_get_mode) :mode)  ; endnote #4
         linewise? (= (mode:sub -1) :V)
@@ -1373,7 +1373,7 @@ sub-table containing label-target key-value pairs for these targets."
             ; Here we can handle any other modifier key as "zeroth" input,
             ; if the need arises (e.g. regex search).
             (where "\t" (not omni?))
-            (do (sx:go (not reverse?) x-mode? false cross-window?) nil)
+            (do (sx:go {:reverse? (not reverse?) : x-mode? : cross-window?}) nil)
 
             <backspace> (do (set backspace-repeat? true)
                             (set new-search? false)
@@ -1622,10 +1622,10 @@ sub-table containing label-target key-value pairs for these targets."
                                        neighbor (. sublist idx)]
                                    (restore-view-on-winleave first neighbor)
                                    (jump-to! neighbor)
-                                   (sx:go reverse? x-mode?
-                                          {: in1 : in2 : sublist : idx
-                                           : from-reverse-cold-repeat?
-                                           :target-windows ?target-windows}))
+                                   (sx:go {: reverse? : x-mode?
+                                           :repeat-invoc {: in1 : in2 : sublist : idx
+                                                          : from-reverse-cold-repeat?
+                                                          :target-windows ?target-windows}}))
                           _ (match (when-not (and instant-repeat? (not autojump?)) ; = no safe label set
                                      (get-target-with-active-primary-label sublist in3))
                               target (exit (update-state
@@ -1682,15 +1682,15 @@ sub-table containing label-target key-value pairs for these targets."
 ; Just for our convenience, to be used here in the script.
 (each [_ [lhs rhs]
        (ipairs
-         [["<Plug>Lightspeed_dotrepeat_s" #(sx:go false false :dot)]
-          ["<Plug>Lightspeed_dotrepeat_S" #(sx:go true false :dot)]
-          ["<Plug>Lightspeed_dotrepeat_x" #(sx:go false true :dot)]
-          ["<Plug>Lightspeed_dotrepeat_X" #(sx:go true true :dot)]
+         [["<Plug>Lightspeed_dotrepeat_s" #(sx:go {:repeat-invoc "dot"})]
+          ["<Plug>Lightspeed_dotrepeat_S" #(sx:go {:repeat-invoc "dot" :reverse? true})]
+          ["<Plug>Lightspeed_dotrepeat_x" #(sx:go {:repeat-invoc "dot" :x-mode? true})]
+          ["<Plug>Lightspeed_dotrepeat_X" #(sx:go {:repeat-invoc "dot" :reverse? true :x-mode? true})]
 
-          ["<Plug>Lightspeed_dotrepeat_f" #(ft:go false false :dot)]
-          ["<Plug>Lightspeed_dotrepeat_F" #(ft:go true false :dot)]
-          ["<Plug>Lightspeed_dotrepeat_t" #(ft:go false true :dot)]
-          ["<Plug>Lightspeed_dotrepeat_T" #(ft:go true true :dot)]])]
+          ["<Plug>Lightspeed_dotrepeat_f" #(ft:go {:repeat-invoc "dot"})]
+          ["<Plug>Lightspeed_dotrepeat_F" #(ft:go {:repeat-invoc "dot" :reverse? true})]
+          ["<Plug>Lightspeed_dotrepeat_t" #(ft:go {:repeat-invoc "dot" :t-mode? true})]
+          ["<Plug>Lightspeed_dotrepeat_T" #(ft:go {:repeat-invoc "dot" :reverse? true :t-mode? true})]])]
   (vim.keymap.set :o lhs rhs {:silent true}))
 
 
