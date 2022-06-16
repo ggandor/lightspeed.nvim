@@ -1680,19 +1680,18 @@ sub-table containing label-target key-value pairs for these targets."
 ; Mappings ///1
 
 ; Just for our convenience, to be used here in the script.
-(each [_ [lhs rhs-call]
+(each [_ [lhs rhs]
        (ipairs
-         [["<Plug>Lightspeed_dotrepeat_s" "sx:go(false, false, 'dot')"]
-          ["<Plug>Lightspeed_dotrepeat_S" "sx:go(true, false, 'dot')"]
-          ["<Plug>Lightspeed_dotrepeat_x" "sx:go(false, true, 'dot')"]
-          ["<Plug>Lightspeed_dotrepeat_X" "sx:go(true, true, 'dot')"]
+         [["<Plug>Lightspeed_dotrepeat_s" #(sx:go false false :dot)]
+          ["<Plug>Lightspeed_dotrepeat_S" #(sx:go true false :dot)]
+          ["<Plug>Lightspeed_dotrepeat_x" #(sx:go false true :dot)]
+          ["<Plug>Lightspeed_dotrepeat_X" #(sx:go true true :dot)]
 
-          ["<Plug>Lightspeed_dotrepeat_f" "ft:go(false, false, 'dot')"]
-          ["<Plug>Lightspeed_dotrepeat_F" "ft:go(true, false, 'dot')"]
-          ["<Plug>Lightspeed_dotrepeat_t" "ft:go(false, true, 'dot')"]
-          ["<Plug>Lightspeed_dotrepeat_T" "ft:go(true, true, 'dot')"]])]
-  (api.nvim_set_keymap :o lhs (.. "<cmd>lua require'lightspeed'." rhs-call "<cr>")
-                       {:noremap true :silent true}))
+          ["<Plug>Lightspeed_dotrepeat_f" #(ft:go false false :dot)]
+          ["<Plug>Lightspeed_dotrepeat_F" #(ft:go true false :dot)]
+          ["<Plug>Lightspeed_dotrepeat_t" #(ft:go false true :dot)]
+          ["<Plug>Lightspeed_dotrepeat_T" #(ft:go true true :dot)]])]
+  (vim.keymap.set :o lhs rhs {:silent true}))
 
 
 ; Init ///1

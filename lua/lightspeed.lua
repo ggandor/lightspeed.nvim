@@ -2759,22 +2759,46 @@ end
 local function restore_editor_opts()
   return set_editor_opts(saved_editor_opts)
 end
-for _, _531_ in ipairs({{"<Plug>Lightspeed_dotrepeat_s", "sx:go(false, false, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_S", "sx:go(true, false, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_x", "sx:go(false, true, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_X", "sx:go(true, true, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_f", "ft:go(false, false, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_F", "ft:go(true, false, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_t", "ft:go(false, true, 'dot')"}, {"<Plug>Lightspeed_dotrepeat_T", "ft:go(true, true, 'dot')"}}) do
-  local _each_532_ = _531_
-  local lhs = _each_532_[1]
-  local rhs_call = _each_532_[2]
-  api.nvim_set_keymap("o", lhs, ("<cmd>lua require'lightspeed'." .. rhs_call .. "<cr>"), {noremap = true, silent = true})
+local function _532_()
+  return sx:go(false, false, "dot")
+end
+local function _533_()
+  return sx:go(true, false, "dot")
+end
+local function _534_()
+  return sx:go(false, true, "dot")
+end
+local function _535_()
+  return sx:go(true, true, "dot")
+end
+local function _536_()
+  return ft:go(false, false, "dot")
+end
+local function _537_()
+  return ft:go(true, false, "dot")
+end
+local function _538_()
+  return ft:go(false, true, "dot")
+end
+local function _539_()
+  return ft:go(true, true, "dot")
+end
+for _, _531_ in ipairs({{"<Plug>Lightspeed_dotrepeat_s", _532_}, {"<Plug>Lightspeed_dotrepeat_S", _533_}, {"<Plug>Lightspeed_dotrepeat_x", _534_}, {"<Plug>Lightspeed_dotrepeat_X", _535_}, {"<Plug>Lightspeed_dotrepeat_f", _536_}, {"<Plug>Lightspeed_dotrepeat_F", _537_}, {"<Plug>Lightspeed_dotrepeat_t", _538_}, {"<Plug>Lightspeed_dotrepeat_T", _539_}}) do
+  local _each_540_ = _531_
+  local lhs = _each_540_[1]
+  local rhs = _each_540_[2]
+  vim.keymap.set("o", lhs, rhs, {silent = true})
 end
 init_highlight()
 api.nvim_create_augroup("LightspeedDefault", {})
-local function _533_()
+local function _541_()
   return init_highlight()
 end
-api.nvim_create_autocmd("ColorScheme", {callback = _533_, group = "LightspeedDefault"})
-local function _534_()
+api.nvim_create_autocmd("ColorScheme", {callback = _541_, group = "LightspeedDefault"})
+local function _542_()
   save_editor_opts()
   return set_temporary_editor_opts()
 end
-api.nvim_create_autocmd("User", {pattern = "LightspeedEnter", callback = _534_, group = "LightspeedDefault"})
+api.nvim_create_autocmd("User", {pattern = "LightspeedEnter", callback = _542_, group = "LightspeedDefault"})
 api.nvim_create_autocmd("User", {pattern = "LightspeedLeave", callback = restore_editor_opts, group = "LightspeedDefault"})
 return {opts = opts, setup = setup, ft = ft, sx = sx, save_editor_opts = save_editor_opts, set_temporary_editor_opts = set_temporary_editor_opts, restore_editor_opts = restore_editor_opts, init_highlight = init_highlight, set_default_keymaps = __fnl_global__set_2ddefault_2dkeymaps}
