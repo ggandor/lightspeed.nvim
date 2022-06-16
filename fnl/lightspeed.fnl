@@ -1679,107 +1679,25 @@ sub-table containing label-target key-value pairs for these targets."
 
 ; Mappings ///1
 
-(fn set-plug-keys []
-  (local plug-keys
-    [
-     ; params: reverse? x-mode? repeat-invoc cross-window? omni?
-     ["<Plug>Lightspeed_s" "sx:go(false)"]
-     ["<Plug>Lightspeed_S" "sx:go(true)"]
-     ["<Plug>Lightspeed_x" "sx:go(false, true)"]
-     ["<Plug>Lightspeed_X" "sx:go(true, true)"]
+; Just for our convenience, to be used here in the script.
+(each [_ [lhs rhs-call]
+       (ipairs
+         [["<Plug>Lightspeed_dotrepeat_s" "sx:go(false, false, 'dot')"]
+          ["<Plug>Lightspeed_dotrepeat_S" "sx:go(true, false, 'dot')"]
+          ["<Plug>Lightspeed_dotrepeat_x" "sx:go(false, true, 'dot')"]
+          ["<Plug>Lightspeed_dotrepeat_X" "sx:go(true, true, 'dot')"]
 
-     ["<Plug>Lightspeed_gs" "sx:go(false, nil, nil, true)"]
-     ["<Plug>Lightspeed_gS" "sx:go(true, nil, nil, true)"]
-
-     ["<Plug>Lightspeed_omni_s" "sx:go(nil, false, nil, nil, true)"]
-     ["<Plug>Lightspeed_omni_gs" "sx:go(nil, false, nil, true, true)"]
-
-     ; params: reverse? t-mode? repeat-invoc
-     ["<Plug>Lightspeed_f" "ft:go(false)"]
-     ["<Plug>Lightspeed_F" "ft:go(true)"]
-     ["<Plug>Lightspeed_t" "ft:go(false, true)"]
-     ["<Plug>Lightspeed_T" "ft:go(true, true)"]
-
-     ; "cold" repeat (;/,-like) (`x-mode?` and `t-mode?` will be retrieved from `state`)
-     ; Note: we should not start the name with ft_ or sx_ if using `hasmapto`
-     ; (or we might switch to <plug> names like `<plug>(lightspeed-;-sx)`).
-     ["<Plug>Lightspeed_;_sx" "sx:go(false, nil, 'cold')"]
-     ["<Plug>Lightspeed_,_sx" "sx:go(true, nil, 'cold')"]
-     ["<Plug>Lightspeed_;_ft" "ft:go(false, nil, 'cold')"]
-     ["<Plug>Lightspeed_,_ft" "ft:go(true, nil, 'cold')"]])
-
-  (each [_ [lhs rhs-call] (ipairs plug-keys)]
-    (each [_ mode (ipairs [:n :x :o])]
-      (api.nvim_set_keymap mode lhs (.. "<cmd>lua require'lightspeed'." rhs-call "<cr>")
-                           {:noremap true :silent true})))
-
-  ; Just for our convenience, to be used here in the script.
-  (each [_ [lhs rhs-call]
-         (ipairs
-           [["<Plug>Lightspeed_dotrepeat_s" "sx:go(false, false, 'dot')"]
-            ["<Plug>Lightspeed_dotrepeat_S" "sx:go(true, false, 'dot')"]
-            ["<Plug>Lightspeed_dotrepeat_x" "sx:go(false, true, 'dot')"]
-            ["<Plug>Lightspeed_dotrepeat_X" "sx:go(true, true, 'dot')"]
-
-            ["<Plug>Lightspeed_dotrepeat_f" "ft:go(false, false, 'dot')"]
-            ["<Plug>Lightspeed_dotrepeat_F" "ft:go(true, false, 'dot')"]
-            ["<Plug>Lightspeed_dotrepeat_t" "ft:go(false, true, 'dot')"]
-            ["<Plug>Lightspeed_dotrepeat_T" "ft:go(true, true, 'dot')"]])]
-    (api.nvim_set_keymap :o lhs (.. "<cmd>lua require'lightspeed'." rhs-call "<cr>")
-                         {:noremap true :silent true})))
-
-
-(fn set-default-keymaps []
-  (local default-keymaps
-    [[:n "s" "<Plug>Lightspeed_s"]
-     [:n "S" "<Plug>Lightspeed_S"]
-     [:x "s" "<Plug>Lightspeed_s"]
-     [:x "S" "<Plug>Lightspeed_S"]
-     [:o "z" "<Plug>Lightspeed_s"]
-     [:o "Z" "<Plug>Lightspeed_S"]
-
-     [:n "gs" "<Plug>Lightspeed_gs"]
-     [:n "gS" "<Plug>Lightspeed_gS"]
-
-     [:o "x" "<Plug>Lightspeed_x"]
-     [:o "X" "<Plug>Lightspeed_X"]
-
-     [:n "f" "<Plug>Lightspeed_f"]
-     [:n "F" "<Plug>Lightspeed_F"]
-     [:x "f" "<Plug>Lightspeed_f"]
-     [:x "F" "<Plug>Lightspeed_F"]
-     [:o "f" "<Plug>Lightspeed_f"]
-     [:o "F" "<Plug>Lightspeed_F"]
-
-     [:n "t" "<Plug>Lightspeed_t"]
-     [:n "T" "<Plug>Lightspeed_T"]
-     [:x "t" "<Plug>Lightspeed_t"]
-     [:x "T" "<Plug>Lightspeed_T"]
-     [:o "t" "<Plug>Lightspeed_t"]
-     [:o "T" "<Plug>Lightspeed_T"]
-
-     [:n ";" "<Plug>Lightspeed_;_ft"]
-     [:x ";" "<Plug>Lightspeed_;_ft"]
-     [:o ";" "<Plug>Lightspeed_;_ft"]
-
-     [:n "," "<Plug>Lightspeed_,_ft"]
-     [:x "," "<Plug>Lightspeed_,_ft"]
-     [:o "," "<Plug>Lightspeed_,_ft"]])
-
-  (each [_ [mode lhs rhs] (ipairs default-keymaps)]
-    (when (and
-            ; User has not mapped (a keyseq starting with) `lhs` to something else.
-            (= (vim.fn.mapcheck lhs mode) "")
-            ; User has not already mapped something to the <Plug> key.
-            (= (vim.fn.hasmapto rhs mode) 0))
-      (api.nvim_set_keymap mode lhs rhs {:silent true}))))
+          ["<Plug>Lightspeed_dotrepeat_f" "ft:go(false, false, 'dot')"]
+          ["<Plug>Lightspeed_dotrepeat_F" "ft:go(true, false, 'dot')"]
+          ["<Plug>Lightspeed_dotrepeat_t" "ft:go(false, true, 'dot')"]
+          ["<Plug>Lightspeed_dotrepeat_T" "ft:go(true, true, 'dot')"]])]
+  (api.nvim_set_keymap :o lhs (.. "<cmd>lua require'lightspeed'." rhs-call "<cr>")
+                       {:noremap true :silent true}))
 
 
 ; Init ///1
 
 (init-highlight)
-(set-plug-keys)
-(when-not vim.g.lightspeed_no_default_keymaps (set-default-keymaps))
 
 (api.nvim_create_augroup "LightspeedDefault" {})
 
