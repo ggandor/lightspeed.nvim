@@ -8,8 +8,8 @@ simplicity (of both interface and implementation) and intuitiveness.
 
 # 🌌 lightspeed.nvim
 
-Lightspeed is a cutting-edge motion plugin for [Neovim](https://neovim.io/),
-with a small interface and lots of innovative ideas, that allow for making
+Lightspeed is a motion plugin for [Neovim](https://neovim.io/), with a
+relatively small interface and lots of innovative ideas, that allow for making
 on-screen movements with yet unprecedented ease and efficiency. The aim is to
 maximize speed while minimizing mental effort and breaks in the flow, providing
 a distractionless experience, that should feel as "native" as possible.
@@ -22,7 +22,7 @@ With Lightspeed you can jump to any positions in the visible window area by
 entering a 2-character search pattern, and then optionally a "label" character
 for choosing among multiple matches. The plugin aims to substitute _all_ native
 commands for in-window navigation (`/`, `?`, `gg`, `f`, etc.) with a uniform,
-_minimal_ set of atomic (repeatable), multi-axis motions.
+minimal set of atomic (repeatable), multi-axis motions.
 
 So far we have more or less described what
 [vim-sneak](https://github.com/justinmk/vim-sneak) does. The game-changing idea
@@ -30,7 +30,7 @@ in Lightspeed is its "clairvoyant" ability: it maps possible futures, and shows
 you which keys you will need to press _before_ you actually need to do that, so
 despite the use of target labels, you can keep typing in a continuous manner.
 You can almost always reach the destination by at most - and very often less
-than - four keystrokes in total, that can be typed _in one go_.
+than - four keystrokes in total, that can be typed in one go.
 
 ## Video tutorial
 
@@ -133,11 +133,11 @@ obvious atomic alternative - like `w`, `{`, or `%` - available.
   jumps to the first match if the remaining matches can be covered by a limited
   set of "safe" target labels, but stays in place, and switches to an extended,
   more comfortable label set otherwise
-* **linewise operations** are possible without limitations via the same
-  interface, by targeting (potentially off-screen) EOL characters
+* **linewise operations** are possible via the same interface, by targeting
+  (potentially off-screen) EOL characters
 * **uniform repeat interface**, and flawless dot-repeat support for operators
   (with [repeat.vim](https://github.com/tpope/vim-repeat) installed)
-* **bidirectional** search (optional)
+* **bidirectional** search (opt-in)
 * **cross-window** motions
 
 ### High-level guiding principles
@@ -350,10 +350,9 @@ providing the necessary additional comfort and precision, since in that case we
 are targeting exact positions, and can only aim once, without the means of easy
 correction.
 
-`z`/`Z` are the equivalents of `s`/`S`, and they follow the semantics of `/` and
-`?` in terms of cursor placement and inclusive/exclusive operational behaviour,
-including forced motion types (`:h
-forced-motion`): 
+`z`/`Z` are the equivalents of Normal/Visual `s`/`S`, and they follow the
+semantics of `/` and `?` in terms of cursor placement and inclusive/exclusive
+operational behaviour, including forced motion types (`:h forced-motion`):
 
 ```
 ab···|                    |···ab
