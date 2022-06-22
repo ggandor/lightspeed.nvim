@@ -1655,12 +1655,14 @@ sub-table containing label-target key-value pairs for these targets."
     (let [[_ scope name] (vim.split opt "." true)]
       (tset saved-editor-opts
             opt
-            ; Workaround for Nvim #13964.
-            (if (= opt :vim.wo.scrolloff) (api.nvim_eval "&l:scrolloff")
-                (= opt :vim.wo.sidescrolloff) (api.nvim_eval "&l:sidescrolloff")
-                (= opt :vim.o.scrolloff) (api.nvim_eval "&scrolloff")
-                (= opt :vim.o.sidescrolloff) (api.nvim_eval "&sidescrolloff")
-                (. _G.vim scope name))))))
+            (if (vim.fn.has "nvim-0.8" ) (. _G.vim scope name)
+                ; Workaround for Nvim #13964.
+                (match opt
+                  :vim.wo.scrolloff (api.nvim_eval "&l:scrolloff")
+                  :vim.wo.sidescrolloff (api.nvim_eval "&l:sidescrolloff")
+                  :vim.o.scrolloff (api.nvim_eval "&scrolloff")
+                  :vim.o.sidescrolloff (api.nvim_eval "&sidescrolloff")
+                  _ (. _G.vim scope name)))))))
 
 
 (fn set-editor-opts [opts]

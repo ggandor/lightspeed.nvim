@@ -2407,15 +2407,15 @@ sx.go = function(self, _382_)
     end
     _465_ = (_466_() or get_targets(in1, reverse_3f0, _3ftarget_windows, omni_3f) or _469_())
     local function _471_()
+      local only = (_465_)[1]
       local _0 = (((_465_)[1]).pair)[1]
       local ch2 = (((_465_)[1]).pair)[2]
-      local only = (_465_)[1]
       return opts.jump_to_unique_chars
     end
     if (((_G.type(_465_) == "table") and ((_G.type((_465_)[1]) == "table") and ((_G.type(((_465_)[1]).pair) == "table") and true and (nil ~= (((_465_)[1]).pair)[2]))) and ((_465_)[2] == nil)) and _471_()) then
+      local only = (_465_)[1]
       local _0 = (((_465_)[1]).pair)[1]
       local ch2 = (((_465_)[1]).pair)[2]
-      local only = (_465_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           if dot_repeatable_op_3f then
@@ -2522,9 +2522,9 @@ sx.go = function(self, _382_)
           _489_ = t_490_
         end
         if ((_G.type(_489_) == "table") and ((_G.type((_489_).pair) == "table") and true and (nil ~= ((_489_).pair)[2]))) then
+          local shortcut = _489_
           local _0 = ((_489_).pair)[1]
           local ch2 = ((_489_).pair)[2]
-          local shortcut = _489_
           do
             if dot_repeatable_op_3f then
               set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f0, x_mode_3f0, "dot")))
@@ -2738,16 +2738,24 @@ local function save_editor_opts()
     local scope = _let_531_[2]
     local name = _let_531_[3]
     local _532_
-    if (opt == "vim.wo.scrolloff") then
-      _532_ = api.nvim_eval("&l:scrolloff")
-    elseif (opt == "vim.wo.sidescrolloff") then
-      _532_ = api.nvim_eval("&l:sidescrolloff")
-    elseif (opt == "vim.o.scrolloff") then
-      _532_ = api.nvim_eval("&scrolloff")
-    elseif (opt == "vim.o.sidescrolloff") then
-      _532_ = api.nvim_eval("&sidescrolloff")
-    else
+    if vim.fn.has("nvim-0.8") then
       _532_ = _G.vim[scope][name]
+    else
+      local _533_ = opt
+      if (_533_ == "vim.wo.scrolloff") then
+        _532_ = api.nvim_eval("&l:scrolloff")
+      elseif (_533_ == "vim.wo.sidescrolloff") then
+        _532_ = api.nvim_eval("&l:sidescrolloff")
+      elseif (_533_ == "vim.o.scrolloff") then
+        _532_ = api.nvim_eval("&scrolloff")
+      elseif (_533_ == "vim.o.sidescrolloff") then
+        _532_ = api.nvim_eval("&sidescrolloff")
+      elseif true then
+        local _1 = _533_
+        _532_ = _G.vim[scope][name]
+      else
+        _532_ = nil
+      end
     end
     saved_editor_opts[opt] = _532_
   end
@@ -2755,10 +2763,10 @@ local function save_editor_opts()
 end
 local function set_editor_opts(opts0)
   for opt, val in pairs(opts0) do
-    local _let_534_ = vim.split(opt, ".", true)
-    local _ = _let_534_[1]
-    local scope = _let_534_[2]
-    local name = _let_534_[3]
+    local _let_542_ = vim.split(opt, ".", true)
+    local _ = _let_542_[1]
+    local scope = _let_542_[2]
+    local name = _let_542_[3]
     _G.vim[scope][name] = val
   end
   return nil
@@ -2769,46 +2777,46 @@ end
 local function restore_editor_opts()
   return set_editor_opts(saved_editor_opts)
 end
-local function _536_()
+local function _544_()
   return sx:go({["repeat-invoc"] = "dot"})
 end
-local function _537_()
+local function _545_()
   return sx:go({["repeat-invoc"] = "dot", ["reverse?"] = true})
 end
-local function _538_()
+local function _546_()
   return sx:go({["repeat-invoc"] = "dot", ["x-mode?"] = true})
 end
-local function _539_()
+local function _547_()
   return sx:go({["repeat-invoc"] = "dot", ["reverse?"] = true, ["x-mode?"] = true})
 end
-local function _540_()
+local function _548_()
   return ft:go({["repeat-invoc"] = "dot"})
 end
-local function _541_()
+local function _549_()
   return ft:go({["repeat-invoc"] = "dot", ["reverse?"] = true})
 end
-local function _542_()
+local function _550_()
   return ft:go({["repeat-invoc"] = "dot", ["t-mode?"] = true})
 end
-local function _543_()
+local function _551_()
   return ft:go({["repeat-invoc"] = "dot", ["reverse?"] = true, ["t-mode?"] = true})
 end
-for _, _535_ in ipairs({{"<Plug>Lightspeed_dotrepeat_s", _536_}, {"<Plug>Lightspeed_dotrepeat_S", _537_}, {"<Plug>Lightspeed_dotrepeat_x", _538_}, {"<Plug>Lightspeed_dotrepeat_X", _539_}, {"<Plug>Lightspeed_dotrepeat_f", _540_}, {"<Plug>Lightspeed_dotrepeat_F", _541_}, {"<Plug>Lightspeed_dotrepeat_t", _542_}, {"<Plug>Lightspeed_dotrepeat_T", _543_}}) do
-  local _each_544_ = _535_
-  local lhs = _each_544_[1]
-  local rhs = _each_544_[2]
+for _, _543_ in ipairs({{"<Plug>Lightspeed_dotrepeat_s", _544_}, {"<Plug>Lightspeed_dotrepeat_S", _545_}, {"<Plug>Lightspeed_dotrepeat_x", _546_}, {"<Plug>Lightspeed_dotrepeat_X", _547_}, {"<Plug>Lightspeed_dotrepeat_f", _548_}, {"<Plug>Lightspeed_dotrepeat_F", _549_}, {"<Plug>Lightspeed_dotrepeat_t", _550_}, {"<Plug>Lightspeed_dotrepeat_T", _551_}}) do
+  local _each_552_ = _543_
+  local lhs = _each_552_[1]
+  local rhs = _each_552_[2]
   vim.keymap.set("o", lhs, rhs, {silent = true})
 end
 init_highlight()
 api.nvim_create_augroup("LightspeedDefault", {})
-local function _545_()
+local function _553_()
   return init_highlight()
 end
-api.nvim_create_autocmd("ColorScheme", {callback = _545_, group = "LightspeedDefault"})
-local function _546_()
+api.nvim_create_autocmd("ColorScheme", {callback = _553_, group = "LightspeedDefault"})
+local function _554_()
   save_editor_opts()
   return set_temporary_editor_opts()
 end
-api.nvim_create_autocmd("User", {pattern = "LightspeedEnter", callback = _546_, group = "LightspeedDefault"})
+api.nvim_create_autocmd("User", {pattern = "LightspeedEnter", callback = _554_, group = "LightspeedDefault"})
 api.nvim_create_autocmd("User", {pattern = "LightspeedLeave", callback = restore_editor_opts, group = "LightspeedDefault"})
 return {opts = opts, setup = setup, ft = ft, sx = sx, save_editor_opts = save_editor_opts, set_temporary_editor_opts = set_temporary_editor_opts, restore_editor_opts = restore_editor_opts, init_highlight = init_highlight, set_default_keymaps = __fnl_global__set_2ddefault_2dkeymaps}
