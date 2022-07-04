@@ -272,46 +272,32 @@ character instead."
 
 (fn init-highlight [force?]
   (local bg vim.o.background)
-  (local groupdefs
-    {hl.group.label                    {:guifg (match bg :light "#f02077" _ "#ff2f87")
-                                        :ctermfg "Red"
-                                        :guibg :NONE :ctermbg :NONE
-                                        :gui "bold,underline"
-                                        :cterm "bold,underline"}
-     hl.group.label-distant            {:guifg (match bg :light "#399d9f" _ "#99ddff")
-                                        :ctermfg (match bg :light "Blue" _ "Cyan")
-                                        :guibg :NONE :ctermbg :NONE
-                                        :gui "bold,underline"
-                                        :cterm "bold,underline"}
-     hl.group.shortcut                 {:guibg "#f00077" :ctermbg "Red"  ; ~inverse of label
-                                        :guifg "#ffffff" :ctermfg "White"
-                                        :gui "bold" :cterm "bold"}
-     hl.group.masked-ch                {:guifg (match bg :light "#cc9999" _ "#b38080")
-                                        :ctermfg "DarkGrey"
-                                        :guibg :NONE :ctermbg :NONE
-                                        :gui :NONE :cterm :NONE}
-     hl.group.unlabeled-match          {:guifg (match bg :light "#272020" _ "#f3ecec")
-                                        :ctermfg (match bg :light "Black" _ "White")
-                                        :guibg :NONE :ctermbg :NONE
-                                        :gui "bold"
-                                        :cterm "bold"}
-     hl.group.greywash                 {:guifg "#777777" :ctermfg "Grey"
-                                        :guibg :NONE :ctermbg :NONE
-                                        :gui :NONE :cterm :NONE}})
-  ; Defining groups.
-  (each [name hl-def-map (pairs groupdefs)]
-    (let [attrs-str (-> (icollect [k v (pairs hl-def-map)] (.. k "=" v))
-                        (table.concat " "))]
-      ; "default" = do not override any existing definition for the group.
-      (vim.cmd (.. "highlight " (if force? "" "default ") name " " attrs-str))))
-  ; Setting linked groups.
-  (each [from-group to-group
-         (pairs {hl.group.unique-ch hl.group.unlabeled-match
-                 hl.group.one-char-match hl.group.shortcut
-                 hl.group.pending-op-area :IncSearch
-                 hl.group.cursor :Cursor})]
-    (vim.cmd (.. "highlight" (if force? "! " " default ")
-                 "link " from-group " " to-group))))
+  (local defaults
+    {hl.group.label           {:fg (match bg :light "#f02077" _ "#ff2f87")
+                               :ctermfg "Red"
+                               :bold true :underline true}
+     hl.group.label-distant   {:fg (match bg :light "#399d9f" _ "#99ddff")
+                               :ctermfg (match bg :light "Blue" _ "Cyan")
+                               :bold true :underline true}
+     hl.group.shortcut        {:bg "#f00077"
+                               :fg "#ffffff"
+                               :ctermbg "Red"
+                               :ctermfg "White"
+                               :bold true}
+     hl.group.masked-ch       {:fg (match bg :light "#cc9999" _ "#b38080")
+                               :ctermfg "DarkGrey"}
+     hl.group.unlabeled-match {:fg (match bg :light "#272020" _ "#f3ecec")
+                               :ctermfg (match bg :light "Black" _ "White")
+                               :bold true}
+     hl.group.greywash        {:fg "#777777"
+                               :ctermfg "Grey"}
+     hl.group.unique-ch       {:link hl.group.unlabeled-match}
+     hl.group.one-char-match  {:link hl.group.shortcut}
+     hl.group.pending-op-area {:link "IncSearch"}
+     hl.group.cursor          {:link "Cursor"}})
+  (each [group-name def-map (pairs defaults)]
+    (when (not force?) (tset def-map :default true))
+    (api.nvim_set_hl 0 group-name def-map)))
 
 
 (fn grey-out-search-area [reverse? ?target-windows omni?]
