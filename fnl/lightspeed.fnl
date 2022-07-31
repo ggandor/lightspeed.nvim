@@ -134,7 +134,8 @@ character instead."
                "c" "." "z"
                "/" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
        {:ignore_case false
-        :exit_after_idle_msecs {:labeled nil :unlabeled 1000}
+        :exit_after_idle_msecs {:labeled nil
+                                :unlabeled nil}
         ; s/x
         :jump_to_unique_chars {:safety_timeout 400}
         :match_only_the_start_of_same_char_seqs true

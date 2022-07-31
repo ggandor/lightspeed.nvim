@@ -1,4 +1,4 @@
-*lightspeed.txt*        For Neovim version 0.7.0       Last change: 2022 June 15
+*lightspeed.txt*        For Neovim version 0.7.0       Last change: 2022 July 31
 
                     .-.. .. --. .... - ... .--. . . -.. 
                   __   _      __   __                      __
@@ -173,10 +173,10 @@ Common options~
 
     Ignore case in search patterns.
 
-`exit_after_idle_msecs = { labeled = nil, unlabeled = 1000 }`
+`exit_after_idle_msecs = { labeled = nil, unlabeled = nil }`
 
-    Timeout value, in milliseconds, after which the plugin should exit
-    unconditionally (`unlabeled` refers to f/t-mode). The feature can be
+    Timeout values, in milliseconds, after which the plugin should exit
+    unconditionally (`unlabeled` includes f/t-motions). The feature can be
     disabled by setting the given value to `nil`.
 
 s/x-specific options~
