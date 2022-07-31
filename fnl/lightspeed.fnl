@@ -1743,13 +1743,7 @@ sub-table containing label-target key-value pairs for these targets."
  : setup
  : ft
  : sx
-
- :save_editor_opts save-editor-opts
- :set_temporary_editor_opts set-temporary-editor-opts
- :restore_editor_opts restore-editor-opts
-
- :init_highlight init-highlight
- :set_default_keymaps set-default-keymaps}
+ :init_highlight init-highlight}
 
 
 ; vim: foldmethod=marker foldmarker=///,//>

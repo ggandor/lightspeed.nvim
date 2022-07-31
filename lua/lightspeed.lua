@@ -2790,4 +2790,4 @@ local function _551_()
 end
 api.nvim_create_autocmd("User", {pattern = "LightspeedEnter", callback = _551_, group = "LightspeedDefault"})
 api.nvim_create_autocmd("User", {pattern = "LightspeedLeave", callback = restore_editor_opts, group = "LightspeedDefault"})
-return {opts = opts, setup = setup, ft = ft, sx = sx, save_editor_opts = save_editor_opts, set_temporary_editor_opts = set_temporary_editor_opts, restore_editor_opts = restore_editor_opts, init_highlight = init_highlight, set_default_keymaps = __fnl_global__set_2ddefault_2dkeymaps}
+return {opts = opts, setup = setup, ft = ft, sx = sx, init_highlight = init_highlight}
