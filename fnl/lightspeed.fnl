@@ -121,33 +121,27 @@ character instead."
 
 ; Setup ///1
 
-(var opts
-     (do
-       (local safe-labels
-              ["s" "f" "n"
-               "u" "t"
-               "/" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
-       (local labels
-              ["s" "f" "n"
-               "j" "k" "l" "o" "d" "w" "e" "h" "m" "v" "g"
-               "u" "t"
-               "c" "." "z"
-               "/" "F" "L" "N" "H" "G" "M" "U" "T" "?" "Z"])
-       {:ignore_case false
-        :exit_after_idle_msecs {:labeled nil
-                                :unlabeled nil}
-        ; s/x
-        :jump_to_unique_chars {:safety_timeout 400}
-        :match_only_the_start_of_same_char_seqs true
-        :substitute_chars {"\r" "¬"}  ; 0x00AC
-        :force_beacons_into_match_width false
-        :safe_labels safe-labels
-        :labels labels
-        :special_keys {:next_match_group "<space>"
-                       :prev_match_group "<tab>"}
-        ; f/t
-        :limit_ft_matches 4
-        :repeat_ft_with_target_char false}))
+(var opts {:ignore_case false
+           :exit_after_idle_msecs {:labeled nil
+                                   :unlabeled nil}
+           ; s/x
+           :jump_to_unique_chars {:safety_timeout 400}
+           :match_only_the_start_of_same_char_seqs true
+           :substitute_chars {"\r" "¬"}  ; 0x00AC
+           :force_beacons_into_match_width false
+           :safe_labels ["s" "f" "n" "u" "t" "/"
+                         "S" "F" "N" "L" "H" "M" "U" "G" "T" "?" "Z"]
+           :labels ["s" "f" "n"
+                    "j" "k" "l" "h" "o" "d" "w" "e" "m" "b"
+                    "u" "y" "v" "r" "g" "t" "c" "x" "/" "z"
+                    "S" "F" "N"
+                    "J" "K" "L" "H" "O" "D" "W" "E" "M" "B"
+                    "U" "Y" "V" "R" "G" "T" "C" "X" "?" "Z"]
+           :special_keys {:next_match_group "<space>"
+                          :prev_match_group "<tab>"}
+           ; f/t
+           :limit_ft_matches 4
+           :repeat_ft_with_target_char false})
 
 
 (local removed-opts [:jump_to_first_match

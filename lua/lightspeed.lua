@@ -115,12 +115,7 @@ local function maparg_expr(name, mode)
     return rhs
   end
 end
-local opts
-do
-  local safe_labels = {"s", "f", "n", "u", "t", "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
-  local labels = {"s", "f", "n", "j", "k", "l", "o", "d", "w", "e", "h", "m", "v", "g", "u", "t", "c", ".", "z", "/", "F", "L", "N", "H", "G", "M", "U", "T", "?", "Z"}
-  opts = {ignore_case = false, exit_after_idle_msecs = {labeled = nil, unlabeled = nil}, jump_to_unique_chars = {safety_timeout = 400}, match_only_the_start_of_same_char_seqs = true, substitute_chars = {["\13"] = "\194\172"}, force_beacons_into_match_width = false, safe_labels = safe_labels, labels = labels, special_keys = {next_match_group = "<space>", prev_match_group = "<tab>"}, limit_ft_matches = 4, repeat_ft_with_target_char = false}
-end
+local opts = {ignore_case = false, exit_after_idle_msecs = {labeled = nil, unlabeled = nil}, jump_to_unique_chars = {safety_timeout = 400}, match_only_the_start_of_same_char_seqs = true, substitute_chars = {["\13"] = "\194\172"}, force_beacons_into_match_width = false, safe_labels = {"s", "f", "n", "u", "t", "/", "S", "F", "N", "L", "H", "M", "U", "G", "T", "?", "Z"}, labels = {"s", "f", "n", "j", "k", "l", "h", "o", "d", "w", "e", "m", "b", "u", "y", "v", "r", "g", "t", "c", "x", "/", "z", "S", "F", "N", "J", "K", "L", "H", "O", "D", "W", "E", "M", "B", "U", "Y", "V", "R", "G", "T", "C", "X", "?", "Z"}, special_keys = {next_match_group = "<space>", prev_match_group = "<tab>"}, limit_ft_matches = 4, repeat_ft_with_target_char = false}
 local removed_opts = {"jump_to_first_match", "instant_repeat_fwd_key", "instant_repeat_bwd_key", "x_mode_prefix_key", "full_inclusive_prefix_key", "grey_out_search_area", "highlight_unique_chars", "jump_on_partial_input_safety_timeout", "cycle_group_fwd_key", "cycle_group_bwd_key"}
 local function get_warning_msg(arg_fields)
   local msg = {{"ligthspeed.nvim\n", "Question"}, {"The following fields in the "}, {"opts", "Visual"}, {" table has been renamed or removed:\n\n"}}
@@ -2378,15 +2373,15 @@ sx.go = function(self, _379_)
     end
     _462_ = (_463_() or get_targets(in1, reverse_3f0, _3ftarget_windows, omni_3f) or _466_())
     local function _468_()
+      local only = (_462_)[1]
       local _0 = (((_462_)[1]).pair)[1]
       local ch2 = (((_462_)[1]).pair)[2]
-      local only = (_462_)[1]
       return opts.jump_to_unique_chars
     end
     if (((_G.type(_462_) == "table") and ((_G.type((_462_)[1]) == "table") and ((_G.type(((_462_)[1]).pair) == "table") and true and (nil ~= (((_462_)[1]).pair)[2]))) and ((_462_)[2] == nil)) and _468_()) then
+      local only = (_462_)[1]
       local _0 = (((_462_)[1]).pair)[1]
       local ch2 = (((_462_)[1]).pair)[2]
-      local only = (_462_)[1]
       if (new_search_3f or (ch2 == prev_in2)) then
         do
           if dot_repeatable_op_3f then
@@ -2493,9 +2488,9 @@ sx.go = function(self, _379_)
           _486_ = t_487_
         end
         if ((_G.type(_486_) == "table") and ((_G.type((_486_).pair) == "table") and true and (nil ~= ((_486_).pair)[2]))) then
+          local shortcut = _486_
           local _0 = ((_486_).pair)[1]
           local ch2 = ((_486_).pair)[2]
-          local shortcut = _486_
           do
             if dot_repeatable_op_3f then
               set_dot_repeat(replace_keycodes(get_plug_key("sx", reverse_3f0, x_mode_3f0, "dot")))
