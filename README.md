@@ -194,7 +194,7 @@ can mean the world - Lightspeed simply _feels_ different because of this.
 Made possible by the above, Lightspeed has the concept of "shortcutable"
 positions, where the assigned label itself is enough to determine the target:
 those you can reach via typing the label character right after the first
-input, bypassing the second one. This case is suprisingly frequent in
+input, bypassing the second one. This case is surprisingly frequent in
 practice, and in case of harder-to-type sequences, when you're not rushing
 with 200+ CPM, can work really well.
 
@@ -255,7 +255,7 @@ Plug 'ggandor/lightspeed.nvim'
 ## 🏹 Usage
 
 "Just relax and let your mind go blank" - Lightspeed thinks for you. It always
-presents information before it is actually needed. 
+presents information before it is actually needed.
 
 ### 2-character search (s/x)
 
@@ -467,7 +467,7 @@ introduction](#-an-in-depth-introduction-of-the-key-features).
 
 Lightspeed exposes a configuration table (`opts`), that can be set directly, or
 via a `setup` function that updates the current settings with the values given
-in its argument table. 
+in its argument table.
 
 ```Lua
 -- NOTE: This is just illustration - there is no need to copy/paste the
@@ -536,7 +536,7 @@ and Visual mode), `gs`, `gS` (Normal mode), `z`, `Z`, `x`, `X`
 details.
 
 That said, Lightspeed will check for conflicts with any custom mappings created
-by you or other plugins, and will not overwite them, unless explicitly told so.
+by you or other plugins, and will not overwrite them, unless explicitly told so.
 To set alternative keymaps, you can use the `<Plug>` keys listed in `:h
 lightspeed-custom-mappings`.
 
@@ -596,11 +596,11 @@ only execute for certain ones, etc.
   should check the state of that first. Alternatively, you can tweak the
   `LightspeedCursor` group, to highlight the cursor in a custom way.
 
-* If you are using VSCode with NeoVim extension, you need to set 
-  [`hi LightspeedCursor gui=reverse`](https://github.com/vscode-neovim/vscode-neovim/pull/868#issuecomment-1131963354) 
+* If you are using VSCode with NeoVim extension, you need to set
+  [`hi LightspeedCursor gui=reverse`](https://github.com/vscode-neovim/vscode-neovim/pull/868#issuecomment-1131963354)
   in your nvim config to support the fake cursor and make Lightspeed work.
 
-* The otherwise useful multiline scoping of `f/F/t/T` can be undesireable when
+* The otherwise useful multiline scoping of `f/F/t/T` can be undesirable when
   recording macros or executing `:normal`. This is [being worked
   on](https://github.com/ggandor/lightspeed.nvim/issues/14), but as an API
   change, it should be thought through carefully. In the meantime, here is a
@@ -657,7 +657,7 @@ _shortcuts_ for very specific situations, when you can count the number of
 occurrences, and thus reach for them in a totally automatic way, and _not_ as
 equals of the `s`/`x` motions.
 
-### I miss Sneak's "vertical scope" feature... 
+### I miss Sneak's "vertical scope" feature...
 
 That might indeed be useful, but I considered it would needlessly complicate the
 plugin. Sometime in the future we might add that though.
