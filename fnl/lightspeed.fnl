@@ -1309,8 +1309,9 @@ sub-table containing label-target key-value pairs for these targets."
                               (get-targetable-windows reverse? omni?))
                             (when instant-repeat? instant-state.target-windows))
         spec-keys (setmetatable {} {:__index
-                                    (fn [_ k] (replace-keycodes
-                                                (. opts.special_keys k)))})]
+                                    (fn [_ k] (let [prop (. opts.special_keys k)]
+                                                (if (not= prop nil)  
+                                                        (replace-keycodes prop))))})]
 
     ; Top-level vars
 
