@@ -1,10 +1,15 @@
 # Announcement
 
-For a more lightweight, easier-to-use alternative, check out the author's new,
-work-in-progress plugin, [Leap](https://github.com/ggandor/leap.nvim). It is a
-streamlined, refined successor of Lightspeed, incorporating all the lessons
-learned from the predecessor, achieving much better balance between speed,
-simplicity (of both interface and implementation) and intuitiveness.
+Lightspeed has been deprecated in favor of
+[Leap](https://github.com/ggandor/leap.nvim), a streamlined but in many
+respects enhanced version of its ancestor. Compared to Lightspeed, Leap:
+
+- gets rid of some gimmicks with a low benefit/cost ratio (like "shortcut"
+  labels), but works the same way in the common case; all the really important
+  features are there
+- has a smaller and simpler visual footprint; it feels like using Sneak
+- is much more flexible and extensible; it can be used as an engine for
+  selecting arbitrary targets, and performing arbitrary actions on them
 
 # 🌌 lightspeed.nvim
 
