@@ -1978,7 +1978,12 @@ sx.go = function(self, _379_)
   _3ftarget_windows = (_386_() or _388_())
   local spec_keys
   local function _390_(_, k)
-    return replace_keycodes(opts.special_keys[k])
+    local prop = opts.special_keys[k]
+    if (prop ~= nil) then
+      return replace_keycodes(prop)
+    else
+      return nil
+    end
   end
   spec_keys = setmetatable({}, {__index = _390_})
   local new_search_3f = not repeat_invoc
